@@ -43,9 +43,12 @@ class Bip32:
     @staticmethod
     def gen_mnemonic():
         """ Returns a new 16 word mnemonic"""
-        ent = os.urandom(16)
+        ent_len = 16  # length of initial entropy in bytes
+        cs_slice_index = 1 # max index of the checksum slice
+
+        ent = os.urandom(ent_len)
         # gets the checksum of the original ENT
-        cs = hashlib.sha256(ent).hexdigest()[0]
+        cs = hashlib.sha256(ent).hexdigest()[0:cs_slice_index]
         ent_cs = ent.hex() + cs
         # Turns ent_cs into a bit array so it can be split into groups of 11 bits
         bits = bitstring.BitArray(hex=ent_cs)
@@ -113,3 +116,5 @@ class Bip32:
             change.append(ck.ChildKey(1).ChildKey(i).WalletImportFormat())
 
         return receiving, change
+
+
