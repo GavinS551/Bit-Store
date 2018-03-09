@@ -1,8 +1,9 @@
 import os
 import hashlib
 
+
 import bitstring
-from lib.bip32utils.BIP32Key import BIP32Key, BIP32_HARDEN
+from src.bip32utils.BIP32Key import BIP32Key, BIP32_HARDEN
 
 
 class WatchOnlyWallet(Exception):
@@ -18,12 +19,12 @@ class Bip32:
     }
 
     @classmethod
-    def from_mnemonic(cls, mnemonic, passphrase='', path=PATHS['bip49path'], force_segwit=False):
+    def from_mnemonic(cls, mnemonic, passphrase='', path=PATHS['bip49path'], force_segwit=False, testnet=False):
         """ Generates a bip32 class from a mnemonic """
         seed = hashlib.pbkdf2_hmac('sha512', mnemonic.encode('utf-8'),
                                    ('mnemonic' + passphrase).encode('utf-8'), 2048)
 
-        return cls(BIP32Key.fromEntropy(seed).ExtendedKey(), path, force_segwit, mnemonic=mnemonic)
+        return cls(BIP32Key.fromEntropy(seed, testnet=testnet).ExtendedKey(), path, force_segwit, mnemonic)
 
     def __init__(self, key, path=PATHS['bip49path'], force_segwit=False, mnemonic=None):
         self.is_private = False if key[1:4] == 'pub' else True
@@ -37,7 +38,7 @@ class Bip32:
         self.master_public_key = self.bip32.PublicKey()
         self.mnemonic = mnemonic
 
-        # amount of addresses to generate
+        # Gap limit for address gen
         self.gap_limit = 20
 
     @staticmethod
@@ -66,6 +67,7 @@ class Bip32:
 
     def _get_base_ck(self):
         """ Returns a "base" child key; i.e external and internal chains are derived from here """
+        
         # First get a child key (ck) to derive from further in a loop
         split_path = self.path.split('/')
         if split_path[0][-1] == "'":
@@ -116,5 +118,3 @@ class Bip32:
             change.append(ck.ChildKey(1).ChildKey(i).WalletImportFormat())
 
         return receiving, change
-
-

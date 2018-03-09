@@ -10,7 +10,7 @@ import hashlib
 import ecdsa
 import struct
 import codecs
-from . import Base58
+from bip32utils import Base58
 
 from hashlib import sha256
 from ecdsa.curves import SECP256k1
@@ -356,12 +356,12 @@ class BIP32Key(object):
         print("     * (prv b58):  ", self.ExtendedKey(private=True, encoded=True))
 
 
-if __name__ == "__main__":
+if __name__ == "__main_":
     # BIP0032 Test vector 1
-    entropy='000102030405060708090A0B0C0D0E0F'.decode('hex')
+    entropy='000102030405060708090A0B0C0D0E0F'.encode('hex')
     m = BIP32Key.fromEntropy(entropy)
     print("Test vector 1:")
-    print("Master (hex):", entropy.encode('hex'))
+    print("Master (hex):", entropy.decode('hex'))
     print("* [Chain m]")
     m.dump()
 
@@ -412,3 +412,12 @@ if __name__ == "__main__":
     print("* [Chain m/0/2147483647h/1/2147483646h/2]")
     m = m.ChildKey(2)
     m.dump()
+
+elif __name__ == '__main__':
+    entropy = '000102030405060708090A0B0C0D0E0F'.encode()
+    m = BIP32Key.fromEntropy(entropy)
+    a = BIP32Key.fromExtendedKey('xpub68nghXnrLxbZaW15zDBiMKoMMDHT8F9bYRHjKSR63iRyMkPiSbViytZwdvzHffRQaZ9gtZKig8QwUTNErzS1nDgp55gXiDHHWdQpSSb6xby')
+    a2 = BIP32Key.fromExtendedKey('xpub68nghXni1J4bPpYkiYjz9AqrqwxjtFWnqQ71YwEubpRhTF7prxsVr2qivG9JuBTxPPU2xEuTvsrcHTvWPtGZeBSgiDAq6itPJseaeoq4Sna')
+
+    print(m.ChildKey(1).ExtendedKey(private=False))
+    print(a.Address(), a2.Address())
