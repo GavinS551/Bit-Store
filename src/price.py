@@ -18,5 +18,17 @@ class Coinmarketcap:
             raise ValueError('Currency ticker not valid')
 
 
-class Bitfinex:
-    pass
+class BlockchainInfo:
+
+    @staticmethod
+    def bitcoin_price(currency):
+        valid_currencies = ['USD', 'AUD', 'BRL', 'CAD', 'CHF', 'CLP', 'CNY',
+                            'DKK', 'EUR', 'GBP', 'HKD', 'INR', 'ISK', 'JPY',
+                            'KRW', 'NZD', 'PLN', 'RUB', 'SEK', 'SGD', 'THB',
+                            'TWD']
+        if currency.upper() in valid_currencies:
+            url = 'https://blockchain.info/ticker'
+            data = requests.get(url).json()
+            return data[currency.upper()]['last']
+        else:
+            raise ValueError('Currency ticker not valid')
