@@ -19,12 +19,14 @@ class Bip32:
     }
 
     @classmethod
-    def from_mnemonic(cls, mnemonic, passphrase='', path=PATHS['bip49path'], force_segwit=False, testnet=False):
+    def from_mnemonic(cls, mnemonic, passphrase='', path=PATHS['bip49path'],
+                      force_segwit=False, testnet=False):
         """ Generates a bip32 class from a mnemonic """
         seed = hashlib.pbkdf2_hmac('sha512', mnemonic.encode('utf-8'),
                                    ('mnemonic' + passphrase).encode('utf-8'), 2048)
 
-        return cls(BIP32Key.fromEntropy(seed, testnet=testnet).ExtendedKey(), path, force_segwit, mnemonic)
+        return cls(BIP32Key.fromEntropy(seed, testnet=testnet).ExtendedKey(),
+                   path, force_segwit, mnemonic)
 
     def __init__(self, key, path=PATHS['bip49path'], force_segwit=False, mnemonic=None):
         self.is_private = False if key[1:4] == 'pub' else True
@@ -84,7 +86,7 @@ class Bip32:
 
         return ck
 
-    def addresses(self):  # 20 is the gap limit for discovering new addresses
+    def addresses(self):
         """ Returns a tuple of receiving and change addresses up to the limit specified"""
         receiving = []
         change = []
