@@ -32,3 +32,16 @@ class BlockchainInfo:
             return data[currency.upper()]['last']
         else:
             raise ValueError('Currency ticker not valid')
+
+
+class Gdax:
+
+    @staticmethod
+    def bitcoin_price(currency):
+        valid_currencies = ["EUR", "USD", "GBP"]
+        if currency.upper() in valid_currencies:
+            url = f'https://api.gdax.com/products/BTC-{currency}/ticker'
+            data = requests.get(url).json()
+            return data['price']
+        else:
+            raise ValueError('Currency ticker not valid')
