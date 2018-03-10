@@ -1,3 +1,2 @@
 bitstring
-bip32utils
 requests
