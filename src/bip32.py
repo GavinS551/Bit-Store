@@ -4,6 +4,7 @@ import hashlib
 
 import bitstring
 from src.bip32utils.BIP32Key import BIP32Key, BIP32_HARDEN
+import src.btc_verify as btc_verify
 
 
 class WatchOnlyWallet(Exception):
@@ -36,8 +37,8 @@ class Bip32:
         self.path = path
 
         if self.is_private:
-            self.master_private_key = self.bip32.PrivateKey()
-        self.master_public_key = self.bip32.PublicKey()
+            self.master_private_key = self.bip32.ExtendedKey()
+        self.master_public_key = self.bip32.ExtendedKey(private=False)
         self.mnemonic = mnemonic
 
         # Gap limit for address gen
@@ -67,8 +68,8 @@ class Bip32:
         # Returns the mnemonic in string format
         return ' '.join(mnemonic)
 
-    def _get_base_ck(self):
-        """ Returns a "base" child key; i.e external and internal chains are derived from here """
+    def _get_account_ck(self):
+        """returns an 'account' child key. i.e the last derivation of the path"""
         
         # First get a child key (ck) to derive from further in a loop
         split_path = self.path.split('/')
@@ -90,7 +91,7 @@ class Bip32:
         """ Returns a tuple of receiving and change addresses up to the limit specified"""
         receiving = []
         change = []
-        ck = self._get_base_ck()
+        ck = self._get_account_ck()
 
         if self.segwit:
             for i in range(self.gap_limit):
@@ -103,7 +104,13 @@ class Bip32:
             for i in range(self.gap_limit):
                 change.append(ck.ChildKey(1).ChildKey(i).Address())
 
-        return receiving, change
+        # Check to make sure that addresses are 100% valid, just in case
+        for a in receiving + change:
+            if btc_verify.check_bc(a):
+                return receiving, change
+            else:
+                raise Exception('Unexpected error occurred in address'
+                                ' generation: INVALID ADDRESS GENERATED')
 
     def wif_keys(self):
         """ Returns a tuple of receiving and change WIF keys up to the limit specified"""
@@ -112,7 +119,7 @@ class Bip32:
 
         receiving = []
         change = []
-        ck = self._get_base_ck()
+        ck = self._get_account_ck()
 
         for i in range(self.gap_limit):
             receiving.append(ck.ChildKey(0).ChildKey(i).WalletImportFormat())
@@ -120,3 +127,10 @@ class Bip32:
             change.append(ck.ChildKey(1).ChildKey(i).WalletImportFormat())
 
         return receiving, change
+
+if __name__ == '__main__':
+    b = Bip32.from_mnemonic('work suggest lumber picnic end rapid chunk remove clump liquid true little assume trash stuff')
+    print(b.addresses())
+    print(b.wif_keys())
+    print(b.master_private_key)
+    print(b.master_public_key)
