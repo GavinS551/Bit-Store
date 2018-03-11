@@ -3,6 +3,9 @@ import requests
 
 class BitcoinPrice:
 
+    def __init__(self):
+        pass
+
     def coinmarketcap(self, currency):
         valid_currencies = ["AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK",
                             "DKK", "EUR", "GBP", "HKD", "HUF", "IDR", "ILS",
@@ -38,8 +41,8 @@ class BitcoinPrice:
             raise ValueError('Currency ticker not valid')
 
     def bitstamp(self, currency):
-        valid_currencies = ["eur", "usd"]
-        if currency.lower() in valid_currencies:
+        valid_currencies = ["EUR", "USD"]
+        if currency.upper() in valid_currencies:
             url = f'https://www.bitstamp.net/api/v2/ticker/btc{currency}/'
             data = requests.get(url).json()
             return data['last']
