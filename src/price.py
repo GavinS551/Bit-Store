@@ -27,7 +27,8 @@ class BitcoinPrice:
                 self.last_request = time.time()
                 return self.last_price
 
-    def coinmarketcap(self, currency):
+    @staticmethod
+    def coinmarketcap(currency):
         valid_currencies = ["AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK",
                             "DKK", "EUR", "GBP", "HKD", "HUF", "IDR", "ILS",
                             "INR", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD",
@@ -41,9 +42,12 @@ class BitcoinPrice:
 
         url = 'https://api.coinmarketcap.com/v1/ticker/bitcoin/?convert='
         data = requests.get(url + currency).json()[0]
+        # will return the currency ticker as well for all methods, because of
+        # the ability to default to USD silently-ish
         return data[f'price_{currency.lower()}'], currency.upper()
 
-    def blockchaininfo(self, currency):
+    @staticmethod
+    def blockchaininfo(currency):
         valid_currencies = ['USD', 'AUD', 'BRL', 'CAD', 'CHF', 'CLP', 'CNY',
                             'DKK', 'EUR', 'GBP', 'HKD', 'INR', 'ISK', 'JPY',
                             'KRW', 'NZD', 'PLN', 'RUB', 'SEK', 'SGD', 'THB',
@@ -58,7 +62,8 @@ class BitcoinPrice:
         data = requests.get(url).json()
         return data[currency.upper()]['last'], currency.upper()
 
-    def gdax(self, currency):
+    @staticmethod
+    def gdax(currency):
         valid_currencies = ["EUR", "USD", "GBP"]
 
         # Currency defaults to USD
@@ -70,8 +75,8 @@ class BitcoinPrice:
         data = requests.get(url).json()
         return data['price'], currency.upper()
 
-
-    def bitstamp(self, currency):
+    @staticmethod
+    def bitstamp(currency):
         valid_currencies = ["EUR", "USD"]
 
         # Currency defaults to USD
