@@ -9,7 +9,7 @@ class Coinmarketcap:
                             "DKK", "EUR", "GBP", "HKD", "HUF", "IDR", "ILS",
                             "INR", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD",
                             "PHP", "PKR", "PLN", "RUB", "SEK", "SGD", "THB",
-                            "TRY", "TWD", "ZAR"]
+                            "TRY", "TWD", "ZAR", "USD"]
         if currency.upper() in valid_currencies:
             url = 'https://api.coinmarketcap.com/v1/ticker/bitcoin/?convert='
             data = requests.get(url + currency).json()[0]
@@ -45,3 +45,20 @@ class Gdax:
             return data['price']
         else:
             raise ValueError('Currency ticker not valid')
+
+
+class BitStamp:
+
+    @staticmethod
+    def bitcoin_price(currency):
+        valid_currencies = ["eur", "usd"]
+        if currency.lower() in valid_currencies:
+            url = f'https://www.bitstamp.net/api/v2/ticker/btc{currency}/'
+            data = requests.get(url).json()
+            return data['last']
+        else:
+            raise ValueError('Currency ticker not valid')
+
+
+
+
