@@ -1,11 +1,19 @@
+import os.path
+
+import cryptography
 from src.bip32 import Bip32
 
 
 class Wallet:
 
     @classmethod
-    def new_wallet(self):
-        pass
+    def new_wallet(cls, name):
 
-    def __init__(self, file):
-        self.file = file
+
+
+        return cls()
+
+    def __init__(self, dir_):
+        self.dir = dir_
+        self.name = os.path.basename(self.dir)
+
