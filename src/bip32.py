@@ -45,8 +45,19 @@ class Bip32:
         self.gap_limit = 20
 
     @staticmethod
-    def gen_mnemonic():
+    def gen_mnemonic(force_use_word_list=False):
         """ Returns a new 16 word mnemonic"""
+
+        # if force_use_word list is true, it skips checking validity of the file
+        # to be used with a custom word list
+        if not force_use_word_list:
+            # Checking integrity of word list file
+            with open('wordlist.txt', 'rb') as w:
+                checksum = b'Q\xca"d\xf5\xb3\xadS*Mm\xae\x17^\x17P'
+                if checksum != hashlib.md5(w.read()).digest():
+                    raise Exception('ERROR: Wordlist is not BIP39 valid '
+                                    '(INVALID MD5 CHECKSUM)')
+
         ent_len = 16  # length of initial entropy in bytes
         cs_slice_index = 1 # max index of the checksum slice
 
@@ -129,7 +140,7 @@ class Bip32:
         return receiving, change
 
 if __name__ == '__main__':
-    b = Bip32.from_mnemonic('work suggest lumber picnic end rapid chunk remove clump liquid true little assume trash stuff')
+    b = Bip32.from_mnemonic(Bip32.gen_mnemonic())
     print(b.addresses())
     print(b.wif_keys())
     print(b.master_private_key)
