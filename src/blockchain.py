@@ -33,9 +33,3 @@ class AddressData:
             return self._get_address_data(address)['final_balance']
         else:
             raise ValueError('Address not in self.addresses')
-
-
-if __name__ == '__main__':
-    ad = AddressData(["32Q3Eb6NxrShRAUCzAd3wARVvRm5M9o5F5", "37uP4pDfbbgBh6WAkmMeA4KNjyqUY5L544"])
-    print(ad.get_address_balance('32Q3Eb6NxrShRAUCzAd3wARVvRm5M9o5F5'))
-    print(ad._get_address_data( "37uP4pDfbbgBh6WAkmMeA4KNjyqUY5L544"))
