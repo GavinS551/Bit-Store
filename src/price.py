@@ -26,6 +26,8 @@ class BitcoinPrice:
                 self.last_price = self.valid_sources[self.source]
                 self.last_request = time.time()
                 return self.last_price
+        else:
+            return self.last_price
 
     @staticmethod
     def coinmarketcap(currency):

@@ -115,7 +115,7 @@ class Bip32:
             for i in range(self.gap_limit):
                 change.append(ck.ChildKey(1).ChildKey(i).Address())
 
-        # Check to make sure that addresses are 100% valid, just in case
+        # Check to make sure that addresses are 100% valid, because better safe than sorry
         for a in receiving + change:
             if btc_verify.check_bc(a):
                 return receiving, change
@@ -139,16 +139,10 @@ class Bip32:
 
         return receiving, change
 
-    def increase_gap_limit(self, num):
+    def change_gap_limit(self, num):
         if num != type(int):
             raise ValueError('Gap limit must be an int')
+        elif num <= 0:
+            raise ValueError('Gap limit must be atleast 1')
         else:
             self.gap_limit = num
-
-
-if __name__ == '__main__':
-    b = Bip32.from_mnemonic(Bip32.gen_mnemonic())
-    print(b.addresses())
-    print(b.wif_keys())
-    print(b.master_private_key)
-    print(b.master_public_key)
