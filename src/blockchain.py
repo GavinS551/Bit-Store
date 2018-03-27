@@ -9,7 +9,7 @@ class AddressData:
         self.raw_data = {}
 
         self._get_api_data()
-        # balance of all addresses im self.addresses
+        # balance of all addresses in self.addresses
         self.wallet_balance = self.raw_data['wallet']['final_balance']
 
     def _get_api_data(self):

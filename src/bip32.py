@@ -139,6 +139,13 @@ class Bip32:
 
         return receiving, change
 
+    def increase_gap_limit(self, num):
+        if num != type(int):
+            raise ValueError('Gap limit must be an int')
+        else:
+            self.gap_limit = num
+
+
 if __name__ == '__main__':
     b = Bip32.from_mnemonic(Bip32.gen_mnemonic())
     print(b.addresses())
