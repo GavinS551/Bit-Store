@@ -2,11 +2,9 @@ import os
 import hashlib
 import base64
 import json
-import tempfile
 
 import cryptography.fernet as fernet
 
-from src.bip32 import Bip32
 import src.config as CONFIG
 
 
@@ -33,72 +31,44 @@ class Crypto:
 
 class DataStore(Crypto):
 
-    STANDARD_DATA_FORMAT = {
-        'MNEMONIC': None,
-        'XPRIV': None,
-        'XPUB': None,
-        'PATH': None,
-        'GAP_LIMIT': None,
-        'ADDRESSES': {
-            'RECEIVING': [],
-            'CHANGE': [],
-            'USED': []
-        },
-        'WIP_KEYS': {
-            'RECEIVING': [],
-            'CHANGE': [],
-            'USED': []
-        }
-
-    }
-
-    def __init__(self, file_path, password, write_template=True):
+    def __init__(self, file_path, password):
         super().__init__(password)
         self.file_path = file_path
-        self.file_dir = ''.join(os.path.split(file_path)[:-1])
 
         if not os.path.exists(self.file_path):
-            raise Exception(f'File path:{self.file_path} doesn\'t exist!')
+            raise ValueError(f'{self.file_path} does not exist!')
 
-        if write_template:
-            with open(self.file_path, 'r') as d:
-                if d.read() == '':
-                    self._write_template()
+        # writes blank template if file is empty
+        with open(self.file_path, 'r') as d:
+            if d.read() == '':
+                self._write_blank_template()
 
     @property
     def _data(self):
         with open(self.file_path, 'r') as d:
-            return json.load(d)
+            return json.loads(self.decrypt(d.read()))
 
-    def _write_template(self):
+    def _write_to_file(self, data):
+        # if data is invalid for json.dumps it will raise exception here before file is overwritten
+        json.dumps(data)
         with open(self.file_path, 'w') as d:
-            d.write(json.dumps(self.STANDARD_DATA_FORMAT))
+            d.write(self.encrypt(json.dumps(data)))
 
-    def write_value(self, **kwargs):
+    def _write_blank_template(self):
+        self._write_to_file(CONFIG.STANDARD_DATA_FORMAT)
+
+    def write_value(self, allow_new_key=False, **kwargs):
         data = self._data
         for k, v in kwargs.items():
-            if k not in self.STANDARD_DATA_FORMAT:
-                raise ValueError(f'Key entered is not valid:{k}')
+            if k not in CONFIG.STANDARD_DATA_FORMAT and allow_new_key is False:
+                raise ValueError(f'Entered key ({k}) is not valid!')
             else:
-                if v not in [None, True, False] and type(v) != int:
-                    # encrypting value before writing to file
-                    data[k] = self.encrypt(v)
-                else:
-                    # bool, null or ints are not encrypted
-                    data[k] = v
+                data[k] = v
+                self._write_to_file(data)
 
-        with open(self.file_path, 'w') as d:
-            json.dump(data, d)
+    def get_value(self, key):
+        return self._data[key.upper()]
 
-    def read_value(self, key):
-        if key not in self.STANDARD_DATA_FORMAT:
-            raise ValueError(f'Key entered is not valid:{key}')
-        try:
-            return self.decrypt(self._data[key.upper()])
-        except AttributeError:
-            return self._data[key.upper()]
+d = DataStore(r'C:\Users\Gavin Shaughnessy\Desktop\test.json', 'hello')
 
-
-# TESTING
-if __name__ == '__main__':
-    d = DataStore('C:\\Users\\Gavin Shaughnessy\\Desktop\\test.json', 'password')
+print(d._data)
