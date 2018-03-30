@@ -41,6 +41,11 @@ class DataStore(Crypto):
         if not os.path.exists(self.file_path):
             raise ValueError(f'{self.file_path} does not exist!')
 
+        # new file handling
+        with open(self.file_path, 'r') as d:
+            if d.read() == '':
+                d.write(self.encrypt(self.json_blank_template()))
+
         self.check_password()  # password validity handling
 
     @property
@@ -77,7 +82,7 @@ class DataStore(Crypto):
     def check_password(self):
         try:
             # tries to decrypt data
-            self._data
+            _ = self._data
         except fernet.InvalidToken:
             raise self.IncorrectPassword('Entered password is incorrect')
 

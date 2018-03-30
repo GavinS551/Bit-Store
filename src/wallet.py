@@ -19,22 +19,22 @@ class Wallet:
         with open(data_file_path, 'w+'):
             pass
 
-        b = bip32.Bip32.from_mnemonic(mnemonic=mnemonic, passphrase=mnemonic_passphrase,
+        bip32_ = bip32.Bip32.from_mnemonic(mnemonic=mnemonic, passphrase=mnemonic_passphrase,
                                       force_segwit=force_segwit, testnet=testnet)
+        d_store = data.DataStore(data_file_path, password)
 
         info = {
-            'MNEMONIC': b.mnemonic,
-            'XPRIV': b.master_private_key,
-            'XPUB': b.master_public_key,
-            'PATH': b.path,
-            'GAP_LIMIT': b.gap_limit,
-            'ADDRESSES_RECEIVING': b.addresses()[0],
-            'ADDRESSES_CHANGE': b.addresses()[1],
-            'WIFKEYS_RECEIVING': b.wif_keys()[0],
-            'WIFKEYS_CHANGE': b.wif_keys()[1]
+            'MNEMONIC': bip32_.mnemonic,
+            'XPRIV': bip32_.master_private_key,
+            'XPUB': bip32_.master_public_key,
+            'PATH': bip32_.path,
+            'GAP_LIMIT': bip32_.gap_limit,
+            'ADDRESSES_RECEIVING': bip32_.addresses()[0],
+            'ADDRESSES_CHANGE': bip32_.addresses()[1],
+            'WIFKEYS_RECEIVING': bip32_.wif_keys()[0],
+            'WIFKEYS_CHANGE': bip32_.wif_keys()[1]
         }
 
-        d_store = data.DataStore(data_file_path, password)
         d_store.write_value(**info)
 
         return cls(name, password)
