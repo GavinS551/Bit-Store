@@ -45,11 +45,23 @@ class Bip32:
         self.is_testnet = self.bip32.testnet
 
     @staticmethod
-    def gen_mnemonic(force_use_word_list=False):
+    def gen_mnemonic(force_use_word_list=False, length=12):
         """ Returns a new 16 word mnemonic"""
 
+        if length not in [12, 15, 18, 21, 24]:
+            raise ValueError('Mnemonic must be either 12, 15, 18, 21 or 24 words long')
+
+        # length of mnemonic vs entropy length in bytes
+        len_v_byte_size = {
+            12: 16,
+            15: 20,
+            18: 24,
+            21: 28,
+            24: 32
+        }
+
         # if force_use_word list is true, it skips checking validity of the file
-        # to be used with a custom word list
+        # (to be used with a custom word list)
         if not force_use_word_list:
             # Checking integrity of word list file
             with open('wordlist.txt', 'rb') as w:
@@ -58,16 +70,18 @@ class Bip32:
                     raise Exception('ERROR: Wordlist is not BIP39 valid '
                                     '(INVALID MD5 CHECKSUM)')
 
-        ent_len = 16  # length of initial entropy in bytes
-        cs_slice_index = 1  # max index of the checksum slice
+        # length of initial entropy in bytes
+        ent_len = len_v_byte_size[length]
+        ent = bitstring.BitArray(bytes=os.urandom(ent_len))
 
-        ent = os.urandom(ent_len)
         # gets the checksum of the original ENT
-        cs = hashlib.sha256(ent).hexdigest()[0:cs_slice_index]
-        ent_cs = ent.hex() + cs
-        # Turns ent_cs into a bit array so it can be split into groups of 11 bits
-        bits = bitstring.BitArray(hex=ent_cs)
-        split_bits = [bits.bin[i:i+11] for i in range(0, len(bits.bin), 11)]
+        cs = bitstring.BitArray(bytes=hashlib.sha256(ent.bytes).digest()).bin[:len(ent.bin) // 32]
+
+        ent_cs_bits = ent.bin + cs
+
+        # split bits into groups of 11
+        split_bits = [ent_cs_bits[i:i + 11] for i in range(0, len(ent_cs_bits), 11)]
+
         word_indexes = [int(b, 2) for b in split_bits]
 
         with open('wordlist.txt', 'r') as w:
@@ -149,7 +163,4 @@ class Bip32:
 
 
 if __name__ == '__main__':
-    b = Bip32.from_mnemonic('tiny useless make elegant meadow lobster clown record buzz goddess rookie purity')
-    print(b.master_private_key)
-    print(b.master_public_key)
-    print(b.account_public_key)
+    print(Bip32.gen_mnemonic(length=24))
