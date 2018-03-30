@@ -1,4 +1,4 @@
-# https://rosettacode.org/wiki/Bitcoin/address_validation#Python, edited to accept lists
+# ADAPTED FROM: https://rosettacode.org/wiki/Bitcoin/address_validation#Python
 
 from hashlib import sha256
 

@@ -3,8 +3,6 @@ import unittest
 from src.bip32 import *
 
 
-
-
 class Bip32Test(unittest.TestCase):
 
     mnemonic = 'tiny useless make elegant meadow lobster clown record buzz goddess rookie purity'
@@ -25,8 +23,6 @@ class Bip32Test(unittest.TestCase):
     def test_testnet_xkey_recognition(self):
         self.assertEqual(self.t_bip32.is_testnet, True)
         # test to see if it produces testnet addresses as well
-        print(self.t_bip32.addresses())
-
         if self.t_bip32.segwit:
             self.assertEqual(self.t_bip32.addresses()[0][0][0], '2')
         else:
@@ -40,6 +36,10 @@ class Bip32Test(unittest.TestCase):
     def test_wifkey_address_matchup(self):
         self.assertEqual(len(self.bip32.addresses()[0]), len(self.bip32.wif_keys()[0]))  # receiving addresses/wifkeys
         self.assertEqual(len(self.bip32.addresses()[1]), len(self.bip32.wif_keys()[1]))  # change addresses/wifkeys
+
+    def test_check_mnemonic(self):
+        self.assertTrue(self.bip32.check_mnemonic(self.bip32.mnemonic))
+        self.assertFalse(self.bip32.check_mnemonic('TOTALLY NOT A MNEMONIC'))
 
 
 if __name__ == '__main__':

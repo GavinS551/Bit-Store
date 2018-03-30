@@ -1,14 +1,21 @@
 import os
 import hashlib
+import binascii
 
 import bitstring
 
 from src.bip32utils.BIP32Key import BIP32Key, BIP32_HARDEN
 from src import btc_verify, config
 
+WORDLIST = 'wordlist.txt'
+PBKDF2_HMAC_ITERATIONS = 2048  # used when converting mnemonic to seed
+
 
 class WatchOnlyWallet(Exception):
-    """ Raised when trying to derive private keys from a watch-only wallet """
+    pass
+
+
+class InvalidMnemonic(Exception):
     pass
 
 
@@ -19,8 +26,13 @@ class Bip32:
     def from_mnemonic(cls, mnemonic, passphrase='', path=config.BIP32_PATHS['bip49path'],
                       force_segwit=False, testnet=False):
         """ Generates a bip32 class from a mnemonic """
+
+        if not cls.check_mnemonic(mnemonic):
+            raise InvalidMnemonic(f'{mnemonic} is not a valid mnemonic')
+
         seed = hashlib.pbkdf2_hmac('sha512', mnemonic.encode('utf-8'),
-                                   ('mnemonic' + passphrase).encode('utf-8'), 2048)
+                                   ('mnemonic' + passphrase).encode('utf-8'),
+                                   PBKDF2_HMAC_ITERATIONS)
 
         return cls(BIP32Key.fromEntropy(seed, testnet=testnet).ExtendedKey(),
                    path, force_segwit, mnemonic)
@@ -47,11 +59,10 @@ class Bip32:
     @staticmethod
     def gen_mnemonic(force_use_word_list=False, length=12):
         """ Returns a new 16 word mnemonic"""
-
         if length not in [12, 15, 18, 21, 24]:
             raise ValueError('Mnemonic must be either 12, 15, 18, 21 or 24 words long')
 
-        # length of mnemonic vs entropy length in bytes
+        # length of mnemonic vs initial entropy length in bytes
         len_v_byte_size = {
             12: 16,
             15: 20,
@@ -84,7 +95,7 @@ class Bip32:
 
         word_indexes = [int(b, 2) for b in split_bits]
 
-        with open('wordlist.txt', 'r') as w:
+        with open(WORDLIST, 'r') as w:
             word_list = w.read().split()
             mnemonic = []
             for i in word_indexes:
@@ -93,9 +104,33 @@ class Bip32:
         # Returns the mnemonic in string format
         return ' '.join(mnemonic)
 
+    # Adapted from <https://tinyurl.com/ycxfjmd6>
+    @staticmethod
+    def check_mnemonic(mnemonic):
+        """ Returns true if mnemonic is valid and vice-versa"""
+        with open(WORDLIST, 'r') as w:
+            wordlist = w.read().split()
+        mnemonic = mnemonic.split(' ')
+
+        if len(mnemonic) not in [12, 15, 18, 21, 24]:
+            return False
+
+        try:
+            idx = map(lambda x: bin(wordlist.index(x))[2:].zfill(11), mnemonic)
+            b = ''.join(idx)
+        except Exception:
+            return False
+
+        len_b = len(b)
+        d = b[:len_b // 33 * 32]
+        h = b[-len_b // 33:]
+        nd = binascii.unhexlify(hex(int(d, 2))[2:].rstrip('L').zfill(len_b // 33 * 8))
+        nh = bin(int(hashlib.sha256(nd).hexdigest(), 16))[2:].zfill(256)[:len_b // 33]
+
+        return h == nh
+
     def _get_account_ck(self):
         """returns an 'account' child key. i.e the last derivation of the path"""
-        
         # First get a child key (ck) to derive from further in a loop
         split_path = self.path.split('/')
         if split_path[0][-1] == "'":
@@ -160,7 +195,3 @@ class Bip32:
             raise ValueError('Gap limit must be atleast 1')
         else:
             self.gap_limit = num
-
-
-if __name__ == '__main__':
-    print(Bip32.gen_mnemonic(length=24))
