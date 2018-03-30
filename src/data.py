@@ -5,7 +5,7 @@ import json
 
 import cryptography.fernet as fernet
 
-import src.config as CONFIG
+import src.config as config
 
 
 class Crypto:
@@ -31,6 +31,9 @@ class Crypto:
 
 class DataStore(Crypto):
 
+    class IncorrectPassword(Exception):
+        pass
+
     def __init__(self, file_path, password):
         super().__init__(password)
         self.file_path = file_path
@@ -38,10 +41,7 @@ class DataStore(Crypto):
         if not os.path.exists(self.file_path):
             raise ValueError(f'{self.file_path} does not exist!')
 
-        # writes blank template if file is empty
-        with open(self.file_path, 'r') as d:
-            if d.read() == '':
-                self._write_blank_template()
+        self.check_password()  # password validity handling
 
     @property
     def _data(self):
@@ -54,8 +54,9 @@ class DataStore(Crypto):
         with open(self.file_path, 'w') as d:
             d.write(self.encrypt(json.dumps(data)))
 
-    def _write_blank_template(self):
-        self._write_to_file(CONFIG.STANDARD_DATA_FORMAT)
+    @staticmethod
+    def json_blank_template():
+        return json.dumps(config.STANDARD_DATA_FORMAT)
 
     def write_value(self, allow_new_key=False, **kwargs):
         data = self._data
@@ -63,14 +64,24 @@ class DataStore(Crypto):
             if k not in data and allow_new_key is False:
                 raise ValueError(f'Entered key ({k}) is not valid!')
             else:
-                data[k] = v
-                self._write_to_file(data)
+                if not isinstance(v, type(config.STANDARD_DATA_FORMAT[k])):
+                    raise ValueError(f'Value is wrong type. It must be a: '
+                                     f'{type(config.STANDARD_DATA_FORMAT[k])}')
+                else:
+                    data[k] = v
+                    self._write_to_file(data)
 
     def get_value(self, key):
         return self._data[key.upper()]
 
+    def check_password(self):
+        try:
+            # tries to decrypt data
+            self._data
+        except fernet.InvalidToken:
+            raise self.IncorrectPassword('Entered password is incorrect')
+
 
 if __name__ == '__main__':
 
-    da = DataStore(r'C:\Users\Gavin Shaughnessy\Desktop\test.json', 'hello')
-    print(da._data)
+    ds = DataStore(r'C:\Users\Gavin Shaughnessy\Desktop\data.json', 'hello')

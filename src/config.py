@@ -7,21 +7,23 @@ DATA_DIR = os.path.join(pathlib.Path.home(), '.BTC-WALLET')
 ###############################################################################
 
 STANDARD_DATA_FORMAT = {
-        'MNEMONIC': None,
-        'XPRIV': None,
-        'XPUB': None,
-        'PATH': None,
-        'GAP_LIMIT': None,
+        'MNEMONIC': '',
+        'XPRIV': '',
+        'XPUB': '',
+        'PATH': '',
+        'GAP_LIMIT': 0,
         'ADDRESSES_RECEIVING': [],
         'ADDRESSES_CHANGE': [],
         'ADDRESSES_USED': [],
         'WIFKEYS_RECEIVING': [],
         'WIFKEYS_CHANGE': [],
-        'WIFKEYS_USED': [],
-        'BTC_PRICE': None
+        'WIFKEYS_USED': []
 
     }
 
-SENSITIVE_DATA = ['MNEMONIC', 'XPRIV', 'WIFKEYS_RECEIVING', 'WIFKEYS_CHANGE', 'WIFKEYS_USED']
-
 ###############################################################################
+
+BIP32_PATHS = {
+        'bip49path': "49'/0'/0'",
+        'bip44path': "44'/0'/0'"
+    }

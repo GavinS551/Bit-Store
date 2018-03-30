@@ -4,7 +4,7 @@ import hashlib
 import bitstring
 
 from src.bip32utils.BIP32Key import BIP32Key, BIP32_HARDEN
-from src import btc_verify
+from src import btc_verify, config
 
 
 class WatchOnlyWallet(Exception):
@@ -14,13 +14,9 @@ class WatchOnlyWallet(Exception):
 
 class Bip32:
     """ Implementation of the BIP32 Deterministic Wallet standard"""
-    PATHS = {
-        'bip49path': "49'/0'/0'",
-        'bip44path': "44'/0'/0'"
-    }
 
     @classmethod
-    def from_mnemonic(cls, mnemonic, passphrase='', path=PATHS['bip49path'],
+    def from_mnemonic(cls, mnemonic, passphrase='', path=config.BIP32_PATHS['bip49path'],
                       force_segwit=False, testnet=False):
         """ Generates a bip32 class from a mnemonic """
         seed = hashlib.pbkdf2_hmac('sha512', mnemonic.encode('utf-8'),
@@ -29,7 +25,7 @@ class Bip32:
         return cls(BIP32Key.fromEntropy(seed, testnet=testnet).ExtendedKey(),
                    path, force_segwit, mnemonic)
 
-    def __init__(self, key, path=PATHS['bip49path'], force_segwit=False, mnemonic=None):
+    def __init__(self, key, path=config.BIP32_PATHS['bip49path'], force_segwit=False, mnemonic=None):
         self.is_private = False if key[1:4] == 'pub' else True
         # path must use "purpose" of 49 else legacy addresses will be generated
         self.segwit = True if path[:2] == '49' or force_segwit else False
@@ -39,10 +35,14 @@ class Bip32:
         if self.is_private:
             self.master_private_key = self.bip32.ExtendedKey()
         self.master_public_key = self.bip32.ExtendedKey(private=False)
+        self.account_public_key = self._get_account_ck().ExtendedKey(private=False)
+
         self.mnemonic = mnemonic
 
         # Gap limit for address gen
         self.gap_limit = 20
+
+        self.is_testnet = self.bip32.testnet
 
     @staticmethod
     def gen_mnemonic(force_use_word_list=False):
@@ -59,7 +59,7 @@ class Bip32:
                                     '(INVALID MD5 CHECKSUM)')
 
         ent_len = 16  # length of initial entropy in bytes
-        cs_slice_index = 1 # max index of the checksum slice
+        cs_slice_index = 1  # max index of the checksum slice
 
         ent = os.urandom(ent_len)
         # gets the checksum of the original ENT
@@ -139,10 +139,17 @@ class Bip32:
 
         return receiving, change
 
-    def change_gap_limit(self, num):
+    def set_gap_limit(self, num):
         if num != type(int):
             raise ValueError('Gap limit must be an int')
         elif num <= 0:
             raise ValueError('Gap limit must be atleast 1')
         else:
             self.gap_limit = num
+
+
+if __name__ == '__main__':
+    b = Bip32.from_mnemonic('tiny useless make elegant meadow lobster clown record buzz goddess rookie purity')
+    print(b.master_private_key)
+    print(b.master_public_key)
+    print(b.account_public_key)
