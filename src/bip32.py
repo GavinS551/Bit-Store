@@ -75,7 +75,7 @@ class Bip32:
         # (to be used with a custom word list)
         if not force_use_word_list:
             # Checking integrity of word list file
-            with open('wordlist.txt', 'rb') as w:
+            with open(WORDLIST, 'rb') as w:
                 checksum = b'Q\xca"d\xf5\xb3\xadS*Mm\xae\x17^\x17P'
                 if checksum != hashlib.md5(w.read()).digest():
                     raise Exception('ERROR: Wordlist is not BIP39 valid '
