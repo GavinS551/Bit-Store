@@ -20,7 +20,7 @@ class Wallet:
             pass
 
         bip32_ = bip32.Bip32.from_mnemonic(mnemonic=mnemonic, passphrase=mnemonic_passphrase,
-                                      force_segwit=force_segwit, testnet=testnet)
+                                           force_segwit=force_segwit, testnet=testnet)
         d_store = data.DataStore(data_file_path, password)
 
         info = {
@@ -35,7 +35,7 @@ class Wallet:
 
         d_store.write_value(**info)
 
-        del(bip32_) # explicitly delete bip32 object after we've finished
+        del bip32_ # explicitly delete bip32 object after we've finished
 
         return cls(name, password)
 
@@ -58,7 +58,6 @@ class Wallet:
             else:
                 addr_index = c_addrs.index(address)
                 u_addrs.append(c_addrs.pop(addr_index))
-
 
         self.data_store.write_value(**{'ADDRESSES_RECEIVING': r_addrs,
                                        'ADDRESSES_CHANGE': c_addrs,
