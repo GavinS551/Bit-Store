@@ -12,6 +12,7 @@ class Crypto:
 
     def __init__(self, password):
         self._fernet = fernet.Fernet(self.key_from_password(password))
+        del(password)  # delete password variable
 
     @staticmethod
     def key_from_password(password, iterations=100_000):
