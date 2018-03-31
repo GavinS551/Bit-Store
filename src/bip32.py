@@ -189,7 +189,7 @@ class Bip32:
         return receiving, change
 
     def set_gap_limit(self, num):
-        if num != type(int):
+        if not isinstance(num, int):
             raise ValueError('Gap limit must be an int')
         elif num <= 0:
             raise ValueError('Gap limit must be atleast 1')
