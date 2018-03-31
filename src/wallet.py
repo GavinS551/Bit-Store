@@ -36,11 +36,12 @@ class Wallet:
         d_store.write_value(**info)
 
         del bip32_ # explicitly delete bip32 object after we've finished
+        del d_store # explicitly delete data_store object after we've finished
 
         return cls(name, password)
 
-    def __init__(self, wallet_dir_path, password):
-        data_file_path = os.path.join(wallet_dir_path, 'data.json')
+    def __init__(self, name, password):
+        data_file_path = os.path.join(config.DATA_DIR, name, 'data.json')
         self.data_store = data.DataStore(data_file_path, password)
 
     def set_address_used(self, address):
