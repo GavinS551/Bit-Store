@@ -12,7 +12,7 @@ class Crypto:
 
     def __init__(self, password):
         self._fernet = fernet.Fernet(self.key_from_password(password))
-        del(password)  # delete password variable
+        del password  # delete password variable
 
     @staticmethod
     def key_from_password(password, iterations=100_000):
@@ -45,7 +45,8 @@ class DataStore(Crypto):
         # new file handling
         with open(self.file_path, 'r') as d:
             if d.read() == '':
-                d.write(self.encrypt(self.json_blank_template()))
+                with open(self.file_path, 'w') as dw:
+                    dw.write(self.encrypt(self.json_blank_template()))
 
         self.check_password()  # password validity handling
 
@@ -93,8 +94,3 @@ class DataStore(Crypto):
             _ = self._data
         except fernet.InvalidToken:
             raise self.IncorrectPassword('Entered password is incorrect')
-
-
-if __name__ == '__main__':
-
-    ds = DataStore(r'C:\Users\Gavin Shaughnessy\Desktop\data.json', 'hello')

@@ -98,7 +98,3 @@ class Wallet:
     @property
     def used_addresses(self):
         return self.data_store.get_value('ADDRESSES_USED')
-
-
-if __name__ == '__main__':
-    w = Wallet(r'C:\Users\Gavin Shaughnessy\Desktop', 'helllo')
