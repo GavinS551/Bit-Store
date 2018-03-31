@@ -15,11 +15,12 @@ STANDARD_DATA_FORMAT = {
         'ADDRESSES_RECEIVING': [],
         'ADDRESSES_CHANGE': [],
         'ADDRESSES_USED': [],
-        'WIFKEYS_RECEIVING': [],
-        'WIFKEYS_CHANGE': [],
-        'WIFKEYS_USED': []
-
     }
+
+SENSITIVE_DATA = [
+        'MNEMONIC',
+        'XPRIV',
+]
 
 ###############################################################################
 

@@ -37,8 +37,6 @@ class Wallet:
             'GAP_LIMIT': bip32_.gap_limit,
             'ADDRESSES_RECEIVING': bip32_.addresses()[0],
             'ADDRESSES_CHANGE': bip32_.addresses()[1],
-            'WIFKEYS_RECEIVING': bip32_.wif_keys()[0],
-            'WIFKEYS_CHANGE': bip32_.wif_keys()[1]
         }
 
         d_store.write_value(**info)
@@ -48,9 +46,6 @@ class Wallet:
     def __init__(self, wallet_dir_path, password):
         data_file_path = os.path.join(wallet_dir_path, 'data.json')
         self.data_store = data.DataStore(data_file_path, password)
-
-        # always use xpriv here in case passphrase was used with mnemonic at generation
-        self.bip32 = bip32.Bip32(self.xpriv)
 
     def set_address_used(self, address):
         r_addrs = self.receiving_addresses
