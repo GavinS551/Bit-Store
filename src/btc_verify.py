@@ -28,5 +28,3 @@ def check_bc(bc):
             return bcbytes[-4:] == sha256(sha256(bcbytes[:-4]).digest()).digest()[:4]
         except Exception:
             return False
-
-

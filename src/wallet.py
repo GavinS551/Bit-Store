@@ -2,6 +2,12 @@ import os
 
 from src import data, bip32, config
 
+#TODO: use double encryption on certain values like mnemonic, so sensitive
+#TODO: data isnt stored in ram unencrypted
+
+# when setting used address, you dont have to make used wif_key. figure out
+# some way of doing it then double encryption of wif keys will be easier
+
 
 class Wallet:
 
