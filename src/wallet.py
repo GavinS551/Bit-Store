@@ -2,12 +2,6 @@ import os
 
 from src import data, bip32, config
 
-#TODO: use double encryption on certain values like mnemonic, so sensitive
-#TODO: data isnt stored in ram unencrypted
-
-# when setting used address, you dont have to make used wif_key. figure out
-# some way of doing it then double encryption of wif keys will be easier
-
 
 class Wallet:
 
@@ -41,6 +35,8 @@ class Wallet:
 
         d_store.write_value(**info)
 
+        del(bip32_) # explicitly delete bip32 object after we've finished
+
         return cls(name, password)
 
     def __init__(self, wallet_dir_path, password):
@@ -52,38 +48,33 @@ class Wallet:
         c_addrs = self.change_addresses
         u_addrs = self.used_addresses
 
-        r_wif = self.receiving_wif_keys
-        c_wif = self.change_wif_keys
-        u_wif = self.used_wif_keys
-
         if address not in r_addrs + c_addrs:
             raise ValueError('Address not found!)')
         else:
             if address in r_addrs:
                 addr_index = r_addrs.index(address)
                 u_addrs.append(r_addrs.pop(addr_index))
-                u_wif.append(r_wif.pop(addr_index))
+
             else:
                 addr_index = c_addrs.index(address)
                 u_addrs.append(c_addrs.pop(addr_index))
-                u_wif.append(c_wif.pop(addr_index))
+
 
         self.data_store.write_value(**{'ADDRESSES_RECEIVING': r_addrs,
                                        'ADDRESSES_CHANGE': c_addrs,
-                                       'ADDRESSES_USED': u_addrs,
-                                       'WIFKEYS_RECEIVING': r_wif,
-                                       'WIFKEYS_CHANGE': c_wif,
-                                       'WIFKEYS_USED': u_wif})
+                                       'ADDRESSES_USED': u_addrs})
 
     # CLASS PROPERTIES
 
     @property
     def mnemonic(self):
-        return self.data_store.get_value('MNEMONIC')
+        # data needs to be decrypted again as it is in config.SENSITIVE_DATA
+        return self.data_store.decrypt(self.data_store.get_value('MNEMONIC'))
 
     @property
     def xpriv(self):
-        return self.data_store.get_value('XPRIV')
+        # data needs to be decrypted again as it is in config.SENSITIVE_DATA
+        return self.data_store.decrypt(self.data_store.get_value('XPRIV'))
 
     @property
     def xpub(self):
@@ -108,22 +99,6 @@ class Wallet:
     @property
     def used_addresses(self):
         return self.data_store.get_value('ADDRESSES_USED')
-
-    @property
-    def receiving_wif_keys(self):
-        return self.data_store.get_value('WIFKEYS_RECEIVING')
-
-    @property
-    def change_wif_keys(self):
-        return self.data_store.get_value('WIFKEYS_CHANGE')
-
-    @property
-    def used_wif_keys(self):
-        return self.data_store.get_value('WIFKEYS_USED')
-
-    # @property
-    # def btc_price(self):
-    #     return self.data_store.get_value('BTC_PRICE')
 
 
 if __name__ == '__main__':

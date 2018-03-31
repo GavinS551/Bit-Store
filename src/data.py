@@ -74,8 +74,15 @@ class DataStore(Crypto):
                     raise ValueError(f'Value is wrong type. It must be a: '
                                      f'{type(config.STANDARD_DATA_FORMAT[k])}')
                 else:
-                    data[k] = v
-                    self._write_to_file(data)
+
+                    if k in config.SENSITIVE_DATA:
+                        # if key is in sensitive data list, it will be encrypted twice
+                        # to limit its exposure in ram, unencrypted
+                        data[k] = self.encrypt(v)
+                    else:
+                        data[k] = v
+
+            self._write_to_file(data)
 
     def get_value(self, key):
         return self._data[key.upper()]

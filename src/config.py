@@ -15,7 +15,7 @@ STANDARD_DATA_FORMAT = {
         'ADDRESSES_RECEIVING': [],
         'ADDRESSES_CHANGE': [],
         'ADDRESSES_USED': [],
-    }
+}
 
 SENSITIVE_DATA = [
         'MNEMONIC',
@@ -27,4 +27,4 @@ SENSITIVE_DATA = [
 BIP32_PATHS = {
         'bip49path': "49'/0'/0'",
         'bip44path': "44'/0'/0'"
-    }
+}
