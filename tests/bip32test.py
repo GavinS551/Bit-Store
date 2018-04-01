@@ -23,7 +23,7 @@ class Bip32Test(unittest.TestCase):
     def test_testnet_xkey_recognition(self):
         self.assertEqual(self.t_bip32.is_testnet, True)
         # test to see if it produces testnet addresses as well
-        if self.t_bip32.segwit:
+        if self.t_bip32.is_segwit:
             self.assertEqual(self.t_bip32.addresses()[0][0][0], '2')
         else:
             self.assertEqual(self.t_bip32.addresses()[0][0][0], 'n' or 'm')

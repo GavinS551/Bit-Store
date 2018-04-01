@@ -40,7 +40,7 @@ class Bip32:
     def __init__(self, key, path=config.BIP32_PATHS['bip49path'], force_segwit=False, mnemonic=None):
         self.is_private = False if key[1:4] == 'pub' else True
         # path must use "purpose" of 49 else legacy addresses will be generated
-        self.segwit = True if path[:2] == '49' or force_segwit else False
+        self.is_segwit = True if path[:2] == '49' or force_segwit else False
         self.bip32 = BIP32Key.fromExtendedKey(key)
         self.path = path
 
@@ -153,7 +153,7 @@ class Bip32:
         change = []
         ck = self._get_account_ck()
 
-        if self.segwit:
+        if self.is_segwit:
             for i in range(self.gap_limit):
                 receiving.append(ck.ChildKey(0).ChildKey(i).P2WPKHoP2SHAddress())
             for i in range(self.gap_limit):

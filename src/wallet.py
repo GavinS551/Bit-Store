@@ -29,6 +29,7 @@ class Wallet:
             'XPUB': bip32_.master_public_key,
             'PATH': bip32_.path,
             'GAP_LIMIT': bip32_.gap_limit,
+            'SEGWIT': bip32_.is_segwit,
             'ADDRESSES_RECEIVING': bip32_.addresses()[0],
             'ADDRESSES_CHANGE': bip32_.addresses()[1],
         }
@@ -99,3 +100,7 @@ class Wallet:
     @property
     def used_addresses(self):
         return self.data_store.get_value('ADDRESSES_USED')
+
+    @property
+    def is_segwit(self):
+        return self.data_store.get_value('SEGWIT')
