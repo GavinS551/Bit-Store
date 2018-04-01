@@ -10,8 +10,6 @@ import cryptography.fernet as fernet
 import src.config as config
 
 
-
-
 class Crypto:
 
     def __init__(self, password):
@@ -25,25 +23,25 @@ class Crypto:
         b_key = hashlib.pbkdf2_hmac('sha256', b_password, b'', iterations)
         return base64.urlsafe_b64encode(b_key)
 
-    def encrypt(self, string):
-        token = self._fernet.encrypt(string.encode('utf-8'))
+    def encrypt(self, string_):
+        token = self._fernet.encrypt(string_.encode('utf-8'))
         return token.decode('utf-8')
 
     def decrypt(self, token):
-        string = self._fernet.decrypt(token.encode('utf-8'))
-        return string.decode('utf-8')
+        string_ = self._fernet.decrypt(token.encode('utf-8'))
+        return string_.decode('utf-8')
 
     @staticmethod
     def generate_password(length, lowercase=True, uppercase=True,
                           digits=True, specials=True, unambiguous=True):
         """ Creates a new password, with optional arguments to include certain character types"""
 
-        PASSWORD_LIMIT = 100  # max password length
+        password_limit = 100  # max password length
 
         # lower limit is 4, to include at least one lower, upper,
         # digit and special -- if they are chosen in the args
-        if length < 4 or length > PASSWORD_LIMIT:
-            raise ValueError(f'Invalid length: Must be between 4 and {PASSWORD_LIMIT}')
+        if length < 4 or length > password_limit:
+            raise ValueError(f'Invalid length: Must be between 4 and {password_limit}')
 
         u = string.ascii_uppercase if uppercase else ''
         lo = string.ascii_lowercase if lowercase else ''
