@@ -12,7 +12,7 @@ STANDARD_DATA_FORMAT = {
         'XPUB': '',
         'PATH': '',
         'GAP_LIMIT': 0,
-        'SEGWIT': bool,
+        'SEGWIT': True,
         'ADDRESSES_RECEIVING': [],
         'ADDRESSES_CHANGE': [],
         'ADDRESSES_USED': [],
