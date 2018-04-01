@@ -169,8 +169,8 @@ class Bip32:
             if btc_verify.check_bc(a):
                 return receiving, change
             else:
-                raise Exception('Unexpected error occurred in address'
-                                ' generation: INVALID ADDRESS GENERATED')
+                raise Exception('Unexpected error occurred in address '
+                                'generation: INVALID ADDRESS GENERATED')
 
     def wif_keys(self):
         """ Returns a tuple of receiving and change WIF keys up to the limit specified """
@@ -213,12 +213,7 @@ class Bip32:
         addresses = self.addresses()[0] + self.addresses()[1]
         wif_keys = self.wif_keys()[0] + self.wif_keys()[1]
 
-        pairs = []
-        for a in addresses:
-            for w in wif_keys:
-                pairs += (a, w)
-
-        return pairs
+        return list(zip(addresses, wif_keys))
 
     def set_gap_limit(self, num):
         if not isinstance(num, int):
