@@ -58,7 +58,7 @@ class Bip32:
 
     @staticmethod
     def gen_mnemonic(force_use_word_list=False, length=12):
-        """ Returns a new 16 word mnemonic"""
+        """ Returns a new mnemonic"""
         if length not in [12, 15, 18, 21, 24]:
             raise ValueError('Mnemonic must be either 12, 15, 18, 21 or 24 words long')
 
@@ -173,7 +173,7 @@ class Bip32:
                                 ' generation: INVALID ADDRESS GENERATED')
 
     def wif_keys(self):
-        """ Returns a tuple of receiving and change WIF keys up to the limit specified"""
+        """ Returns a tuple of receiving and change WIF keys up to the limit specified """
         if not self.is_private:
             raise WatchOnlyWallet('Can\'t derive private key from watch-only wallet')
 
@@ -188,10 +188,26 @@ class Bip32:
 
         return receiving, change
 
+    def address_wifkey_pairs(self):
+        """ Returns a list of tuples with addresses mapped to their WIF keys """
+        if not self.is_private:
+            raise WatchOnlyWallet('Can\'t derive private key from watch-only wallet')
+
+        # both receiving and change addresses/wif keys in single lists
+        addresses = self.addresses()[0] + self.addresses()[1]
+        wif_keys = self.wif_keys()[0] + self.wif_keys()[1]
+
+        pairs = []
+        for a in addresses:
+            for w in wif_keys:
+                pairs += (a, w)
+
+        return pairs
+
     def set_gap_limit(self, num):
         if not isinstance(num, int):
             raise ValueError('Gap limit must be an int')
         elif num <= 0:
-            raise ValueError('Gap limit must be atleast 1')
+            raise ValueError('Gap limit must be at least 1')
         else:
             self.gap_limit = num
