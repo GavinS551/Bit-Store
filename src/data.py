@@ -2,10 +2,14 @@ import os
 import hashlib
 import base64
 import json
+import string
+import secrets
 
 import cryptography.fernet as fernet
 
 import src.config as config
+
+
 
 
 class Crypto:
@@ -28,6 +32,43 @@ class Crypto:
     def decrypt(self, token):
         string = self._fernet.decrypt(token.encode('utf-8'))
         return string.decode('utf-8')
+
+    @staticmethod
+    def generate_password(length, lowercase=True, uppercase=True,
+                          digits=True, specials=True):
+        """ Creates a new password, with optional arguments to include certain character types"""
+        
+        PASSWORD_LIMIT = 100  # max password length
+
+        # lower limit is 4, to include at least one lower, upper,
+        # digit and special -- if they are chosen in the args
+        if length < 4 or length > PASSWORD_LIMIT:
+            raise ValueError(f'Invalid length: Must be between 4 and {PASSWORD_LIMIT}')
+
+        u = string.ascii_uppercase if uppercase else ''
+        lo = string.ascii_lowercase if lowercase else ''
+        d = string.digits if digits else ''
+        s = '!@#$%^&*()' if specials else ''
+        chars = u + lo + d + s
+
+        if chars == '':
+            raise Exception('No character types chosen')
+
+        while True:
+            password = ''.join(secrets.choice(chars) for _ in range(length))
+
+            # Password requirements
+            if all([
+                (any(c.islower() for c in password))
+                if lowercase else True,
+                (any(c.isupper() for c in password))
+                if uppercase else True,
+                (any(c.isdigit() for c in password))
+                if digits else True,
+                (any(c in s for c in password))
+                if specials else True
+            ]):
+                return password
 
 
 class DataStore(Crypto):
