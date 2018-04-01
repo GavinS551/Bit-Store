@@ -35,9 +35,9 @@ class Crypto:
 
     @staticmethod
     def generate_password(length, lowercase=True, uppercase=True,
-                          digits=True, specials=True):
+                          digits=True, specials=True, unambiguous=True):
         """ Creates a new password, with optional arguments to include certain character types"""
-        
+
         PASSWORD_LIMIT = 100  # max password length
 
         # lower limit is 4, to include at least one lower, upper,
@@ -50,6 +50,8 @@ class Crypto:
         d = string.digits if digits else ''
         s = '!@#$%^&*()' if specials else ''
         chars = u + lo + d + s
+
+        ambiguous_chars = 'IlO01'
 
         if chars == '':
             raise Exception('No character types chosen')
@@ -66,7 +68,9 @@ class Crypto:
                 (any(c.isdigit() for c in password))
                 if digits else True,
                 (any(c in s for c in password))
-                if specials else True
+                if specials else True,
+                (any(c in ambiguous_chars for c in password))
+                if unambiguous else True
             ]):
                 return password
 
