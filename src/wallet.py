@@ -36,6 +36,7 @@ class Wallet:
 
         d_store.write_value(**info)
 
+        # Minimise amount of time sensitive data is in RAM
         del bip32_ # explicitly delete bip32 object after we've finished
         del d_store # explicitly delete data_store object after we've finished
 
@@ -76,6 +77,15 @@ class Wallet:
     def xpriv(self):
         # data needs to be decrypted again as it is in config.SENSITIVE_DATA
         return self.data_store.decrypt(self.data_store.get_value('XPRIV'))
+
+    @property
+    def address_wifkey_pairs(self):
+        _bip32 = bip32.Bip32(key=self.xpriv, path=self.path,
+                             force_segwit=self.is_segwit)
+        pairs = _bip32.address_wifkey_pairs()
+
+        del _bip32
+        return pairs
 
     @property
     def xpub(self):
