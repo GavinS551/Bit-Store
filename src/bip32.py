@@ -24,7 +24,7 @@ class Bip32:
 
     @classmethod
     def from_mnemonic(cls, mnemonic, passphrase='', path=config.BIP32_PATHS['bip49path'],
-                      force_segwit=False, testnet=False):
+                      segwit=True, testnet=False):
         """ Generates a bip32 class from a mnemonic """
 
         if not cls.check_mnemonic(mnemonic):
@@ -35,12 +35,12 @@ class Bip32:
                                    PBKDF2_HMAC_ITERATIONS)
 
         return cls(BIP32Key.fromEntropy(seed, testnet=testnet).ExtendedKey(),
-                   path, force_segwit, mnemonic)
+                   path, segwit, mnemonic)
 
-    def __init__(self, key, path=config.BIP32_PATHS['bip49path'], force_segwit=False, mnemonic=None):
+    def __init__(self, key, path=config.BIP32_PATHS['bip49path'], segwit=True, mnemonic=None):
         self.is_private = False if key[1:4] == 'pub' else True
         # path must use "purpose" of 49 else legacy addresses will be generated
-        self.is_segwit = True if path[:2] == '49' or force_segwit else False
+        self.is_segwit = segwit
         self.bip32 = BIP32Key.fromExtendedKey(key)
         self.path = path
 
@@ -185,6 +185,22 @@ class Bip32:
             receiving.append(ck.ChildKey(0).ChildKey(i).WalletImportFormat())
         for i in range(self.gap_limit):
             change.append(ck.ChildKey(1).ChildKey(i).WalletImportFormat())
+
+        return receiving, change
+
+    def raw_private_keys(self):
+        """ Returns hex bitcoin private keys"""
+        if not self.is_private:
+            raise WatchOnlyWallet('Can\'t derive private key from watch-only wallet')
+
+        receiving = []
+        change = []
+        ck = self._get_account_ck()
+
+        for i in range(self.gap_limit):
+            receiving.append(ck.ChildKey(0).ChildKey(i).PrivateKey().hex())
+        for i in range(self.gap_limit):
+            change.append(ck.ChildKey(1).ChildKey(i).PrivateKey().hex())
 
         return receiving, change
 

@@ -15,7 +15,7 @@ class Bip32Test(unittest.TestCase):
     t_bip32 = Bip32(key=testnet_xpriv)
 
     def test_segwit_address_generation(self):
-        if self.bip32.segwit and not self.bip32.is_testnet:
+        if self.bip32.is_segwit and not self.bip32.is_testnet:
             self.assertEqual(self.bip32.addresses()[0][0][0], '3')
         else:
             self.assertEqual(self.bip32.addresses()[0][0][0], '1')
