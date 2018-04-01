@@ -8,39 +8,60 @@ class Wallet:
     @classmethod
     def new_wallet(cls, name, password, mnemonic=bip32.Bip32.gen_mnemonic(),
                    mnemonic_passphrase='', segwit=True, testnet=False):
+
         dir_ = os.path.join(config.DATA_DIR, name)
-
-        if not os.path.isdir:
-            os.makedirs(dir_, exist_ok=True)
-        else:
-            raise Exception('Wallet with same name already exists!')
-
         data_file_path = os.path.join(dir_, 'data.json')
-        with open(data_file_path, 'w+'):
-            pass
 
-        bip32_ = bip32.Bip32.from_mnemonic(mnemonic=mnemonic, passphrase=mnemonic_passphrase,
-                                           segwit=segwit, testnet=testnet)
-        d_store = data.DataStore(data_file_path, password)
+        # Everything is in a try/except block so files get cleaned up
+        # before exception is raised
+        try:
 
-        info = {
-            'MNEMONIC': bip32_.mnemonic,
-            'XPRIV': bip32_.master_private_key,
-            'XPUB': bip32_.master_public_key,
-            'PATH': bip32_.path,
-            'GAP_LIMIT': bip32_.gap_limit,
-            'SEGWIT': bip32_.is_segwit,
-            'ADDRESSES_RECEIVING': bip32_.addresses()[0],
-            'ADDRESSES_CHANGE': bip32_.addresses()[1],
-        }
+            bip32_ = bip32.Bip32.from_mnemonic(mnemonic=mnemonic, passphrase=mnemonic_passphrase,
+                                               segwit=segwit, testnet=testnet)
 
-        d_store.write_value(**info)
+            if not os.path.isdir(dir_):
+                os.makedirs(dir_, exist_ok=True)
 
-        # Minimise amount of time sensitive data is in RAM
-        del bip32_  # explicitly delete bip32 object after we've finished
-        del d_store  # explicitly delete data_store object after we've finished
+            elif not os.path.exists(data_file_path) and os.path.isdir(dir_):
+                # won't raise exception if wallet folder exists, but no data file
+                pass
 
-        return cls(name, password)
+            else:
+                raise Exception('Wallet with the same name already exists!')
+
+            with open(data_file_path, 'w+'):
+                pass
+
+            d_store = data.DataStore(data_file_path, password)
+
+            info = {
+                'MNEMONIC': bip32_.mnemonic,
+                'XPRIV': bip32_.master_private_key,
+                'XPUB': bip32_.master_public_key,
+                'PATH': bip32_.path,
+                'GAP_LIMIT': bip32_.gap_limit,
+                'SEGWIT': bip32_.is_segwit,
+                'ADDRESSES_RECEIVING': bip32_.addresses()[0],
+                'ADDRESSES_CHANGE': bip32_.addresses()[1],
+            }
+
+            d_store.write_value(**info)
+
+            # Minimise amount of time sensitive data is in RAM
+            del bip32_
+            del d_store
+
+            return cls(name, password)
+
+        except:
+
+            if os.path.exists(data_file_path):
+                os.remove(data_file_path)
+            if os.path.exists(dir_):
+                os.rmdir(dir_)
+
+            # re-raise exception that triggered try/except block
+            raise
 
     def __init__(self, name, password):
         data_file_path = os.path.join(config.DATA_DIR, name, 'data.json')
