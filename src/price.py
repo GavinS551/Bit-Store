@@ -7,6 +7,9 @@ class BitcoinPrice:
     def __init__(self, currency='USD', source='coinmarketcap'):
 
         self.source = source
+        if self.source not in self.valid_sources:
+            raise Exception(f'{self.source} is not a valid source!')
+
         self.last_request = 0  # unix timestamp of last price request
         self.last_price = 0  # last requested price
 
@@ -20,12 +23,9 @@ class BitcoinPrice:
     def fetch_price(self):
         # Leaves 60 seconds between price requests
         if time.time() - self.last_request >= 60:
-            if self.source not in self.valid_sources:
-                raise Exception(f'{self.source} is not a valid source!')
-            else:
-                self.last_price = self.valid_sources[self.source]
-                self.last_request = time.time()
-                return self.last_price
+            self.last_price = self.valid_sources[self.source]
+            self.last_request = time.time()
+            return self.last_price
         else:
             return self.last_price
 
@@ -37,10 +37,8 @@ class BitcoinPrice:
                             "PHP", "PKR", "PLN", "RUB", "SEK", "SGD", "THB",
                             "TRY", "TWD", "ZAR", "USD"]
 
-        # Currency defaults to USD
-        if currency not in valid_currencies:
-            print(f'{currency} is not a valid currency! Defaulting to USD...')
-            currency = 'USD'
+        if currency.upper() not in valid_currencies:
+            raise ValueError(f'"{currency}" is not a valid currency for this source')
 
         url = 'https://api.coinmarketcap.com/v1/ticker/bitcoin/?convert='
         data = requests.get(url + currency).json()[0]
@@ -55,10 +53,8 @@ class BitcoinPrice:
                             'KRW', 'NZD', 'PLN', 'RUB', 'SEK', 'SGD', 'THB',
                             'TWD']
 
-        # Currency defaults to USD
-        if currency not in valid_currencies:
-            print(f'{currency} is not a valid currency! Defaulting to USD...')
-            currency = 'USD'
+        if currency.upper() not in valid_currencies:
+            raise ValueError(f'"{currency}" is not a valid currency for this source')
 
         url = 'https://blockchain.info/ticker'
         data = requests.get(url).json()
@@ -68,10 +64,8 @@ class BitcoinPrice:
     def gdax(currency):
         valid_currencies = ["EUR", "USD", "GBP"]
 
-        # Currency defaults to USD
-        if currency not in valid_currencies:
-            print(f'{currency} is not a valid currency! Defaulting to USD...')
-            currency = 'USD'
+        if currency.upper() not in valid_currencies:
+            raise ValueError(f'"{currency}" is not a valid currency for this source')
 
         url = f'https://api.gdax.com/products/BTC-{currency}/ticker'
         data = requests.get(url).json()
@@ -81,10 +75,8 @@ class BitcoinPrice:
     def bitstamp(currency):
         valid_currencies = ["EUR", "USD"]
 
-        # Currency defaults to USD
-        if currency not in valid_currencies:
-            print(f'{currency} is not a valid currency! Defaulting to USD...')
-            currency = 'USD'
+        if currency.upper() not in valid_currencies:
+            raise ValueError(f'"{currency}" is not a valid currency for this source')
 
         url = f'https://www.bitstamp.net/api/v2/ticker/btc{currency}/'
         data = requests.get(url).json()
