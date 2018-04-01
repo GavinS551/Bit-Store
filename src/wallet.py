@@ -7,7 +7,7 @@ class Wallet:
 
     @classmethod
     def new_wallet(cls, name, password, mnemonic=bip32.Bip32.gen_mnemonic(),
-                   mnemonic_passphrase='', force_segwit=False, testnet=False):
+                   mnemonic_passphrase='', segwit=True, testnet=False):
         dir_ = os.path.join(config.DATA_DIR, name)
 
         if not os.path.isdir:
@@ -20,7 +20,7 @@ class Wallet:
             pass
 
         bip32_ = bip32.Bip32.from_mnemonic(mnemonic=mnemonic, passphrase=mnemonic_passphrase,
-                                           force_segwit=force_segwit, testnet=testnet)
+                                           segwit=segwit, testnet=testnet)
         d_store = data.DataStore(data_file_path, password)
 
         info = {
@@ -37,8 +37,8 @@ class Wallet:
         d_store.write_value(**info)
 
         # Minimise amount of time sensitive data is in RAM
-        del bip32_ # explicitly delete bip32 object after we've finished
-        del d_store # explicitly delete data_store object after we've finished
+        del bip32_  # explicitly delete bip32 object after we've finished
+        del d_store  # explicitly delete data_store object after we've finished
 
         return cls(name, password)
 
@@ -81,7 +81,7 @@ class Wallet:
     @property
     def address_wifkey_pairs(self):
         _bip32 = bip32.Bip32(key=self.xpriv, path=self.path,
-                             force_segwit=self.is_segwit)
+                             segwit=self.is_segwit)
         pairs = _bip32.address_wifkey_pairs()
 
         del _bip32
