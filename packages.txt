@@ -1,4 +1,0 @@
-bitstring
-requests
-cryptography
-chainside-btcpy
