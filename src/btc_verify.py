@@ -13,7 +13,7 @@ def decode_base58(bc, length):
 
 
 def check_bc(bc):
-    if bc == type(list):
+    if isinstance(bc, list):
         valid_list = []
         try:
             for a in bc:
