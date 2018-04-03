@@ -40,7 +40,6 @@ class Bip32:
     def __init__(self, key, path=config.BIP32_PATHS['bip49path'], segwit=True,
                  mnemonic=None, gap_limit=20):
         self.is_private = False if key[1:4] == 'pub' else True
-        # path must use "purpose" of 49 else legacy addresses will be generated
         self.is_segwit = segwit
         self.bip32 = BIP32Key.fromExtendedKey(key)
         self.path = path
