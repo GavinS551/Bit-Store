@@ -24,7 +24,7 @@ class Bip32:
 
     @classmethod
     def from_mnemonic(cls, mnemonic, passphrase='', path=config.BIP32_PATHS['bip49path'],
-                      segwit=True, testnet=False):
+                      segwit=True, gap_limit=20, testnet=False):
         """ Generates a bip32 class from a mnemonic """
 
         if not cls.check_mnemonic(mnemonic):
@@ -35,9 +35,10 @@ class Bip32:
                                    PBKDF2_HMAC_ITERATIONS)
 
         return cls(BIP32Key.fromEntropy(seed, testnet=testnet).ExtendedKey(),
-                   path, segwit, mnemonic)
+                   path, segwit, mnemonic, gap_limit)
 
-    def __init__(self, key, path=config.BIP32_PATHS['bip49path'], segwit=True, mnemonic=None):
+    def __init__(self, key, path=config.BIP32_PATHS['bip49path'], segwit=True,
+                 mnemonic=None, gap_limit=20):
         self.is_private = False if key[1:4] == 'pub' else True
         # path must use "purpose" of 49 else legacy addresses will be generated
         self.is_segwit = segwit
@@ -52,7 +53,7 @@ class Bip32:
         self.mnemonic = mnemonic
 
         # Gap limit for address gen
-        self.gap_limit = 20
+        self.gap_limit = gap_limit
 
         self.is_testnet = self.bip32.testnet
 
@@ -165,12 +166,11 @@ class Bip32:
                 change.append(ck.ChildKey(1).ChildKey(i).Address())
 
         # Check to make sure that addresses are 100% valid, because better safe than sorry
-        for a in receiving + change:
-            if btc_verify.check_bc(a):
-                return receiving, change
-            else:
-                raise Exception('Unexpected error occurred in address '
-                                'generation: INVALID ADDRESS GENERATED')
+        if btc_verify.check_bc(receiving + change):
+            return receiving, change
+        else:
+            raise Exception('Unexpected error occurred in address '
+                            'generation: INVALID ADDRESS GENERATED')
 
     def wif_keys(self):
         """ Returns a tuple of receiving and change WIF keys up to the limit specified """

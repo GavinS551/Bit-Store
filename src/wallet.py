@@ -102,7 +102,7 @@ class Wallet:
     @property
     def address_wifkey_pairs(self):
         _bip32 = bip32.Bip32(key=self.xpriv, path=self.path,
-                             segwit=self.is_segwit)
+                             segwit=self.is_segwit, gap_limit=self.gap_limit)
         pairs = _bip32.address_wifkey_pairs()
 
         del _bip32

@@ -20,7 +20,7 @@ class BitcoinPrice:
             'bitstamp': self.bitstamp(currency),
         }
 
-    def fetch_price(self):
+    def get_price(self):
         # Leaves 60 seconds between price requests
         if time.time() - self.last_request >= 60:
             self.last_price = self.valid_sources[self.source]
