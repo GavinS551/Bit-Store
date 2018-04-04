@@ -4,7 +4,7 @@ import binascii
 
 import bitstring
 
-from src.bip32utils.BIP32Key import BIP32Key, BIP32_HARDEN
+from bip32utils.BIP32Key import BIP32Key, BIP32_HARDEN
 from src import btc_verify, config
 
 WORDLIST = 'wordlist.txt'
