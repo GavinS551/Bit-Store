@@ -10,11 +10,16 @@ import cryptography.fernet as fernet
 import src.config as config
 
 
+class IncorrectPassword(Exception):
+    pass
+
+
 class Crypto:
 
     def __init__(self, password):
         self._fernet = fernet.Fernet(self.key_from_password(password))
-        del password  # delete password variable
+        # delete password variable
+        del password  # TODO: figure out if this does anything
 
     @staticmethod
     def key_from_password(password, iterations=100_000):
@@ -75,9 +80,6 @@ class Crypto:
 
 class DataStore(Crypto):
 
-    class IncorrectPassword(Exception):
-        pass
-
     def __init__(self, file_path, password):
         super().__init__(password)
         self.file_path = file_path
@@ -136,4 +138,4 @@ class DataStore(Crypto):
             # tries to decrypt data
             _ = self._data
         except fernet.InvalidToken:
-            raise self.IncorrectPassword('Entered password is incorrect')
+            raise IncorrectPassword('Entered password is incorrect')
