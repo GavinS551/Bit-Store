@@ -91,13 +91,11 @@ class Wallet:
 
     @property
     def mnemonic(self):
-        # data needs to be decrypted again as it is in config.SENSITIVE_DATA
-        return self.data_store.decrypt(self.data_store.get_value('MNEMONIC'))
+        return self.data_store.get_value('MNEMONIC')
 
     @property
     def xpriv(self):
-        # data needs to be decrypted again as it is in config.SENSITIVE_DATA
-        return self.data_store.decrypt(self.data_store.get_value('XPRIV'))
+        return self.data_store.get_value('XPRIV')
 
     @property
     def address_wifkey_pairs(self):

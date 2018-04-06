@@ -131,7 +131,10 @@ class DataStore(Crypto):
             self._write_to_file(data)
 
     def get_value(self, key):
-        return self._data[key.upper()]
+        if key in config.SENSITIVE_DATA:
+            return self.decrypt(self._data[key.upper()])
+        else:
+            return self._data[key.upper()]
 
     def check_password(self):
         try:
