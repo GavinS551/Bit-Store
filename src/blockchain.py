@@ -21,6 +21,27 @@ class BlockchainInfoAPI:
         self.last_request_time = 0
         self.last_requested_data = {}
 
+    def _check_address(self, address):
+        if address not in self.addresses:
+            raise ValueError('Address entered is not in self.addresses')
+
+    def _find_address_index(self, address):
+        """ this is needed due to blockchain.info not sorting addresses
+            in the order they are passed in through the url """
+        self._check_address(address)
+
+        for e, i in enumerate(self._blockchain_data['addresses']):
+            if i['address'] == address:
+                return e
+
+    def _find_address_data(self, address, data):
+        self._check_address(address)
+
+        if data not in self._blockchain_data['addresses'][self._find_address_index(address)]:
+            raise ValueError(f'Data type:{data} is not a valid data type')
+        else:
+            return self._blockchain_data['addresses'][self._find_address_index(address)][data]
+
     @property
     def _blockchain_data(self):
         # leaves 10 seconds between api requests
@@ -41,25 +62,6 @@ class BlockchainInfoAPI:
             # if 10 seconds haven't passed since last api call, the last
             # data received will be returned
             return self.last_requested_data
-
-    def _find_address_index(self, address):
-        """ this is needed due to blockchain.info not sorting addresses
-            in the order they are passed in through the url """
-        if address not in self.addresses:
-            raise ValueError('Address entered is not in self.addresses')
-
-        for e, i in enumerate(self._blockchain_data['addresses']):
-            if i['address'] == address:
-                return e
-
-    def _find_address_data(self, address, data):
-        if address not in self.addresses:
-            raise ValueError('Address entered is not in self.addresses')
-
-        if data not in self._blockchain_data['addresses'][self._find_address_index(address)]:
-            raise ValueError(f'Data type:{data} is not a valid data type')
-        else:
-            return self._blockchain_data['addresses'][self._find_address_index(address)][data]
 
     @property
     def wallet_balance(self):
@@ -126,14 +128,26 @@ class BlockchainInfoAPI:
 
         return transaction_dict
 
+    def get_unspent_outputs(self, address):
+        self._check_address(address)
+
+        if address in self.address_transactions:
+            address_txns = self.address_transactions[address]
+        else:
+            return None
+
+        unspent_outs = []
+
+        for tx in address_txns:
+            for out in tx['out']:
+                if out['spent'] is False:
+                    unspent_outs.append(out)
+
+        return unspent_outs
+
 
 if __name__ == '__main__':
 
     addresses = ['3MrYpTRyKU3xoATozbkfWsrjx6FopbEfBz', '32W1cJzQTH6D6TNtVzznMu9NmB3dSvrjpR']
     b = BlockchainInfoAPI(addresses)
-    print(b.address_balances)
-    print(b.address_num_transactions)
-
-    # with open(r'C:\Users\Gavin Shaughnessy\Desktop\test.json', 'w+') as t:
-    #     import json
-    #     json.dump(b.address_transactions, t, indent=4, sort_keys=False)
+    print(b.get_unspent_outputs('32W1cJzQTH6D6TNtVzznMu9NmB3dSvrjpR'))
