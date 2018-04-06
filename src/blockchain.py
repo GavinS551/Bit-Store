@@ -144,10 +144,3 @@ class BlockchainInfoAPI:
                     unspent_outs.append(out)
 
         return unspent_outs
-
-
-if __name__ == '__main__':
-
-    addresses = ['3MrYpTRyKU3xoATozbkfWsrjx6FopbEfBz', '32W1cJzQTH6D6TNtVzznMu9NmB3dSvrjpR']
-    b = BlockchainInfoAPI(addresses)
-    print(b.get_unspent_outputs('32W1cJzQTH6D6TNtVzznMu9NmB3dSvrjpR'))
