@@ -10,7 +10,7 @@ class Wallet:
                    mnemonic_passphrase='', segwit=True, testnet=False):
 
         dir_ = os.path.join(config.DATA_DIR, name)
-        data_file_path = os.path.join(dir_, 'data.json')
+        data_file_path = os.path.join(dir_, 'wallet_data.json')
 
         # Everything is in a try/except block so files get cleaned up
         # before exception is raised
@@ -64,7 +64,7 @@ class Wallet:
             raise
 
     def __init__(self, name, password):
-        data_file_path = os.path.join(config.DATA_DIR, name, 'data.json')
+        data_file_path = os.path.join(config.DATA_DIR, name, 'wallet_data.json')
         self.data_store = data.DataStore(data_file_path, password)
 
     def set_address_used(self, address):
