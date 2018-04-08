@@ -3,6 +3,10 @@ import os
 from src import data, bip32, config
 
 
+class WalletAlreadyExistsError(Exception):
+    pass
+
+
 class Wallet:
 
     @classmethod
@@ -27,7 +31,7 @@ class Wallet:
                 pass
 
             else:
-                raise Exception('Wallet with the same name already exists!')
+                raise WalletAlreadyExistsError('Wallet with the same name already exists!')
 
             with open(data_file_path, 'w+'):
                 pass
