@@ -118,6 +118,7 @@ class BlockchainInfoAPI:
                 for i in tx['inputs']:
                     if a == i['prev_out']['addr']:
                         tx_list.append(tx)
+                        tx_caught_flag = True
 
                 if not tx_caught_flag:
                     for i in tx['out']:
