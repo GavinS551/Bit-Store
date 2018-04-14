@@ -29,3 +29,8 @@ BIP32_PATHS = {
         'bip49path': "49'/0'/0'",
         'bip44path': "44'/0'/0'"
 }
+
+
+PRICE_API_SOURCE = 'coinmarketcap'
+
+FIAT = 'USD'

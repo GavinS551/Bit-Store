@@ -1,6 +1,6 @@
 import os
 
-from . import data, bip32, config
+from . import data, bip32, config, blockchain, price
 from .exceptions.wallet_exceptions import *
 
 
@@ -68,6 +68,12 @@ class Wallet:
         data_file_path = os.path.join(config.DATA_DIR, name, 'wallet_data.json')
         self.data_store = data.DataStore(data_file_path, password)
 
+        # NETWORK RELATED FUNCTIONS
+        addresses = self.receiving_addresses + self.change_addresses + self.used_addresses
+        self.blockchain_api = blockchain.BlockchainInfoAPI(addresses)
+
+        self.fiat_price_api = price.BitcoinPrice(currency=config.FIAT, source=config.PRICE_API_SOURCE)
+
     def set_address_used(self, address):
         r_addrs = self.receiving_addresses
         c_addrs = self.change_addresses
@@ -100,6 +106,7 @@ class Wallet:
 
     @property
     def address_wifkey_pairs(self):
+        # TODO: PERFORMANCE IMPROVEMENTS NEEDED
         _bip32 = bip32.Bip32(key=self.xpriv, path=self.path,
                              segwit=self.is_segwit, gap_limit=self.gap_limit)
         pairs = _bip32.address_wifkey_pairs()
