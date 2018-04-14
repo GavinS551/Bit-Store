@@ -1,11 +1,13 @@
 import os
 import hashlib
 import binascii
+import string
 
 import bitstring
 
 from bip32utils.BIP32Key import BIP32Key, BIP32_HARDEN
 from src import btc_verify, config
+
 
 WORDLIST = 'wordlist.txt'
 PBKDF2_HMAC_ITERATIONS = 2048  # used when converting mnemonic to seed
@@ -16,6 +18,10 @@ class WatchOnlyWallet(Exception):
 
 
 class InvalidMnemonic(Exception):
+    pass
+
+
+class InvalidPath(Exception):
     pass
 
 
@@ -39,6 +45,13 @@ class Bip32:
 
     def __init__(self, key, path=config.BIP32_PATHS['bip49path'], segwit=True,
                  mnemonic=None, gap_limit=20):
+
+        if not self.check_path(path):
+            raise InvalidPath(f'{path} is not a valid path')
+
+        if gap_limit <= 0:
+            raise ValueError('Gap limit must be a positive int')
+
         self.is_private = False if key[1:4] == 'pub' else True
         self.is_segwit = segwit
         self.bip32 = BIP32Key.fromExtendedKey(key)
@@ -51,9 +64,10 @@ class Bip32:
 
         self.mnemonic = mnemonic
 
-        # Gap limit for address gen
         self.gap_limit = gap_limit
 
+        # to generate a testnet class from an extended key, the key must be
+        # in the standard testnet format
         self.is_testnet = self.bip32.testnet
 
     @staticmethod
@@ -107,7 +121,7 @@ class Bip32:
     # Adapted from <https://tinyurl.com/ycxfjmd6>
     @staticmethod
     def check_mnemonic(mnemonic):
-        """ Returns true if mnemonic is valid and vice-versa"""
+        """ Returns True if mnemonic is valid and vice-versa"""
         with open(WORDLIST, 'r') as w:
             wordlist = w.read().split()
         mnemonic = mnemonic.split(' ')
@@ -128,6 +142,32 @@ class Bip32:
         nh = bin(int(hashlib.sha256(nd).hexdigest(), 16))[2:].zfill(256)[:len_b // 33]
 
         return h == nh
+
+    @staticmethod
+    def check_path(path):
+        """ returns True if path is in a valid format and vice-versa"""
+
+        valid_chars = string.digits + '/' + "'"
+        valid_index_chars = string.digits + "'"
+        split_path = path.split('/')
+
+        if not all([True for c in path if c in valid_chars]):
+            return False
+
+        for idx in split_path:
+
+            if idx == '':
+                return False
+
+            for e, c in enumerate(idx):
+
+                if c not in valid_index_chars:
+                    return False
+
+                if c == "'" and e != len(idx) - 1:
+                    return False
+
+        return True
 
     def _get_account_ck(self):
         """returns an 'account' child key. i.e the last derivation of the path"""
@@ -164,12 +204,11 @@ class Bip32:
             for i in range(self.gap_limit):
                 change.append(ck.ChildKey(1).ChildKey(i).Address())
 
-        # Check to make sure that addresses are 100% valid, because better safe than sorry
+        # Sanity checks
         if btc_verify.check_bc(receiving + change):
             return receiving, change
         else:
-            raise Exception('Unexpected error occurred in address '
-                            'generation: INVALID ADDRESS GENERATED')
+            raise Exception('Unexpected error occurred in address generation')
 
     def wif_keys(self):
         """ Returns a tuple of receiving and change WIF keys up to the limit specified """
