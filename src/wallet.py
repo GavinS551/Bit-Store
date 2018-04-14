@@ -1,10 +1,7 @@
 import os
 
-from src import data, bip32, config
-
-
-class WalletAlreadyExistsError(Exception):
-    pass
+from . import data, bip32, config
+from .exceptions.wallet_exceptions import *
 
 
 class Wallet:

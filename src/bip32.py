@@ -4,25 +4,15 @@ import binascii
 import string
 
 import bitstring
-
 from bip32utils.BIP32Key import BIP32Key, BIP32_HARDEN
-from src import btc_verify, config
+
+
+from . import btc_verify, config
+from .exceptions.bip32_exceptions import *
 
 
 WORDLIST = 'wordlist.txt'
 PBKDF2_HMAC_ITERATIONS = 2048  # used when converting mnemonic to seed
-
-
-class WatchOnlyWallet(Exception):
-    pass
-
-
-class InvalidMnemonic(Exception):
-    pass
-
-
-class InvalidPath(Exception):
-    pass
 
 
 class Bip32:

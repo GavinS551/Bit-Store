@@ -7,11 +7,8 @@ import secrets
 
 import cryptography.fernet as fernet
 
-import src.config as config
-
-
-class IncorrectPassword(Exception):
-    pass
+from . import config as config
+from .exceptions.data_exceptions import *
 
 
 class Crypto:
