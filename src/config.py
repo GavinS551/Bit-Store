@@ -1,36 +1,63 @@
-import pathlib
 import os
+import pathlib
+import json
 
+
+DEFAULT_CONFIG = {
+
+    'STANDARD_DATA_FORMAT': {
+            'MNEMONIC': '',
+            'XPRIV': '',
+            'XPUB': '',
+            'PATH': '',
+            'GAP_LIMIT': 0,
+            'SEGWIT': True,
+            'ADDRESSES_RECEIVING': [],
+            'ADDRESSES_CHANGE': [],
+            'ADDRESSES_USED': [],
+    },
+
+    'SENSITIVE_DATA': [
+            'MNEMONIC',
+            'XPRIV',
+    ],
+
+    'BIP32_PATHS': {
+            'bip49path': "49'/0'/0'",
+            'bip44path': "44'/0'/0'"
+    },
+
+    'PRICE_API_SOURCE': 'coinmarketcap',
+
+    'FIAT': 'USD'
+}
 
 DATA_DIR = os.path.join(pathlib.Path.home(), '.BTC-WALLET')
-
-###############################################################################
-
-STANDARD_DATA_FORMAT = {
-        'MNEMONIC': '',
-        'XPRIV': '',
-        'XPUB': '',
-        'PATH': '',
-        'GAP_LIMIT': 0,
-        'SEGWIT': True,
-        'ADDRESSES_RECEIVING': [],
-        'ADDRESSES_CHANGE': [],
-        'ADDRESSES_USED': [],
-}
-
-SENSITIVE_DATA = [
-        'MNEMONIC',
-        'XPRIV',
-]
-
-###############################################################################
-
-BIP32_PATHS = {
-        'bip49path': "49'/0'/0'",
-        'bip44path': "44'/0'/0'"
-}
+CONFIG_FILE = os.path.join(DATA_DIR, 'config.json')
 
 
-PRICE_API_SOURCE = 'coinmarketcap'
+# creates program data dir if it doesn't exist
+if not os.path.isdir(DATA_DIR):
+    os.makedirs(DATA_DIR, exist_ok=True)
 
-FIAT = 'USD'
+
+# and likewise for the config file itself
+if not os.path.exists(CONFIG_FILE):
+    with open(CONFIG_FILE, 'w+') as cf:
+        json.dump(DEFAULT_CONFIG, cf, indent=4, sort_keys=False)
+
+
+with open(CONFIG_FILE, 'r') as cf:
+    CONFIG_VARS = json.load(cf)
+
+
+# CONFIG VARIABLES
+STANDARD_DATA_FORMAT = CONFIG_VARS['STANDARD_DATA_FORMAT']
+
+SENSITIVE_DATA = CONFIG_VARS['SENSITIVE_DATA']
+
+BIP32_PATHS = CONFIG_VARS['BIP32_PATHS']
+
+PRICE_API_SOURCE = CONFIG_VARS['PRICE_API_SOURCE']
+
+FIAT = CONFIG_VARS['FIAT']
