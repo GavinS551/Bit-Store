@@ -4,6 +4,8 @@ import requests
 
 from src import btc_verify
 
+TIME_INTERVAL = 10  # leaves 10 seconds between api requests
+
 
 class BlockchainInfoAPI:
 
@@ -44,8 +46,8 @@ class BlockchainInfoAPI:
 
     @property
     def _blockchain_data(self):
-        # leaves 10 seconds between api requests
-        if not time.time() - self.last_request_time < 10:
+        # leaves TIME_INTERVAL seconds between api requests
+        if not time.time() - self.last_request_time < TIME_INTERVAL:
 
             url = self.URL
 
