@@ -1,6 +1,6 @@
 import os
 
-from . import data, bip32, config, blockchain, price
+from . import data, bip32, config
 from .exceptions.wallet_exceptions import *
 
 
