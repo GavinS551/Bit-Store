@@ -47,8 +47,7 @@ class Bip32:
         self.bip32 = BIP32Key.fromExtendedKey(key)
         self.path = path
 
-        if self.is_private:
-            self.master_private_key = self.bip32.ExtendedKey()
+        self.master_private_key = self.bip32.ExtendedKey() if self.is_private else None
         self.master_public_key = self.bip32.ExtendedKey(private=False)
         self.account_public_key = self._get_account_ck().ExtendedKey(private=False)
 
