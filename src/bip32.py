@@ -216,22 +216,23 @@ class Bip32:
 
         return receiving, change
 
-    def raw_private_keys(self):
-        """ Returns hex bitcoin private keys"""
-        if not self.is_private:
-            raise WatchOnlyWallet('Can\'t derive private key from watch-only wallet')
+    # def raw_private_keys(self):
+    #     """ Returns hex bitcoin private keys"""
+    #     if not self.is_private:
+    #         raise WatchOnlyWallet('Can\'t derive private key from watch-only wallet')
+    #
+    #     receiving = []
+    #     change = []
+    #     ck = self._get_account_ck()
+    #
+    #     for i in range(self.gap_limit):
+    #         receiving.append(ck.ChildKey(0).ChildKey(i).PrivateKey().hex())
+    #     for i in range(self.gap_limit):
+    #         change.append(ck.ChildKey(1).ChildKey(i).PrivateKey().hex())
+    #
+    #     return receiving, change
 
-        receiving = []
-        change = []
-        ck = self._get_account_ck()
-
-        for i in range(self.gap_limit):
-            receiving.append(ck.ChildKey(0).ChildKey(i).PrivateKey().hex())
-        for i in range(self.gap_limit):
-            change.append(ck.ChildKey(1).ChildKey(i).PrivateKey().hex())
-
-        return receiving, change
-
+    # TODO: FIX TERRIBLE PERFORMANCE HERE
     def address_wifkey_pairs(self):
         """ Returns a list of tuples with addresses mapped to their WIF keys """
         if not self.is_private:
