@@ -112,7 +112,7 @@ class BlockchainInfoAPI:
             tx_list = []
 
             for tx in txns:
-                # used to make sure a txn won't be added twice if an address
+                # flag used to make sure a txn won't be added twice if an address
                 # acted as both an input and as an output. I.E if an address
                 # is in both tx['inputs'] and tx['out']
                 tx_caught_flag = False
