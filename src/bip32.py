@@ -232,17 +232,15 @@ class Bip32:
     #
     #     return receiving, change
 
-    # TODO: FIX TERRIBLE PERFORMANCE HERE
     def address_wifkey_pairs(self):
         """ Returns a list of tuples with addresses mapped to their WIF keys """
         if not self.is_private:
             raise WatchOnlyWallet('Can\'t derive private key from watch-only wallet')
 
-        # both receiving and change addresses/wif keys in single lists
-        addresses = self.addresses()[0] + self.addresses()[1]
-        wif_keys = self.wif_keys()[0] + self.wif_keys()[1]
+        addresses = self.addresses()
+        wif_keys = self.wif_keys()
 
-        return list(zip(addresses, wif_keys))
+        return list(zip(addresses[0] + addresses[1], wif_keys[0] + wif_keys[1]))
 
     def set_gap_limit(self, num):
         if not isinstance(num, int):
