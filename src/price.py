@@ -44,7 +44,7 @@ class BitcoinPrice:
         data = requests.get(url + currency).json()[0]
         # will return the currency ticker as well for all methods, because of
         # the ability to default to USD silently-ish
-        return data[f'price_{currency.lower()}'], currency.upper()
+        return data[f'price_{currency.lower()}']
 
     @staticmethod
     def blockchaininfo(currency):
@@ -58,7 +58,7 @@ class BitcoinPrice:
 
         url = 'https://blockchain.info/ticker'
         data = requests.get(url).json()
-        return data[currency.upper()]['last'], currency.upper()
+        return data[currency.upper()]['last']
 
     @staticmethod
     def gdax(currency):
@@ -69,7 +69,7 @@ class BitcoinPrice:
 
         url = f'https://api.gdax.com/products/BTC-{currency}/ticker'
         data = requests.get(url).json()
-        return data['price'], currency.upper()
+        return data['price']
 
     @staticmethod
     def bitstamp(currency):
@@ -80,4 +80,4 @@ class BitcoinPrice:
 
         url = f'https://www.bitstamp.net/api/v2/ticker/btc{currency}/'
         data = requests.get(url).json()
-        return data['last'], currency.upper()
+        return data['last']
