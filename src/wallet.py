@@ -80,27 +80,25 @@ class Wallet:
 
         # offline for debugging purposes
         if not offline:
-            t1 = threading.Thread(target=self._blockchain_data_updater)
-            t1.start()
+            self._thread_writing = False  # flag that makes sure thread won't end while writing data to file
+            self._start_blockchain_updater_thread()
+
+    def _start_blockchain_updater_thread(self):
+        t1 = threading.Thread(target=self._blockchain_data_updater)
+        t1.start()
 
     def _blockchain_data_updater(self):
-
         # TODO: ADD WRITING DATA PROTECTION WHEN EXITING THREAD
-
-        writing_data = False  # flag that makes sure thread won't end while writing
 
         def _update_api_data(data_keys):
             data_dict = {}
-            global writing_data
 
             for d in data_keys:
                 data_dict[d] = api_data[d]
 
-            writing_data = True
-            print('UPDATING API DATA')
+            self._thread_writing = True
             self.data_store.write_value(**data_dict)
-
-            writing_data = False
+            self._thread_writing = False
 
         api_data = {}
 
@@ -127,6 +125,7 @@ class Wallet:
             # data that needs to be updated
             old_keys = [k for k in api_data if self.data_store.get_value(k) != api_data[k]]
 
+            # if old_keys isn't an empty list
             if bool(old_keys):
                 _update_api_data(old_keys)
 
