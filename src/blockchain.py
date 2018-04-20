@@ -4,12 +4,12 @@ import requests
 
 from src import btc_verify
 
-TIME_INTERVAL = 10  # leaves 10 seconds between api requests
-
 
 class BlockchainInfoAPI:
 
     def __init__(self, addresses):
+
+        self.TIME_INTERVAL = 10  # leaves 10 seconds between api requests
 
         if not isinstance(addresses, list):
             raise ValueError('Address(es) must be in a list!')
@@ -47,7 +47,7 @@ class BlockchainInfoAPI:
     @property
     def _blockchain_data(self):
         # leaves TIME_INTERVAL seconds between api requests
-        if not time.time() - self.last_request_time < TIME_INTERVAL:
+        if not time.time() - self.last_request_time < self.TIME_INTERVAL:
 
             url = self.URL
 
