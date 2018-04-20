@@ -1,6 +1,8 @@
 import os
+import threading
+import time
 
-from . import data, bip32, config
+from . import data, bip32, config, blockchain, price
 from .exceptions.wallet_exceptions import *
 
 
@@ -68,6 +70,43 @@ class Wallet:
         data_file_path = os.path.join(config.DATA_DIR, name, 'wallet_data.json')
         self.data_store = data.DataStore(data_file_path, password)
 
+    #     # network threading
+    #     t1 = threading.Thread(target=self._blockchain_data_daemon(), daemon=True)
+    #     t1.start()
+    #
+    #     self._api_data = {}
+    #
+    # # BEGIN NETWORK RELATED METHODS
+    #
+    # def _blockchain_data_daemon(self):
+    #
+    #     while True:
+    #
+    #         addresses = self.receiving_addresses + self.change_addresses + self.used_addresses
+    #         bd = blockchain.BlockchainInfoAPI(addresses)
+    #         price_data = price.BitcoinPrice(currency=config.FIAT, source=config.PRICE_API_SOURCE)
+    #
+    #         self._api_data = {
+    #             'WALLET_BAL': bd.wallet_balance,
+    #             'TXNS': bd.address_transactions,
+    #             'ADDRESS_BALS': bd.address_balances,
+    #             'PRICE': price_data.get_price()
+    #         }
+    #
+    #         # data that needs to be updated
+    #         old_keys = []
+    #         for k in self._api_data:
+    #             if self.data_store.get_value(k) != self._api_data[k]:
+    #                 old_keys.append(k)
+    #
+    #         if not old_keys:
+    #             self._update_api_data(old_keys)
+    #
+    #         time.sleep(10)
+    #
+    # def _update_api_data(self, data_keys):
+    #     t2 = threading.Thread()
+
     def set_address_used(self, address):
         r_addrs = self.receiving_addresses
         c_addrs = self.change_addresses
@@ -100,7 +139,6 @@ class Wallet:
 
     @property
     def address_wifkey_pairs(self):
-        # TODO: PERFORMANCE IMPROVEMENTS NEEDED
         _bip32 = bip32.Bip32(key=self.xpriv, path=self.path,
                              segwit=self.is_segwit, gap_limit=self.gap_limit)
         pairs = _bip32.address_wifkey_pairs()
@@ -135,3 +173,19 @@ class Wallet:
     @property
     def is_segwit(self):
         return self.data_store.get_value('SEGWIT')
+
+    @property
+    def address_balances(self):
+        return self.data_store.get_value('ADDRESS_BALS')
+
+    @property
+    def transactions(self):
+        return self.data_store.get_value('TXNS')
+
+    @property
+    def price(self):
+        return self.data_store.get_value('PRICE')
+
+    @property
+    def wallet_balance(self):
+        return self.data_store.get_value('WALLET_BAL')

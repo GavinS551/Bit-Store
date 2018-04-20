@@ -15,6 +15,10 @@ DEFAULT_CONFIG = {
             'ADDRESSES_RECEIVING': [],
             'ADDRESSES_CHANGE': [],
             'ADDRESSES_USED': [],
+            'ADDRESS_BALS': {},
+            'TXNS': {},
+            'PRICE': 0,
+            'WALLET_BAL': 0
     },
 
     'SENSITIVE_DATA': [
