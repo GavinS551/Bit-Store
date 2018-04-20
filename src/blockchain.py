@@ -131,19 +131,29 @@ class BlockchainInfoAPI:
 
         return transaction_dict
 
-    def get_unspent_outputs(self, address):
-        self._check_address(address)
+    @property
+    def unspent_outputs(self):
 
-        if address in self.address_transactions:
-            address_txns = self.address_transactions[address]
-        else:
-            return None
+        unspent_outs = {}
 
-        unspent_outs = []
+        for address in self.addresses:
 
-        for tx in address_txns:
-            for out in tx['out']:
-                if out['spent'] is False:
-                    unspent_outs.append(out)
+            if address in self.address_transactions:
+                address_txns = self.address_transactions[address]
+            else:
+                continue
+
+            addr_unspent_outs = []
+
+            for tx in address_txns:
+                for out in tx['out']:
+                    if out['spent'] is False:
+                        addr_unspent_outs.append(out)
+
+            # continue if there is no unspent outs for a particular address
+            if not addr_unspent_outs:
+                continue
+
+            unspent_outs[address] = addr_unspent_outs
 
         return unspent_outs
