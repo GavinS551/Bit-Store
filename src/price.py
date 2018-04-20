@@ -6,19 +6,19 @@ class BitcoinPrice:
 
     def __init__(self, currency='USD', source='coinmarketcap'):
 
-        self.source = source
-        if self.source not in self.valid_sources:
-            raise Exception(f'{self.source} is not a valid source!')
-
-        self.last_request = 0  # unix timestamp of last price request
-        self.last_price = 0  # last requested price
-
         self.valid_sources = {
             'coinmarketcap': self.coinmarketcap(currency),
             'blockchaininfo': self.blockchaininfo(currency),
             'gdax': self.gdax(currency),
             'bitstamp': self.bitstamp(currency),
         }
+
+        self.source = source
+        if self.source not in self.valid_sources:
+            raise Exception(f'{self.source} is not a valid source!')
+
+        self.last_request = 0  # unix timestamp of last price request
+        self.last_price = 0  # last requested price
 
     def get_price(self):
         # Leaves 60 seconds between price requests
