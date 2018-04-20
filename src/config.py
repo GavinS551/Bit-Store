@@ -3,6 +3,10 @@ import pathlib
 import json
 
 
+DATA_DIR = os.path.join(pathlib.Path.home(), '.BTC-WALLET')
+CONFIG_FILE = os.path.join(DATA_DIR, 'config.json')
+
+
 DEFAULT_CONFIG = {
 
     'STANDARD_DATA_FORMAT': {
@@ -36,10 +40,6 @@ DEFAULT_CONFIG = {
 
     'FIAT': 'USD'
 }
-
-
-DATA_DIR = os.path.join(pathlib.Path.home(), '.BTC-WALLET')
-CONFIG_FILE = os.path.join(DATA_DIR, 'config.json')
 
 
 def reset_config_file():
