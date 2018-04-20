@@ -12,7 +12,7 @@ class Wallet:
 
     @classmethod
     def new_wallet(cls, name, password, mnemonic=bip32.Bip32.gen_mnemonic(),
-                   mnemonic_passphrase='', segwit=True, testnet=False):
+                   mnemonic_passphrase='', segwit=True, testnet=False, offline=False):
 
         dir_ = os.path.join(config.DATA_DIR, name)
         data_file_path = os.path.join(dir_, 'wallet_data.json')
@@ -59,7 +59,7 @@ class Wallet:
             del bip32_
             del d_store
 
-            return cls(name, password)
+            return cls(name, password, offline=offline)
 
         except BaseException as ex:
 
@@ -74,12 +74,14 @@ class Wallet:
             # re-raise exception that triggered try/except block
             raise
 
-    def __init__(self, name, password):
+    def __init__(self, name, password, offline=False):
         data_file_path = os.path.join(config.DATA_DIR, name, 'wallet_data.json')
         self.data_store = data.DataStore(data_file_path, password)
 
-        t1 = threading.Thread(target=self._blockchain_data_updater)
-        t1.start()
+        # offline for debugging purposes
+        if not offline:
+            t1 = threading.Thread(target=self._blockchain_data_updater)
+            t1.start()
 
     def _blockchain_data_updater(self):
 
@@ -104,8 +106,6 @@ class Wallet:
 
         while True:
 
-            print('UPDATING DATA')
-
             try:
                 addresses = self.receiving_addresses + self.change_addresses + self.used_addresses
                 bd = blockchain.BlockchainInfoAPI(addresses)
@@ -117,19 +117,17 @@ class Wallet:
                 continue
 
             api_data = {
-                'WALLET_BAL': bd.wallet_balance,
+                'WALLET_BAL': int(bd.wallet_balance),
                 'TXNS': bd.address_transactions,
                 'ADDRESS_BALS': bd.address_balances,
-                'PRICE': price_data.get_price(),
+                'PRICE': int(price_data.get_price().split('.')[0]),
                 'UNSPENT_OUTS': bd.unspent_outputs
             }
-
-            print(api_data)
 
             # data that needs to be updated
             old_keys = [k for k in api_data if self.data_store.get_value(k) != api_data[k]]
 
-            if not old_keys:
+            if bool(old_keys):
                 _update_api_data(old_keys)
 
             time.sleep(10)
