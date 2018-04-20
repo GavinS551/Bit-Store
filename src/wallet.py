@@ -37,6 +37,9 @@ class Wallet:
 
             d_store = data.DataStore(data_file_path, password)
 
+            # only gen addresses once, and not twice for receiving and change
+            addresses = bip32_.addresses()
+
             info = {
                 'MNEMONIC': bip32_.mnemonic,
                 'XPRIV': bip32_.master_private_key,
@@ -44,8 +47,8 @@ class Wallet:
                 'PATH': bip32_.path,
                 'GAP_LIMIT': bip32_.gap_limit,
                 'SEGWIT': bip32_.is_segwit,
-                'ADDRESSES_RECEIVING': bip32_.addresses()[0],
-                'ADDRESSES_CHANGE': bip32_.addresses()[1],
+                'ADDRESSES_RECEIVING': addresses[0],
+                'ADDRESSES_CHANGE': addresses[1],
             }
 
             d_store.write_value(**info)
