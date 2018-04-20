@@ -114,7 +114,7 @@ class DataStore(Crypto):
                 raise ValueError(f'Entered key ({k}) is not valid!')
             else:
                 if not isinstance(v, type(config.STANDARD_DATA_FORMAT[k])):
-                    raise ValueError(f'Value is wrong type. It must be a: '
+                    raise ValueError(f'Value ({v}) is wrong type. It must be a: '
                                      f'{type(config.STANDARD_DATA_FORMAT[k])}')
                 else:
 
