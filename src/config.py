@@ -18,7 +18,8 @@ DEFAULT_CONFIG = {
             'ADDRESS_BALS': {},
             'TXNS': {},
             'PRICE': 0,
-            'WALLET_BAL': 0
+            'WALLET_BAL': 0,
+            'UNSPENT_OUTS': {}
     },
 
     'SENSITIVE_DATA': [
@@ -36,8 +37,14 @@ DEFAULT_CONFIG = {
     'FIAT': 'USD'
 }
 
+
 DATA_DIR = os.path.join(pathlib.Path.home(), '.BTC-WALLET')
 CONFIG_FILE = os.path.join(DATA_DIR, 'config.json')
+
+
+def reset_config_file():
+    with open(CONFIG_FILE, 'w') as cf:
+        json.dump(DEFAULT_CONFIG, cf, indent=4, sort_keys=False)
 
 
 # creates program data dir if it doesn't exist
