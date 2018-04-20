@@ -2,6 +2,8 @@ import os
 import threading
 import time
 
+import requests.exceptions
+
 from . import data, bip32, config, blockchain, price
 from .exceptions.wallet_exceptions import *
 
@@ -59,12 +61,15 @@ class Wallet:
 
             return cls(name, password)
 
-        except:
+        except BaseException as ex:
 
-            if os.path.exists(data_file_path):
-                os.remove(data_file_path)
-            if os.path.exists(dir_):
-                os.rmdir(dir_)
+            # if exception is because of a name conflict, it won't delete data
+            if isinstance(ex, type(WalletAlreadyExistsError)):
+
+                if os.path.exists(data_file_path):
+                    os.remove(data_file_path)
+                if os.path.exists(dir_):
+                    os.rmdir(dir_)
 
             # re-raise exception that triggered try/except block
             raise
@@ -73,42 +78,61 @@ class Wallet:
         data_file_path = os.path.join(config.DATA_DIR, name, 'wallet_data.json')
         self.data_store = data.DataStore(data_file_path, password)
 
-        # network threading
-        t1 = threading.Thread(target=self._blockchain_data_daemon(), daemon=True)
+        t1 = threading.Thread(target=self._blockchain_data_updater)
         t1.start()
 
-        self._api_data = {}
+    def _blockchain_data_updater(self):
 
-    # BEGIN NETWORK RELATED METHODS
+        # TODO: ADD WRITING DATA PROTECTION WHEN EXITING THREAD
 
-    def _blockchain_data_daemon(self):
+        writing_data = False  # flag that makes sure thread won't end while writing
+
+        def _update_api_data(data_keys):
+            data_dict = {}
+            global writing_data
+
+            for d in data_keys:
+                data_dict[d] = api_data[d]
+
+            writing_data = True
+            print('UPDATING API DATA')
+            self.data_store.write_value(**data_dict)
+
+            writing_data = False
+
+        api_data = {}
 
         while True:
 
-            addresses = self.receiving_addresses + self.change_addresses + self.used_addresses
-            bd = blockchain.BlockchainInfoAPI(addresses)
-            price_data = price.BitcoinPrice(currency=config.FIAT, source=config.PRICE_API_SOURCE)
+            print('UPDATING DATA')
 
-            self._api_data = {
+            try:
+                addresses = self.receiving_addresses + self.change_addresses + self.used_addresses
+                bd = blockchain.BlockchainInfoAPI(addresses)
+                price_data = price.BitcoinPrice(currency=config.FIAT, source=config.PRICE_API_SOURCE)
+
+            except requests.exceptions.ConnectionError:
+                print('CONNECTION ERROR, TRYING AGAIN IN 30 SECONDS...')
+                time.sleep(30)
+                continue
+
+            api_data = {
                 'WALLET_BAL': bd.wallet_balance,
                 'TXNS': bd.address_transactions,
                 'ADDRESS_BALS': bd.address_balances,
-                'PRICE': price_data.get_price()
+                'PRICE': price_data.get_price(),
+                'UNSPENT_OUTS': bd.unspent_outputs
             }
 
+            print(api_data)
+
             # data that needs to be updated
-            old_keys = []
-            for k in self._api_data:
-                if self.data_store.get_value(k) != self._api_data[k]:
-                    old_keys.append(k)
+            old_keys = [k for k in api_data if self.data_store.get_value(k) != api_data[k]]
 
             if not old_keys:
-                self._update_api_data(old_keys)
+                _update_api_data(old_keys)
 
             time.sleep(10)
-
-    def _update_api_data(self, data_keys):
-        t2 = threading.Thread()
 
     def set_address_used(self, address):
         r_addrs = self.receiving_addresses
@@ -117,7 +141,9 @@ class Wallet:
 
         if address not in r_addrs + c_addrs:
             raise ValueError('Address not found!)')
+
         else:
+
             if address in r_addrs:
                 addr_index = r_addrs.index(address)
                 u_addrs.append(r_addrs.pop(addr_index))
@@ -192,3 +218,7 @@ class Wallet:
     @property
     def wallet_balance(self):
         return self.data_store.get_value('WALLET_BAL')
+
+    @property
+    def unspent_outputs(self):
+        return self.data_store.get_value('UNSPENT_OUTS')
