@@ -7,7 +7,7 @@ import secrets
 
 import cryptography.fernet as fernet
 
-from . import config as config
+from . import config
 from .exceptions.data_exceptions import *
 
 
@@ -69,7 +69,7 @@ class Crypto:
                 if digits else True,
                 (any(c in s for c in password))
                 if specials else True,
-                (any(c in ambiguous_chars for c in password))
+                (not any(c in ambiguous_chars for c in password))
                 if unambiguous else True
             ]):
                 return password
