@@ -38,6 +38,8 @@ class Crypto:
                           digits=True, specials=True, unambiguous=True):
         """ Creates a new password, with optional arguments to include certain character types"""
 
+        # TODO: Maybe redo password requirement logic (should it *require* certain chars?)
+
         password_limit = 100  # max password length
 
         # lower limit is 4, to include at least one lower, upper,
