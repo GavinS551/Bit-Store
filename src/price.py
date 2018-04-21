@@ -20,7 +20,8 @@ class BitcoinPrice:
         self.last_request = 0  # unix timestamp of last price request
         self.last_price = 0  # last requested price
 
-    def get_price(self):
+    @property
+    def price(self):
         # Leaves 60 seconds between price requests
         if time.time() - self.last_request >= 60:
             self.last_price = self.valid_sources[self.source]

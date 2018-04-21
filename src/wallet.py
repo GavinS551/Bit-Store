@@ -116,7 +116,7 @@ class Wallet:
                 'WALLET_BAL': int(bd.wallet_balance),
                 'TXNS': bd.address_transactions,
                 'ADDRESS_BALS': bd.address_balances,
-                'PRICE': int(price_data.get_price().split('.')[0]),
+                'PRICE': int(price_data.price.split('.')[0]),
                 'UNSPENT_OUTS': bd.unspent_outputs
             }
 
