@@ -11,8 +11,7 @@ from .exceptions.wallet_exceptions import *
 class Wallet:
 
     @classmethod
-    def new_wallet(cls, name, password, mnemonic=bip32.Bip32.gen_mnemonic(),
-                   mnemonic_passphrase='', segwit=True, testnet=False, offline=False):
+    def new_wallet(cls, name, password, bip32_obj, offline=False):
 
         dir_ = os.path.join(config.DATA_DIR, name)
         data_file_path = os.path.join(dir_, 'wallet_data.json')
@@ -21,8 +20,7 @@ class Wallet:
         # before exception is raised
         try:
 
-            bip32_ = bip32.Bip32.from_mnemonic(mnemonic=mnemonic, passphrase=mnemonic_passphrase,
-                                               segwit=segwit, testnet=testnet)
+            bip32_ = bip32_obj
 
             if not os.path.isdir(dir_):
                 os.makedirs(dir_, exist_ok=True)
