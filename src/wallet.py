@@ -64,7 +64,7 @@ class Wallet:
         except BaseException as ex:
 
             # if exception is because of a name conflict, it won't delete data
-            if isinstance(ex, type(WalletAlreadyExistsError)):
+            if not isinstance(ex, WalletAlreadyExistsError):
 
                 if os.path.exists(data_file_path):
                     os.remove(data_file_path)
