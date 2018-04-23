@@ -7,8 +7,8 @@ import secrets
 
 import cryptography.fernet as fernet
 
-from src import config
-from src.exceptions.data_exceptions import *
+from . import config
+from .exceptions.data_exceptions import *
 
 
 class Crypto:

@@ -2,7 +2,7 @@ import time
 
 import requests
 
-from src import btc_verify
+from . import btc_verify
 
 
 class BlockchainInfoAPI:
