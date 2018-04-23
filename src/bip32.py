@@ -6,7 +6,6 @@ import string
 import bitstring
 from bip32utils.BIP32Key import BIP32Key, BIP32_HARDEN
 
-
 from . import btc_verify, config
 from .exceptions.bip32_exceptions import *
 
