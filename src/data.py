@@ -63,15 +63,15 @@ class Crypto:
 
             # Password requirements
             if all([
-                (any(c.islower() for c in password))
+                any(c.islower() for c in password)
                 if lowercase else True,
-                (any(c.isupper() for c in password))
+                any(c.isupper() for c in password)
                 if uppercase else True,
-                (any(c.isdigit() for c in password))
+                any(c.isdigit() for c in password)
                 if digits else True,
-                (any(c in s for c in password))
+                any(c in s for c in password)
                 if specials else True,
-                (not any(c in ambiguous_chars for c in password))
+                not any(c in ambiguous_chars for c in password)
                 if unambiguous else True
             ]):
                 return password
