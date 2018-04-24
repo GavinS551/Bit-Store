@@ -1,6 +1,7 @@
 import os
 import threading
-import time
+import signal
+import sys
 
 import requests.exceptions
 
@@ -9,6 +10,69 @@ from .exceptions.wallet_exceptions import *
 
 
 class Wallet:
+
+    def _create_api_updater_thread(self):
+        return self.__class__.ApiDataUpdaterThread(self)
+
+    class ApiDataUpdaterThread(threading.Thread):
+
+        def __init__(self, wallet_instance):
+            super().__init__()
+            self.event = threading.Event()
+            self.wallet_instance = wallet_instance
+
+            self.set_handlers()
+
+        def set_handlers(self):
+
+            def _handler(signum, frame):
+                self.event.set()
+                sys.exit(0)
+
+            signal.signal(signal.SIGINT, _handler)
+            signal.signal(signal.SIGTERM, _handler)
+
+        def run(self):
+
+            def _update_api_data(data_keys):
+                data_dict = {}
+
+                for d in data_keys:
+                    data_dict[d] = api_data[d]
+
+                self.wallet_instance.data_store.write_value(**data_dict)
+
+            while not self.event.is_set():
+
+                try:
+                    addresses = self.wallet_instance.receiving_addresses + \
+                                self.wallet_instance.change_addresses + \
+                                self.wallet_instance.used_addresses
+
+                    bd = blockchain.BlockchainInfoAPI(addresses)
+                    price_data = price.BitcoinPrice(currency=config.FIAT, source=config.PRICE_API_SOURCE)
+
+                except requests.exceptions.ConnectionError:
+                    print('CONNECTION ERROR, TRYING AGAIN IN 30 SECONDS...')
+                    self.event.wait(30)
+                    continue
+
+                api_data = {
+                    'WALLET_BAL': int(bd.wallet_balance),
+                    'TXNS': bd.address_transactions,
+                    'ADDRESS_BALS': bd.address_balances,
+                    'PRICE': int(price_data.price.split('.')[0]),
+                    'UNSPENT_OUTS': bd.unspent_outputs
+                }
+
+                # data that needs to be updated
+                old_keys = [k for k in api_data if self.wallet_instance.data_store.get_value(k) != api_data[k]]
+
+                # if old_keys isn't an empty list
+                if bool(old_keys):
+                    _update_api_data(old_keys)
+
+                self.event.wait(10)
 
     @classmethod
     def new_wallet(cls, name, password, bip32_obj, offline=False):
@@ -78,56 +142,8 @@ class Wallet:
 
         # offline for debugging purposes
         if not offline:
-            self._thread_writing = False  # flag that makes sure thread won't end while writing data to file
-            self._start_blockchain_updater_thread()
-
-    def _start_blockchain_updater_thread(self):
-        t1 = threading.Thread(target=self._blockchain_data_updater)
-        t1.start()
-
-    def _blockchain_data_updater(self):
-        # TODO: ADD WRITING DATA PROTECTION WHEN EXITING THREAD
-
-        def _update_api_data(data_keys):
-            data_dict = {}
-
-            for d in data_keys:
-                data_dict[d] = api_data[d]
-
-            self._thread_writing = True
-            self.data_store.write_value(**data_dict)
-            self._thread_writing = False
-
-        api_data = {}
-
-        while True:
-
-            try:
-                addresses = self.receiving_addresses + self.change_addresses + self.used_addresses
-                bd = blockchain.BlockchainInfoAPI(addresses)
-                price_data = price.BitcoinPrice(currency=config.FIAT, source=config.PRICE_API_SOURCE)
-
-            except requests.exceptions.ConnectionError:
-                print('CONNECTION ERROR, TRYING AGAIN IN 30 SECONDS...')
-                time.sleep(30)
-                continue
-
-            api_data = {
-                'WALLET_BAL': int(bd.wallet_balance),
-                'TXNS': bd.address_transactions,
-                'ADDRESS_BALS': bd.address_balances,
-                'PRICE': int(price_data.price.split('.')[0]),
-                'UNSPENT_OUTS': bd.unspent_outputs
-            }
-
-            # data that needs to be updated
-            old_keys = [k for k in api_data if self.data_store.get_value(k) != api_data[k]]
-
-            # if old_keys isn't an empty list
-            if bool(old_keys):
-                _update_api_data(old_keys)
-
-            time.sleep(10)
+            self.updater_thread = self._create_api_updater_thread()
+            self.updater_thread.start()
 
     def set_address_used(self, address):
         r_addrs = self.receiving_addresses
