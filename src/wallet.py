@@ -11,15 +11,22 @@ from .exceptions.wallet_exceptions import *
 
 class Wallet:
 
-    def _create_api_updater_thread(self):
-        return type(self).ApiDataUpdaterThread(self)
+    def _create_api_updater_thread(self, refresh_rate):
+        return type(self).ApiDataUpdaterThread(self, refresh_rate)
 
     class ApiDataUpdaterThread(threading.Thread):
 
-        def __init__(self, wallet_instance):
+        def __init__(self, wallet_instance, refresh_rate):
             super().__init__()
             self.event = threading.Event()
             self.wallet_instance = wallet_instance
+
+            if not isinstance(refresh_rate, int):
+                raise ValueError('Refresh rate must be an int')
+            if refresh_rate < 10:
+                raise ValueError('Refresh rate must be at least 10 seconds')
+
+            self.refresh_rate = refresh_rate  # int: seconds
 
             self.set_handlers()
 
@@ -72,7 +79,7 @@ class Wallet:
                 if bool(old_keys):
                     _update_api_data(old_keys)
 
-                self.event.wait(10)
+                self.event.wait(self.refresh_rate)
 
     @classmethod
     def new_wallet(cls, name, password, bip32_obj, offline=False):
@@ -142,7 +149,8 @@ class Wallet:
 
         # offline for debugging purposes
         if not offline:
-            self.updater_thread = self._create_api_updater_thread()
+            refresh_rate = 10
+            self.updater_thread = self._create_api_updater_thread(refresh_rate)
             self.updater_thread.start()
 
     def set_address_used(self, address):
