@@ -112,18 +112,21 @@ class DataStore(Crypto):
     def write_value(self, allow_new_key=False, **kwargs):
         data = self._data
         for k, v in kwargs.items():
+
             if k not in data and allow_new_key is False:
                 raise ValueError(f'Entered key ({k}) is not valid!')
+
             else:
                 if not isinstance(v, type(config.STANDARD_DATA_FORMAT[k])):
                     raise ValueError(f'Value ({v}) is wrong type. It must be a: '
                                      f'{type(config.STANDARD_DATA_FORMAT[k])}')
-                else:
 
+                else:
                     if k in config.SENSITIVE_DATA:
                         # if key is in sensitive data list, it will be encrypted twice
                         # to limit its exposure in ram, unencrypted
                         data[k] = self.encrypt(v)
+
                     else:
                         data[k] = v
 
@@ -132,6 +135,7 @@ class DataStore(Crypto):
     def get_value(self, key):
         if key in config.SENSITIVE_DATA:
             return self.decrypt(self._data[key.upper()])
+
         else:
             return self._data[key.upper()]
 
@@ -139,5 +143,6 @@ class DataStore(Crypto):
         try:
             # tries to decrypt data
             _ = self._data
+
         except fernet.InvalidToken:
             raise IncorrectPassword('Entered password is incorrect')
