@@ -12,7 +12,7 @@ from .exceptions.wallet_exceptions import *
 class Wallet:
 
     def _create_api_updater_thread(self):
-        return self.__class__.ApiDataUpdaterThread(self)
+        return type(self).ApiDataUpdaterThread(self)
 
     class ApiDataUpdaterThread(threading.Thread):
 
