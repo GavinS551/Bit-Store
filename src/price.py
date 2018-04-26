@@ -4,7 +4,7 @@ import time
 
 class BitcoinPrice:
 
-    def __init__(self, currency='USD', source='coinmarketcap', timeout=15):
+    def __init__(self, currency='USD', source='coinmarketcap', timeout=10):
 
         self.valid_sources = {
             'coinmarketcap': self.coinmarketcap(currency),
