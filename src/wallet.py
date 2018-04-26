@@ -16,6 +16,8 @@ class Wallet:
 
     class ApiDataUpdaterThread(threading.Thread):
 
+        # TODO: ADD A TIMEOUT TO DATA UPDATER THREAD
+
         def __init__(self, wallet_instance, refresh_rate):
             super().__init__()
             self.event = threading.Event()
@@ -68,7 +70,7 @@ class Wallet:
                     'WALLET_BAL': int(bd.wallet_balance),
                     'TXNS': bd.address_transactions,
                     'ADDRESS_BALS': bd.address_balances,
-                    'PRICE': int(float(price_data.price)),
+                    'PRICE': float(price_data.price),
                     'UNSPENT_OUTS': bd.unspent_outputs
                 }
 

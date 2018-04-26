@@ -21,7 +21,7 @@ DEFAULT_CONFIG = {
             'ADDRESSES_USED': [],
             'ADDRESS_BALS': [],
             'TXNS': {},
-            'PRICE': 0,
+            'PRICE': 0.0,
             'WALLET_BAL': 0,
             'UNSPENT_OUTS': {}
     },
