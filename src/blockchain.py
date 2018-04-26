@@ -137,11 +137,12 @@ class BlockchainInfoAPI:
     def unspent_outputs(self):
 
         unspent_outs = {}
+        addr_txns = self.address_transactions
 
         for address in self.addresses:
 
-            if address in self.address_transactions:
-                address_txns = self.address_transactions[address]
+            if address in addr_txns:
+                address_txns = addr_txns[address]
             else:
                 continue
 
