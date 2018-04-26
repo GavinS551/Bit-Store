@@ -26,6 +26,8 @@ DEFAULT_CONFIG = {
             'UNSPENT_OUTS': {}
     },
 
+    # Sensitive data must be stored as a string due to limitations in data.py's
+    # handling of sensitive data encryption
     'SENSITIVE_DATA': [
             'MNEMONIC',
             'XPRIV',
