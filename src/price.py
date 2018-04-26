@@ -4,7 +4,7 @@ import time
 
 class BitcoinPrice:
 
-    def __init__(self, currency='USD', source='coinmarketcap'):
+    def __init__(self, currency='USD', source='coinmarketcap', timeout=15):
 
         self.valid_sources = {
             'coinmarketcap': self.coinmarketcap(currency),
@@ -20,6 +20,8 @@ class BitcoinPrice:
         self.last_request = 0  # unix timestamp of last price request
         self.last_price = 0  # last requested price
 
+        self.timeout = timeout
+
     @property
     def price(self):
         # Leaves 60 seconds between price requests
@@ -30,8 +32,7 @@ class BitcoinPrice:
         else:
             return self.last_price
 
-    @staticmethod
-    def coinmarketcap(currency):
+    def coinmarketcap(self, currency):
         valid_currencies = ["AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK",
                             "DKK", "EUR", "GBP", "HKD", "HUF", "IDR", "ILS",
                             "INR", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD",
@@ -42,13 +43,12 @@ class BitcoinPrice:
             raise ValueError(f'"{currency}" is not a valid currency for this source')
 
         url = 'https://api.coinmarketcap.com/v1/ticker/bitcoin/?convert='
-        data = requests.get(url + currency).json()[0]
+        data = requests.get(url + currency, timeout=self.timeout).json()[0]
         # will return the currency ticker as well for all methods, because of
         # the ability to default to USD silently-ish
         return data[f'price_{currency.lower()}']
 
-    @staticmethod
-    def blockchaininfo(currency):
+    def blockchaininfo(self, currency):
         valid_currencies = ['USD', 'AUD', 'BRL', 'CAD', 'CHF', 'CLP', 'CNY',
                             'DKK', 'EUR', 'GBP', 'HKD', 'INR', 'ISK', 'JPY',
                             'KRW', 'NZD', 'PLN', 'RUB', 'SEK', 'SGD', 'THB',
@@ -58,27 +58,25 @@ class BitcoinPrice:
             raise ValueError(f'"{currency}" is not a valid currency for this source')
 
         url = 'https://blockchain.info/ticker'
-        data = requests.get(url).json()
+        data = requests.get(url, timeout=self.timeout).json()
         return data[currency.upper()]['last']
 
-    @staticmethod
-    def gdax(currency):
+    def gdax(self, currency):
         valid_currencies = ["EUR", "USD", "GBP"]
 
         if currency.upper() not in valid_currencies:
             raise ValueError(f'"{currency}" is not a valid currency for this source')
 
         url = f'https://api.gdax.com/products/BTC-{currency}/ticker'
-        data = requests.get(url).json()
+        data = requests.get(url, timeout=self.timeout).json()
         return data['price']
 
-    @staticmethod
-    def bitstamp(currency):
+    def bitstamp(self, currency):
         valid_currencies = ["EUR", "USD"]
 
         if currency.upper() not in valid_currencies:
             raise ValueError(f'"{currency}" is not a valid currency for this source')
 
         url = f'https://www.bitstamp.net/api/v2/ticker/btc{currency}/'
-        data = requests.get(url).json()
+        data = requests.get(url, timeout=self.timeout).json()
         return data['last']
