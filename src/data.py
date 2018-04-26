@@ -92,7 +92,8 @@ class DataStore(Crypto):
                 with open(self.file_path, 'w') as dw:
                     dw.write(self.encrypt(self.json_blank_template()))
 
-        self.check_password()  # password validity handling
+        if not self.check_password():
+            raise IncorrectPassword('Entered password is incorrect')
 
     @property
     def _data(self):
@@ -143,6 +144,7 @@ class DataStore(Crypto):
         try:
             # tries to decrypt data
             _ = self._data
+            return True
 
         except fernet.InvalidToken:
-            raise IncorrectPassword('Entered password is incorrect')
+            return False
