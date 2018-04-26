@@ -7,7 +7,7 @@ from . import btc_verify
 
 class BlockchainInfoAPI:
 
-    def __init__(self, addresses):
+    def __init__(self, addresses, timeout=10):
 
         self.TIME_INTERVAL = 10  # leaves 10 seconds between api requests
 
@@ -22,6 +22,8 @@ class BlockchainInfoAPI:
 
         self.last_request_time = 0
         self.last_requested_data = {}
+
+        self.timeout = timeout
 
     def _check_address(self, address):
         if address not in self.addresses:
@@ -54,7 +56,7 @@ class BlockchainInfoAPI:
             for address in self.addresses:
                 url += f'{address}|'
 
-            data = requests.get(url).json()
+            data = requests.get(url, timeout=self.timeout).json()
             self.last_request_time = time.time()
             self.last_requested_data = data
 
