@@ -19,16 +19,23 @@ class Wallet:
         # TODO: ADD A TIMEOUT TO DATA UPDATER THREAD
 
         def __init__(self, wallet_instance, refresh_rate):
-            super().__init__()
-            self.event = threading.Event()
-            self.wallet_instance = wallet_instance
+
+            if not isinstance(wallet_instance, Wallet):
+                raise TypeError('wallet_instance must be an instance of Wallet class')
 
             if not isinstance(refresh_rate, int):
                 raise ValueError('Refresh rate must be an int')
+
+            # due to api request limits
             if refresh_rate < 10:
                 raise ValueError('Refresh rate must be at least 10 seconds')
 
-            self.refresh_rate = refresh_rate  # int: seconds
+            super().__init__(name='API_DATA_UPDATER')
+            self.event = threading.Event()
+            self.wallet_instance = wallet_instance
+            self.refresh_rate = refresh_rate
+            # a requests Exception, stored if the last data request failed
+            self.connection_error = None
 
             self.set_handlers()
 
@@ -53,26 +60,30 @@ class Wallet:
 
             while not self.event.is_set():
 
+                addresses = self.wallet_instance.receiving_addresses + \
+                            self.wallet_instance.change_addresses + \
+                            self.wallet_instance.used_addresses
+
+                bd = blockchain.BlockchainInfoAPI(addresses)
+                price_data = price.BitcoinPrice(currency=config.FIAT, source=config.PRICE_API_SOURCE)
+
                 try:
-                    addresses = self.wallet_instance.receiving_addresses + \
-                                self.wallet_instance.change_addresses + \
-                                self.wallet_instance.used_addresses
+                    api_data = {
+                        'WALLET_BAL': int(bd.wallet_balance),
+                        'TXNS': bd.address_transactions,
+                        'ADDRESS_BALS': bd.address_balances,
+                        'PRICE': float(price_data.price),
+                        'UNSPENT_OUTS': bd.unspent_outputs
+                    }
+                    self.connection_error = None
 
-                    bd = blockchain.BlockchainInfoAPI(addresses)
-                    price_data = price.BitcoinPrice(currency=config.FIAT, source=config.PRICE_API_SOURCE)
+                except (requests.exceptions.ConnectionError,
+                        requests.exceptions.Timeout,
+                        requests.exceptions.HTTPError) as ex:
 
-                except requests.exceptions.ConnectionError:
-                    print('CONNECTION ERROR, TRYING AGAIN IN 30 SECONDS...')
+                    self.connection_error = ex
                     self.event.wait(30)
                     continue
-
-                api_data = {
-                    'WALLET_BAL': int(bd.wallet_balance),
-                    'TXNS': bd.address_transactions,
-                    'ADDRESS_BALS': bd.address_balances,
-                    'PRICE': float(price_data.price),
-                    'UNSPENT_OUTS': bd.unspent_outputs
-                }
 
                 # data that needs to be updated
                 old_keys = [k for k in api_data if self.wallet_instance.data_store.get_value(k) != api_data[k]]
@@ -151,8 +162,7 @@ class Wallet:
 
         # offline for debugging purposes
         if not offline:
-            refresh_rate = 10
-            self.updater_thread = self._create_api_updater_thread(refresh_rate)
+            self.updater_thread = self._create_api_updater_thread(refresh_rate=10)
             self.updater_thread.start()
 
     def set_address_used(self, address):
