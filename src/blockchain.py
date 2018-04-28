@@ -1,11 +1,52 @@
 import time
+import abc
 
 import requests
 
 from . import btc_verify
 
 
-class BlockchainInfoAPI:
+def blockchain_api(source, addresses, timeout=10):
+
+    sources = {
+        'blockchain.info': BlockchainInfo
+    }
+
+    if source.lower() not in sources:
+        raise ValueError(f'{source} is an invalid source')
+
+    return sources[source](addresses, timeout)
+
+
+class BlockchainApiInterface(metaclass=abc.ABCMeta):
+    """
+    A blockchain api class must accept two arguments: 1. addresses (a list
+    of bitcoin addresses) and 2. timeout (an int (seconds) that sets the timeout
+    for an api call)
+    """
+
+    @property
+    @abc.abstractmethod
+    def wallet_balance(self):
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def address_balances(self):
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def address_transactions(self):
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def unspent_outputs(self):
+        raise NotImplementedError
+
+
+class BlockchainInfo(BlockchainApiInterface):
 
     def __init__(self, addresses, timeout=10):
 
@@ -68,6 +109,15 @@ class BlockchainInfoAPI:
             return self.last_requested_data
 
     @property
+    def _address_num_transactions(self):
+        """ Returns a list of tuples containing address/amount of txns """
+        num_txns = []
+        for address in self.addresses:
+            num_txns.append(self._find_address_data(address, 'n_tx'))
+
+        return list(zip(self.addresses, num_txns))
+
+    @property
     def wallet_balance(self):
         """ Combined balance of all addresses (in satoshis)"""
         return self._blockchain_data['wallet']['final_balance']
@@ -82,15 +132,6 @@ class BlockchainInfoAPI:
         return list(zip(self.addresses, balances))
 
     @property
-    def address_num_transactions(self):
-        """ Returns a list of tuples containing address/amount of txns """
-        num_txns = []
-        for address in self.addresses:
-            num_txns.append(self._find_address_data(address, 'n_tx'))
-
-        return list(zip(self.addresses, num_txns))
-
-    @property
     def address_transactions(self):
         """ Returns a dict with addresses as keys and all txns associated with them as values"""
 
@@ -98,8 +139,8 @@ class BlockchainInfoAPI:
         num_txns = 0
 
         # addr_num_txns is created because I will be calling it twice, and don't
-        # want a second API call to possibly happen like it could calling self.address_num_transactions
-        addr_num_txns = self.address_num_transactions
+        # want a second API call to possibly happen like it could calling self._address_num_transactions
+        addr_num_txns = self._address_num_transactions
         for _, n in addr_num_txns:
             num_txns += n
 

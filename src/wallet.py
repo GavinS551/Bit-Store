@@ -62,7 +62,7 @@ class Wallet:
                             self.wallet_instance.change_addresses + \
                             self.wallet_instance.used_addresses
 
-                bd = blockchain.BlockchainInfoAPI(addresses)
+                bd = blockchain.blockchain_api(config.BLOCKCHAIN_API_SOURCE, addresses)
                 price_data = price.BitcoinPrice(currency=config.FIAT, source=config.PRICE_API_SOURCE)
 
                 try:
@@ -94,6 +94,9 @@ class Wallet:
 
     @classmethod
     def new_wallet(cls, name, password, bip32_obj, offline=False):
+
+        if not isinstance(bip32_obj, bip32.Bip32):
+            raise ValueError('bip32_obj must be an instance of Bip32 class')
 
         dir_ = os.path.join(config.DATA_DIR, name)
         data_file_path = os.path.join(dir_, 'wallet_data.json')
