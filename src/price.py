@@ -7,11 +7,13 @@ class BitcoinPrice:
     def __init__(self, currency='USD', source='coinmarketcap', timeout=10):
 
         self.valid_sources = {
-            'coinmarketcap': self.coinmarketcap(currency),
-            'blockchaininfo': self.blockchaininfo(currency),
-            'gdax': self.gdax(currency),
-            'bitstamp': self.bitstamp(currency),
+            'coinmarketcap': self.coinmarketcap,
+            'blockchaininfo': self.blockchaininfo,
+            'gdax': self.gdax,
+            'bitstamp': self.bitstamp,
         }
+
+        self.currency = currency
 
         self.source = source
         if self.source not in self.valid_sources:
@@ -26,13 +28,14 @@ class BitcoinPrice:
     def price(self):
         # Leaves 60 seconds between price requests
         if time.time() - self.last_request >= 60:
-            self.last_price = self.valid_sources[self.source]
+            self.last_price = self.valid_sources[self.source]()
             self.last_request = time.time()
             return self.last_price
         else:
             return self.last_price
 
-    def coinmarketcap(self, currency):
+    def coinmarketcap(self):
+        currency = self.currency
         valid_currencies = ["AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK",
                             "DKK", "EUR", "GBP", "HKD", "HUF", "IDR", "ILS",
                             "INR", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD",
@@ -48,7 +51,8 @@ class BitcoinPrice:
         # the ability to default to USD silently-ish
         return data[f'price_{currency.lower()}']
 
-    def blockchaininfo(self, currency):
+    def blockchaininfo(self):
+        currency = self.currency
         valid_currencies = ['USD', 'AUD', 'BRL', 'CAD', 'CHF', 'CLP', 'CNY',
                             'DKK', 'EUR', 'GBP', 'HKD', 'INR', 'ISK', 'JPY',
                             'KRW', 'NZD', 'PLN', 'RUB', 'SEK', 'SGD', 'THB',
@@ -61,7 +65,8 @@ class BitcoinPrice:
         data = requests.get(url, timeout=self.timeout).json()
         return data[currency.upper()]['last']
 
-    def gdax(self, currency):
+    def gdax(self):
+        currency = self.currency
         valid_currencies = ["EUR", "USD", "GBP"]
 
         if currency.upper() not in valid_currencies:
@@ -71,7 +76,8 @@ class BitcoinPrice:
         data = requests.get(url, timeout=self.timeout).json()
         return data['price']
 
-    def bitstamp(self, currency):
+    def bitstamp(self):
+        currency = self.currency
         valid_currencies = ["EUR", "USD"]
 
         if currency.upper() not in valid_currencies:
