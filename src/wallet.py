@@ -16,8 +16,6 @@ class Wallet:
 
     class ApiDataUpdaterThread(threading.Thread):
 
-        # TODO: ADD A TIMEOUT TO DATA UPDATER THREAD
-
         def __init__(self, wallet_instance, refresh_rate):
 
             if not isinstance(wallet_instance, Wallet):
@@ -41,7 +39,7 @@ class Wallet:
 
         def set_handlers(self):
 
-            def _handler(signum, frame):
+            def _handler(_, __):
                 self.event.set()
                 sys.exit(0)
 
