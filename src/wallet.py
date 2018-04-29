@@ -56,7 +56,9 @@ class Wallet:
 
                 self.wallet_instance.data_store.write_value(**data_dict)
 
-            while not self.event.is_set():
+            # if the main thread is dead then self.event can never change as
+            # only a SIGINT or SIGTERM from the main thread can set self.event
+            while not self.event.is_set() and threading.main_thread().is_alive():
 
                 addresses = self.wallet_instance.receiving_addresses + \
                             self.wallet_instance.change_addresses + \
