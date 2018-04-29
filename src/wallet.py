@@ -89,7 +89,7 @@ class Wallet:
                 old_keys = [k for k in api_data if self.wallet_instance.data_store.get_value(k) != api_data[k]]
 
                 # if old_keys isn't an empty list
-                if old_keys:
+                if old_keys and not self.event.is_set():
                     _update_api_data(old_keys)
 
                 self.event.wait(self.refresh_rate)
