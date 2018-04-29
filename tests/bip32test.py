@@ -14,33 +14,45 @@ class Bip32Test(unittest.TestCase):
     bip32 = Bip32.from_mnemonic(mnemonic)
     t_bip32 = Bip32(key=testnet_xpriv)
 
+    addresses = bip32.addresses()
+    tn_addresses = t_bip32.addresses()
+
     def test_segwit_address_generation(self):
         if self.bip32.is_segwit and not self.bip32.is_testnet:
-            self.assertEqual(self.bip32.addresses()[0][0][0], '3')
+            self.assertEqual(self.addresses[0][0][0], '3')
         else:
-            self.assertEqual(self.bip32.addresses()[0][0][0], '1')
+            self.assertEqual(self.addresses[0][0][0], '1')
 
     def test_testnet_xkey_recognition(self):
         self.assertEqual(self.t_bip32.is_testnet, True)
         # test to see if it produces testnet addresses as well
         if self.t_bip32.is_segwit:
-            self.assertEqual(self.t_bip32.addresses()[0][0][0], '2')
+            self.assertEqual(self.tn_addresses[0][0][0], '2')
         else:
-            self.assertEqual(self.t_bip32.addresses()[0][0][0], 'n' or 'm')
+            self.assertEqual(self.tn_addresses[0][0][0], 'n' or 'm')
 
     def test_key_derivation(self):
         self.assertEqual(self.bip32.master_private_key, self.xpriv)
         self.assertEqual(self.bip32.master_public_key, self.xpub)
         self.assertEqual(self.bip32.account_public_key, self.a_xpub)
 
-    def test_wifkey_address_matchup(self):
-        self.assertEqual(len(self.bip32.addresses()[0]), len(self.bip32.wif_keys()[0]))  # receiving addresses/wifkeys
-        self.assertEqual(len(self.bip32.addresses()[1]), len(self.bip32.wif_keys()[1]))  # change addresses/wifkeys
-
     def test_check_mnemonic(self):
         self.assertTrue(self.bip32.check_mnemonic(self.bip32.mnemonic))
         self.assertFalse(self.bip32.check_mnemonic('TOTALLY NOT A MNEMONIC'))
 
+    def test_check_paths(self):
+
+        a = "12/312'/4234/23423'2353525325"
+        b = "0"
+        c = "44'/0'/0/256"
+
+        self.assertFalse(Bip32.check_path(a))
+        self.assertTrue(Bip32.check_path(b))
+        self.assertTrue(Bip32.check_path(c))
+
+    def test_check_gap_limit_setter(self):
+        self.bip32.set_gap_limit(14)
+        self.assertEqual(len(self.bip32.addresses()[0]), 14)
 
 if __name__ == '__main__':
     unittest.main()
