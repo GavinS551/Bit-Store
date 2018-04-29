@@ -4,6 +4,8 @@ import time
 
 class BitcoinPrice:
 
+    # TODO: CLASS NEEDS A REFACTOR
+
     def __init__(self, currency='USD', source='coinmarketcap', timeout=10):
 
         self.valid_sources = {
