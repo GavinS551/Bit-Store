@@ -23,6 +23,8 @@ class BlockchainApiInterface(metaclass=abc.ABCMeta):
     A blockchain api class must accept two arguments: 1. addresses (a list
     of bitcoin addresses) and 2. timeout (an int (seconds) that sets the timeout
     for an api call)
+
+    BALANCES SHOULD ALWAYS BE IN SATOSHIS, AS AN INT
     """
 
     @property

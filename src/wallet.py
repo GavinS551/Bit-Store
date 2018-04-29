@@ -69,10 +69,10 @@ class Wallet:
 
                 try:
                     api_data = {
-                        'WALLET_BAL': int(bd.wallet_balance),
+                        'WALLET_BAL': bd.wallet_balance,
                         'TXNS': bd.address_transactions,
                         'ADDRESS_BALS': bd.address_balances,
-                        'PRICE': float(price_data.price),
+                        'PRICE': price_data.price,
                         'UNSPENT_OUTS': bd.unspent_outputs
                     }
                     self.connection_error = None
