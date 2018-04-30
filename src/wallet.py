@@ -2,6 +2,7 @@ import os
 import threading
 import signal
 import sys
+import shutil
 
 import requests.exceptions
 
@@ -150,11 +151,7 @@ class Wallet:
 
             # if exception is because of a name conflict, it won't delete data
             if not isinstance(ex, WalletAlreadyExistsError):
-
-                if os.path.exists(data_file_path):
-                    os.remove(data_file_path)
-                if os.path.exists(dir_):
-                    os.rmdir(dir_)
+                shutil.rmtree(dir_, ignore_errors=True)
 
             # re-raise exception that triggered try/except block
             raise
