@@ -127,11 +127,11 @@ class BlockchainInfo(BlockchainApiInterface):
     @property
     def address_balances(self):
         """ returns a list of tuples with address/balance(in satoshis) """
-        balances = []
+        balances = {}
         for address in self.addresses:
-            balances.append(self._find_address_data(address, 'final_balance'))
+            balances[address] = self._find_address_data(address, 'final_balance')
 
-        return list(zip(self.addresses, balances))
+        return balances
 
     @property
     def address_transactions(self):

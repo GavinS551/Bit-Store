@@ -190,8 +190,6 @@ class Wallet:
                                        'ADDRESSES_CHANGE': c_addrs,
                                        'ADDRESSES_USED': u_addrs})
 
-    # CLASS PROPERTIES
-
     @property
     def mnemonic(self):
         return self.data_store.get_value('MNEMONIC')
