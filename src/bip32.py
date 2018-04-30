@@ -6,7 +6,7 @@ import string
 import bitstring
 from bip32utils.BIP32Key import BIP32Key, BIP32_HARDEN
 
-from . import btc_verify, config
+from . import config
 from .exceptions.bip32_exceptions import *
 
 
@@ -59,7 +59,7 @@ class Bip32:
         self.is_testnet = self.bip32.testnet
 
     @staticmethod
-    def gen_mnemonic(force_use_word_list=False, length=12):
+    def gen_mnemonic(length=12):
         """ Returns a new mnemonic"""
         if length not in [12, 15, 18, 21, 24]:
             raise ValueError('Mnemonic must be either 12, 15, 18, 21 or 24 words long')
@@ -73,15 +73,12 @@ class Bip32:
             24: 32
         }
 
-        # if force_use_word list is true, it skips checking validity of the file
-        # (to be used with a custom word list)
-        if not force_use_word_list:
-            # Checking integrity of word list file
-            with open(WORDLIST, 'rb') as w:
-                checksum = b'Q\xca"d\xf5\xb3\xadS*Mm\xae\x17^\x17P'
-                if checksum != hashlib.md5(w.read()).digest():
-                    raise Exception('ERROR: Wordlist is not BIP39 valid '
-                                    '(INVALID MD5 CHECKSUM)')
+        # Checking integrity of word list file
+        with open(WORDLIST, 'rb') as w:
+            checksum = b'Q\xca"d\xf5\xb3\xadS*Mm\xae\x17^\x17P'
+            if checksum != hashlib.md5(w.read()).digest():
+                raise Exception('ERROR: Wordlist is not BIP39 valid '
+                                '(INVALID MD5 CHECKSUM)')
 
         # length of initial entropy in bytes
         ent_len = len_v_byte_size[length]
@@ -98,7 +95,7 @@ class Bip32:
         word_indexes = [int(b, 2) for b in split_bits]
 
         with open(WORDLIST, 'r') as w:
-            word_list = w.read().split()
+            word_list = w.readlines()
             mnemonic = []
             for i in word_indexes:
                 mnemonic.append(word_list[i])
@@ -111,7 +108,7 @@ class Bip32:
     def check_mnemonic(mnemonic):
         """ Returns True if mnemonic is valid and vice-versa"""
         with open(WORDLIST, 'r') as w:
-            wordlist = w.read().split()
+            wordlist = w.readlines()
         mnemonic = mnemonic.split(' ')
 
         if len(mnemonic) not in [12, 15, 18, 21, 24]:
@@ -192,11 +189,7 @@ class Bip32:
             for i in range(self.gap_limit):
                 change.append(ck.ChildKey(1).ChildKey(i).Address())
 
-        # Sanity checks
-        if btc_verify.check_bc(receiving + change):
-            return receiving, change
-        else:
-            raise Exception('Unexpected error occurred in address generation')
+        return receiving, change
 
     def wif_keys(self):
         """ Returns a tuple of receiving and change WIF keys up to the limit specified """
