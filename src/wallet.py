@@ -13,7 +13,7 @@ from .exceptions.wallet_exceptions import *
 class Wallet:
 
     def _create_api_updater_thread(self, refresh_rate):
-        return type(self).ApiDataUpdaterThread(self, refresh_rate)
+        return self.ApiDataUpdaterThread(self, refresh_rate)
 
     class ApiDataUpdaterThread(threading.Thread):
 
@@ -61,9 +61,7 @@ class Wallet:
             # only a SIGINT or SIGTERM from the main thread can set self.event
             while not self.event.is_set() and threading.main_thread().is_alive():
 
-                addresses = self.wallet_instance.receiving_addresses + \
-                            self.wallet_instance.change_addresses + \
-                            self.wallet_instance.used_addresses
+                addresses = self.wallet_instance.all_addresses
 
                 bd = blockchain.blockchain_api(config.BLOCKCHAIN_API_SOURCE, addresses)
                 price_data = price.BitcoinPrice(currency=config.FIAT, source=config.PRICE_API_SOURCE)
@@ -227,6 +225,10 @@ class Wallet:
     @property
     def used_addresses(self):
         return self.data_store.get_value('ADDRESSES_USED')
+
+    @property
+    def all_addresses(self):
+        return self.receiving_addresses + self.change_addresses + self.used_addresses
 
     @property
     def is_segwit(self):
