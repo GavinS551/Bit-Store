@@ -74,7 +74,7 @@ class Wallet:
                         'PRICE': price_data.price,
                         'UNSPENT_OUTS': bd.unspent_outputs
                     }
-                    self.connection_error = None
+                    self.connection_error = False
 
                 except (requests.exceptions.ConnectionError,
                         requests.exceptions.Timeout,
