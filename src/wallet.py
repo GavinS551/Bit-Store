@@ -63,7 +63,7 @@ class Wallet:
 
                 addresses = self.wallet_instance.all_addresses
 
-                bd = blockchain.blockchain_api(config.BLOCKCHAIN_API_SOURCE, addresses)
+                bd = blockchain.blockchain_api(addresses)
                 price_data = price.BitcoinPrice(currency=config.FIAT, source=config.PRICE_API_SOURCE)
 
                 try:

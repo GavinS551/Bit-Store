@@ -4,9 +4,10 @@ import abc
 import requests
 
 from . import btc_verify
+from . import config
 
 
-def blockchain_api(source, addresses, timeout=10):
+def blockchain_api(addresses, source=config.BLOCKCHAIN_API_SOURCE, timeout=10):
 
     sources = {
         'blockchain.info': BlockchainInfo
