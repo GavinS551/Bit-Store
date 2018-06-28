@@ -14,7 +14,7 @@ def blockchain_api(addresses, source=config.BLOCKCHAIN_API_SOURCE, timeout=10):
     }
 
     if source.lower() not in sources:
-        raise ValueError(f'{source} is an invalid source')
+        raise NotImplementedError(f'{source} is an invalid source')
 
     return sources[source](addresses, timeout)
 
