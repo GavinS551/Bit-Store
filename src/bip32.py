@@ -10,7 +10,7 @@ from . import config
 from .exceptions.bip32_exceptions import *
 
 
-WORDLIST = 'wordlist.txt'
+WORDLIST = os.path.abspath('wordlist.txt')
 PBKDF2_HMAC_ITERATIONS = 2048  # used when converting mnemonic to seed
 
 
