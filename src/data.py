@@ -2,8 +2,6 @@ import os
 import hashlib
 import base64
 import json
-# import string
-# import secrets
 
 import cryptography.fernet as fernet
 
@@ -33,48 +31,6 @@ class Crypto:
         string_ = self._fernet.decrypt(token.encode('utf-8'))
         return string_.decode('utf-8')
 
-    # @staticmethod
-    # def generate_password(length, lowercase=True, uppercase=True,
-    #                       digits=True, specials=True, unambiguous=True):
-    #     """ Creates a new password, with optional arguments to include certain character types"""
-    #
-    #     # TODO: Maybe redo password requirement logic (should it *require* certain chars?)
-    #
-    #     password_limit = 100  # max password length
-    #
-    #     # lower limit is 4, to include at least one lower, upper,
-    #     # digit and special -- if they are chosen in the args
-    #     if length < 4 or length > password_limit:
-    #         raise ValueError(f'Invalid length: Must be between 4 and {password_limit}')
-    #
-    #     u = string.ascii_uppercase if uppercase else ''
-    #     lo = string.ascii_lowercase if lowercase else ''
-    #     d = string.digits if digits else ''
-    #     s = '!@#$%^&*()' if specials else ''
-    #     chars = u + lo + d + s
-    #
-    #     ambiguous_chars = 'IlO01'
-    #
-    #     if chars == '':
-    #         raise Exception('No character types chosen')
-    #
-    #     while True:
-    #         password = ''.join(secrets.choice(chars) for _ in range(length))
-    #
-    #         # Password requirements
-    #         if all([
-    #             any(c.islower() for c in password)
-    #             if lowercase else True,
-    #             any(c.isupper() for c in password)
-    #             if uppercase else True,
-    #             any(c.isdigit() for c in password)
-    #             if digits else True,
-    #             any(c in s for c in password)
-    #             if specials else True,
-    #             not any(c in ambiguous_chars for c in password)
-    #             if unambiguous else True
-    #         ]):
-    #             return password
 
 # TODO: check if this class needs to actually check for existence of file
 class DataStore(Crypto):
@@ -93,7 +49,7 @@ class DataStore(Crypto):
                     dw.write(self.encrypt(self.json_blank_template()))
 
         if not self.check_password():
-            raise IncorrectPassword('Entered password is incorrect')
+            raise IncorrectPasswordError('Entered password is incorrect')
 
     @property
     def _data(self):

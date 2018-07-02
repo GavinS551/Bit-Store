@@ -1,2 +1,2 @@
-class IncorrectPassword(Exception):
+class IncorrectPasswordError(Exception):
     pass
