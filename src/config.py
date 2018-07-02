@@ -3,7 +3,7 @@ import pathlib
 import json
 
 
-DATA_DIR = os.path.join(pathlib.Path.home(), '.BTC-WALLET')
+DATA_DIR = os.path.join(pathlib.Path.home(), '.Bit-Store')
 CONFIG_FILE = os.path.join(DATA_DIR, 'config.json')
 
 
