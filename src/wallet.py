@@ -6,7 +6,7 @@ import shutil
 
 import requests.exceptions
 
-from . import data, bip32, config, blockchain, price
+from . import data, bip32, config, blockchain, price, tx
 from .exceptions.wallet_exceptions import *
 
 
@@ -64,7 +64,7 @@ class Wallet:
                 addresses = self.wallet_instance.all_addresses
 
                 bd = blockchain.blockchain_api(addresses)
-                price_data = price.BitcoinPrice(currency=config.FIAT, source=config.PRICE_API_SOURCE)
+                price_data = price.BitcoinPrice()
 
                 try:
                     api_data = {
@@ -90,6 +90,9 @@ class Wallet:
                 # if old_keys isn't an empty list
                 if old_keys and not self.event.is_set():
                     _update_api_data(old_keys)
+
+                # if new transactions have been updated, used addresses are set appropriately
+                self.wallet_instance._set_used_addresses_()
 
                 self.event.wait(self.refresh_rate)
 
@@ -163,27 +166,34 @@ class Wallet:
             self.updater_thread = self._create_api_updater_thread(refresh_rate=10)
             self.updater_thread.start()
 
-    def set_address_used(self, address):
+    def _set_addresses_used(self, addresses):
         r_addrs = self.receiving_addresses
         c_addrs = self.change_addresses
         u_addrs = self.used_addresses
 
-        if address not in r_addrs + c_addrs:
-            raise ValueError('Address not found!)')
+        for address in addresses:
 
-        else:
-
-            if address in r_addrs:
-                addr_index = r_addrs.index(address)
-                u_addrs.append(r_addrs.pop(addr_index))
+            if address not in r_addrs + c_addrs:
+                raise ValueError('Address not found!)')
 
             else:
-                addr_index = c_addrs.index(address)
-                u_addrs.append(c_addrs.pop(addr_index))
+
+                if address in r_addrs:
+                    addr_index = r_addrs.index(address)
+                    u_addrs.append(r_addrs.pop(addr_index))
+
+                else:
+                    addr_index = c_addrs.index(address)
+                    u_addrs.append(c_addrs.pop(addr_index))
 
         self.data_store.write_value(**{'ADDRESSES_RECEIVING': r_addrs,
                                        'ADDRESSES_CHANGE': c_addrs,
                                        'ADDRESSES_USED': u_addrs})
+
+    def _set_used_addresses_(self):
+        """ sets all addresses with txns associated with them as used"""
+        u_addrs = [a for a in self.non_used_addresses if a in self.transactions]
+        self._set_addresses_used(u_addrs)
 
     @property
     def mnemonic(self):
@@ -226,7 +236,11 @@ class Wallet:
 
     @property
     def all_addresses(self):
-        return self.receiving_addresses + self.change_addresses + self.used_addresses
+        return self.non_used_addresses + self.used_addresses
+
+    @property
+    def non_used_addresses(self):
+        return self.receiving_addresses + self.change_addresses
 
     @property
     def is_segwit(self):
@@ -251,3 +265,16 @@ class Wallet:
     @property
     def unspent_outputs(self):
         return self.data_store.get_value('UNSPENT_OUTS')
+
+    def make_txn(self, receivers_amounts, fee, use_least_inputs=True, locktime=0):
+
+        txn = tx.Transaction(inputs_amounts=self.address_balances,
+                             outputs_amounts=receivers_amounts,
+                             change_address=self.change_addresses[0],
+                             fee=fee,
+                             is_segwit=self.is_segwit,
+                             transaction_data=self.unspent_outputs,
+                             use_least_inputs=use_least_inputs,
+                             locktime=locktime)
+
+        return txn.unsigned_txn

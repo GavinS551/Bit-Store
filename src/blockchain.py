@@ -195,7 +195,7 @@ class BlockchainInfo(BlockchainApiInterface):
             for tx in address_txns:
                 for out in tx['out']:
                     if out['spent'] is False:
-                        addr_unspent_outs.append(out)
+                        addr_unspent_outs.append(tx)
 
             # continue if there is no unspent outs for a particular address
             if not addr_unspent_outs:
