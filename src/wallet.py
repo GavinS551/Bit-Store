@@ -263,6 +263,10 @@ class Wallet:
         return self.data_store.get_value('WALLET_BAL')
 
     @property
+    def wallet_fiat_balance(self):
+        return (self.wallet_balance * 1e-8) * self.price
+
+    @property
     def unspent_outputs(self):
         return self.data_store.get_value('UNSPENT_OUTS')
 
