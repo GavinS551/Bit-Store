@@ -69,15 +69,15 @@ def reset_config_file():
         json.dump(DEFAULT_CONFIG, cf, indent=4, sort_keys=False)
 
 
-# def write_value(key, value):
-#     if key not in DEFAULT_CONFIG:
-#         raise ValueError(f'{key} is an invalid key')
-#
-#     config = read_file()
-#     config[key] = value
-#
-#     with open(CONFIG_FILE, 'w') as cf:
-#         json.dump(config, cf, indent=4, sort_keys=False)
+def write_value(key, value):
+    if key not in DEFAULT_CONFIG:
+        raise ValueError(f'{key} is an invalid key')
+
+    config = read_file()
+    config[key] = value
+
+    with open(CONFIG_FILE, 'w') as cf:
+        json.dump(config, cf, indent=4, sort_keys=False)
 
 
 init()
