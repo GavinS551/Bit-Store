@@ -108,7 +108,8 @@ class Bip32:
     def check_mnemonic(mnemonic):
         """ Returns True if mnemonic is valid and vice-versa"""
         with open(WORDLIST, 'r') as w:
-            wordlist = w.readlines()
+            wordlist = w.read().split()
+
         mnemonic = mnemonic.split(' ')
 
         if len(mnemonic) not in [12, 15, 18, 21, 24]:
