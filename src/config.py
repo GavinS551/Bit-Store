@@ -42,7 +42,9 @@ DEFAULT_CONFIG = {
 
     'BLOCKCHAIN_API_SOURCE': 'blockchain.info',
 
-    'FIAT': 'USD'
+    'FIAT': 'USD',
+
+    'UNITS': 'BTC'
 }
 
 
