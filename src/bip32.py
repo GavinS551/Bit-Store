@@ -137,7 +137,7 @@ class Bip32:
         valid_index_chars = string.digits + "'"
         split_path = path.split('/')
 
-        if not all([True for c in path if c in valid_chars]):
+        if not all([c in valid_chars for c in path]):
             return False
 
         for idx in split_path:
