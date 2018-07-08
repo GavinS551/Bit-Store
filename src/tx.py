@@ -21,8 +21,8 @@ class Transaction:
         :param locktime: locktime of btc txn
         """
 
-        self.senders_amounts = inputs_amounts
-        self.receivers_amounts = outputs_amounts
+        self.inputs_amounts = inputs_amounts
+        self.outputs_amounts = outputs_amounts
         self.change_address = change_address
         self.fee = fee
         self.is_segwit = is_segwit
@@ -32,7 +32,6 @@ class Transaction:
 
         self.change_amount = 0
         self.chosen_inputs = self._choose_input_addresses()
-
         self.unsigned_txn = self._make_unsigned_txn()
 
     @staticmethod
@@ -44,7 +43,7 @@ class Transaction:
         if self.use_least_inputs:
 
             total_to_spend = 0
-            for i in self.receivers_amounts.values():
+            for i in self.outputs_amounts.values():
                 total_to_spend += i
             total_to_spend += self.fee
 
@@ -52,7 +51,7 @@ class Transaction:
                 raise ValueError('amount to send has to be > 0')
 
             addresses = []
-            for address, amount in sorted(self.senders_amounts.items(),
+            for address, amount in sorted(self.inputs_amounts.items(),
                                           key=lambda x: x[1], reverse=True):
 
                 addresses.append(address)
@@ -73,10 +72,10 @@ class Transaction:
 
         # adding change address to outputs, if there is leftover balance
         if self.change_amount > 0:
-            self.receivers_amounts[self.change_address] = self.change_amount
+            self.outputs_amounts[self.change_address] = self.change_amount
 
         outputs = []
-        for i, (addr, amount) in enumerate(self.receivers_amounts.items()):
+        for i, (addr, amount) in enumerate(self.outputs_amounts.items()):
 
             if addr[0] == '1':
                 out_script = P2pkhScript
