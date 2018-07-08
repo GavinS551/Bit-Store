@@ -75,10 +75,10 @@ class Bip32:
 
         # Checking integrity of word list file
         with open(WORDLIST, 'rb') as w:
-            checksum = b'Q\xca"d\xf5\xb3\xadS*Mm\xae\x17^\x17P'
-            if checksum != hashlib.md5(w.read()).digest():
+            wl_hash = b'Q\xca"d\xf5\xb3\xadS*Mm\xae\x17^\x17P'
+            if wl_hash != hashlib.md5(w.read()).digest():
                 raise Exception('ERROR: Wordlist is not BIP39 valid '
-                                '(INVALID MD5 CHECKSUM)')
+                                '(INVALID MD5 HASH)')
 
         # length of initial entropy in bytes
         ent_len = len_v_byte_size[length]
