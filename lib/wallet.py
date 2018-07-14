@@ -196,6 +196,19 @@ class Wallet:
         u_addrs = [a for a in self.non_used_addresses if a in self.transactions]
         self._set_addresses_used(u_addrs)
 
+    def make_txn(self, receivers_amounts, fee, use_least_inputs=True, locktime=0):
+
+        txn = tx.Transaction(inputs_amounts=self.address_balances,
+                             outputs_amounts=receivers_amounts,
+                             change_address=self.change_addresses[0],
+                             fee=fee,
+                             is_segwit=self.is_segwit,
+                             transaction_data=self.unspent_outputs,
+                             use_least_inputs=use_least_inputs,
+                             locktime=locktime)
+
+        return txn.unsigned_txn
+
     @property
     def xpub(self):
         return self.data_store.get_value('XPUB')
@@ -285,16 +298,3 @@ class Wallet:
 
         else:
             raise IncorrectPasswordError
-
-    def make_txn(self, receivers_amounts, fee, use_least_inputs=True, locktime=0):
-
-        txn = tx.Transaction(inputs_amounts=self.address_balances,
-                             outputs_amounts=receivers_amounts,
-                             change_address=self.change_addresses[0],
-                             fee=fee,
-                             is_segwit=self.is_segwit,
-                             transaction_data=self.unspent_outputs,
-                             use_least_inputs=use_least_inputs,
-                             locktime=locktime)
-
-        return txn.unsigned_txn
