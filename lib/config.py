@@ -7,47 +7,6 @@ DATA_DIR = os.path.join(pathlib.Path.home(), '.Bit-Store')
 CONFIG_FILE = os.path.join(DATA_DIR, 'config.json')
 
 
-DEFAULT_CONFIG = {
-
-    'STANDARD_DATA_FORMAT': {
-            'MNEMONIC': '',
-            'XPRIV': '',
-            'XPUB': '',
-            'PATH': '',
-            'GAP_LIMIT': 0,
-            'SEGWIT': True,
-            'ADDRESSES_RECEIVING': [],
-            'ADDRESSES_CHANGE': [],
-            'ADDRESSES_USED': [],
-            'ADDRESS_BALS': {},
-            'TXNS': {},
-            'PRICE': 0.0,
-            'WALLET_BAL': 0,
-            'UNSPENT_OUTS': {}
-    },
-
-    # Sensitive data must be stored as a string due to limitations in data.py's
-    # handling of sensitive data encryption
-    'SENSITIVE_DATA': [
-            'MNEMONIC',
-            'XPRIV',
-    ],
-
-    'BIP32_PATHS': {
-            'bip49path': "49'/0'/0'",
-            'bip44path': "44'/0'/0'"
-    },
-
-    'PRICE_API_SOURCE': 'coinmarketcap',
-
-    'BLOCKCHAIN_API_SOURCE': 'blockchain.info',
-
-    'FIAT': 'USD',
-
-    'UNITS': 'BTC'
-}
-
-
 def init():
     # creates program data dir if it doesn't exist
     if not os.path.isdir(DATA_DIR):
@@ -84,10 +43,50 @@ init()
 _CONFIG_VARS = read_file()
 
 
-# CONFIG VARIABLES
-STANDARD_DATA_FORMAT = _CONFIG_VARS['STANDARD_DATA_FORMAT']
+DEFAULT_CONFIG = {
 
-SENSITIVE_DATA = _CONFIG_VARS['SENSITIVE_DATA']
+    'BIP32_PATHS': {
+        'bip49path': "49'/0'/0'",
+        'bip44path': "44'/0'/0'"
+    },
+
+    'PRICE_API_SOURCE': 'coinmarketcap',
+
+    'BLOCKCHAIN_API_SOURCE': 'blockchain.info',
+
+    'FIAT': 'USD',
+
+    'UNITS': 'BTC'
+}
+
+
+STANDARD_DATA_FORMAT = {
+    'MNEMONIC': '',
+    'XPRIV': '',
+    'XPUB': '',
+    'PATH': '',
+    'GAP_LIMIT': 0,
+    'SEGWIT': True,
+    'ADDRESSES_RECEIVING': [],
+    'ADDRESSES_CHANGE': [],
+    'ADDRESSES_USED': [],
+    'ADDRESS_BALS': {},
+    'TXNS': {},
+    'PRICE': 0.0,
+    'WALLET_BAL': 0,
+    'UNSPENT_OUTS': {},
+    'PASSWORD_HASH': ''
+}
+
+# Sensitive data must be stored as a string due to limitations in data.py's
+# handling of sensitive data encryption
+SENSITIVE_DATA = [
+    'MNEMONIC',
+    'XPRIV',
+]
+
+
+# CONFIG VARIABLES FROM FILE
 
 BIP32_PATHS = _CONFIG_VARS['BIP32_PATHS']
 
