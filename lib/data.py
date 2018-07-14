@@ -74,7 +74,7 @@ class DataStore(Crypto):
         data = self._data
         for k, v in kwargs.items():
 
-            if k not in data and allow_new_key is False:
+            if k not in config.STANDARD_DATA_FORMAT and allow_new_key is False:
                 raise ValueError(f'Entered key ({k}) is not valid!')
 
             else:
