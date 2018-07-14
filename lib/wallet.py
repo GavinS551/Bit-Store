@@ -8,6 +8,7 @@ import requests.exceptions
 
 from . import data, bip32, config, blockchain, price, tx
 from .exceptions.wallet_exceptions import *
+from .exceptions.data_exceptions import IncorrectPasswordError
 
 
 class Wallet:
@@ -196,21 +197,6 @@ class Wallet:
         self._set_addresses_used(u_addrs)
 
     @property
-    def mnemonic(self):
-        return self.data_store.get_value('MNEMONIC')
-
-    @property
-    def xpriv(self):
-        return self.data_store.get_value('XPRIV')
-
-    @property
-    def address_wifkey_pairs(self):
-        _bip32 = bip32.Bip32(key=self.xpriv, path=self.path,
-                             segwit=self.is_segwit, gap_limit=self.gap_limit)
-
-        return _bip32.address_wifkey_pairs()
-
-    @property
     def xpub(self):
         return self.data_store.get_value('XPUB')
 
@@ -235,12 +221,12 @@ class Wallet:
         return self.data_store.get_value('ADDRESSES_USED')
 
     @property
-    def all_addresses(self):
-        return self.non_used_addresses + self.used_addresses
-
-    @property
     def non_used_addresses(self):
         return self.receiving_addresses + self.change_addresses
+
+    @property
+    def all_addresses(self):
+        return self.non_used_addresses + self.used_addresses
 
     @property
     def is_segwit(self):
@@ -269,6 +255,36 @@ class Wallet:
     @property
     def unspent_outputs(self):
         return self.data_store.get_value('UNSPENT_OUTS')
+
+    # attributes below require a password to return for more security
+
+    def get_address_wifkey_pairs(self, password):
+
+        if self.data_store.validate_password_hash(password):
+
+            _bip32 = bip32.Bip32(key=self.get_xpriv(password), path=self.path,
+                                 segwit=self.is_segwit, gap_limit=self.gap_limit)
+
+            return _bip32.address_wifkey_pairs()
+
+        else:
+            raise IncorrectPasswordError
+
+    def get_mnemonic(self, password):
+
+        if self.data_store.validate_password_hash(password):
+            return self.data_store.get_value('MNEMONIC')
+
+        else:
+            raise IncorrectPasswordError
+
+    def get_xpriv(self, password):
+
+        if self.data_store.validate_password_hash(password):
+            return self.data_store.get_value('XPRIV')
+
+        else:
+            raise IncorrectPasswordError
 
     def make_txn(self, receivers_amounts, fee, use_least_inputs=True, locktime=0):
 
