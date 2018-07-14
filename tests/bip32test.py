@@ -1,6 +1,6 @@
 import unittest
 
-from src.bip32 import *
+from lib.bip32 import *
 
 
 class Bip32Test(unittest.TestCase):
@@ -53,6 +53,7 @@ class Bip32Test(unittest.TestCase):
     def test_check_gap_limit_setter(self):
         self.bip32.set_gap_limit(14)
         self.assertEqual(len(self.bip32.addresses()[0]), 14)
+
 
 if __name__ == '__main__':
     unittest.main()
