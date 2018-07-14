@@ -51,6 +51,10 @@ class DataStore(Crypto):
         if not self.check_password():
             raise IncorrectPasswordError('Entered password is incorrect')
 
+        # Storing password hash for password validation independent of
+        # this class i.e Wallet class for sensitive information
+        self.write_value(PASSWORD_HASH=hashlib.sha256(password.encode('utf-8')).hexdigest())
+
     @property
     def _data(self):
         with open(self.file_path, 'r') as d:
