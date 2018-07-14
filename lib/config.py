@@ -78,6 +78,7 @@ STANDARD_DATA_FORMAT = {
     'PASSWORD_HASH': ''
 }
 
+
 # Sensitive data must be stored as a string due to limitations in data.py's
 # handling of sensitive data encryption
 SENSITIVE_DATA = [
