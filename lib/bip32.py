@@ -6,7 +6,7 @@ import string
 import bitstring
 from bip32utils.BIP32Key import BIP32Key, BIP32_HARDEN
 
-from . import config
+from . import config, zero_mem
 from .exceptions.bip32_exceptions import *
 
 
@@ -172,6 +172,15 @@ class Bip32:
                 ck = ck.ChildKey(int(i[:-1]))
 
         return ck
+
+    def delete_sensitive_data(self):
+        zero_mem.zeromem(self.master_private_key)
+
+        if self.mnemonic is not None:
+            zero_mem.zeromem(self.mnemonic)
+
+        self.bip32.SetPublic()
+        del self.bip32
 
     def addresses(self):
         """ Returns a tuple of receiving and change addresses up to the limit specified"""

@@ -113,9 +113,6 @@ class Wallet:
         # before exception is raised
         try:
 
-            bip32_ = bip32_obj
-            del globals()['bip32_obj']
-
             if not os.path.isdir(dir_):
                 os.makedirs(dir_, exist_ok=True)
 
@@ -132,24 +129,22 @@ class Wallet:
             d_store = data.DataStore(data_file_path, password)
 
             # only gen addresses once, and not twice for receiving and change
-            addresses = bip32_.addresses()
+            addresses = bip32_obj.addresses()
 
             info = {
-                'MNEMONIC': bip32_.mnemonic,
-                'XPRIV': bip32_.master_private_key,
-                'XPUB': bip32_.master_public_key,
-                'PATH': bip32_.path,
-                'GAP_LIMIT': bip32_.gap_limit,
-                'SEGWIT': bip32_.is_segwit,
+                'MNEMONIC': bip32_obj.mnemonic,
+                'XPRIV': bip32_obj.master_private_key,
+                'XPUB': bip32_obj.master_public_key,
+                'PATH': bip32_obj.path,
+                'GAP_LIMIT': bip32_obj.gap_limit,
+                'SEGWIT': bip32_obj.is_segwit,
                 'ADDRESSES_RECEIVING': addresses[0],
                 'ADDRESSES_CHANGE': addresses[1],
             }
 
             d_store.write_value(**info)
 
-            # Minimise amount of time sensitive data is in RAM
-            # del bip32_
-            # del d_store
+            bip32_obj.delete_sensitive_data()
 
             return cls(name, password, offline=offline)
 

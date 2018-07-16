@@ -3,7 +3,7 @@ import sys
 import ctypes
 import platform
 
-
+# TODO: ADD TO BIP32
 def zeromem(string):
     if platform.system() == 'Windows':
         location = id(string) + 20
@@ -16,4 +16,4 @@ def zeromem(string):
         memset(location, 0, size)
 
     else:
-        print('This feature is only supported on Windows')
+        print('"zero_mem.py": This feature is only supported on Windows')

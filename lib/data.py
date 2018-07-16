@@ -25,6 +25,7 @@ class Crypto:
 
     def encrypt(self, string_):
         token = self._fernet.encrypt(string_.encode('utf-8'))
+        zero_mem.zeromem(string_)
         return token.decode('utf-8')
 
     def decrypt(self, token):
