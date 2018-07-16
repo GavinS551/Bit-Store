@@ -11,6 +11,9 @@ from .exceptions.wallet_exceptions import *
 from .exceptions.data_exceptions import IncorrectPasswordError
 
 
+API_REFRESH_RATE = 10
+
+
 class Wallet:
 
     def _create_api_updater_thread(self, refresh_rate):
@@ -82,7 +85,7 @@ class Wallet:
                         requests.exceptions.HTTPError) as ex:
 
                     self.connection_error = ex
-                    self.event.wait(30)
+                    self.event.wait(self.refresh_rate)
                     continue
 
                 # data that needs to be updated
@@ -111,6 +114,7 @@ class Wallet:
         try:
 
             bip32_ = bip32_obj
+            del globals()['bip32_obj']
 
             if not os.path.isdir(dir_):
                 os.makedirs(dir_, exist_ok=True)
@@ -144,8 +148,8 @@ class Wallet:
             d_store.write_value(**info)
 
             # Minimise amount of time sensitive data is in RAM
-            del bip32_
-            del d_store
+            # del bip32_
+            # del d_store
 
             return cls(name, password, offline=offline)
 
@@ -164,7 +168,7 @@ class Wallet:
 
         # offline for debugging purposes
         if not offline:
-            self.updater_thread = self._create_api_updater_thread(refresh_rate=10)
+            self.updater_thread = self._create_api_updater_thread(refresh_rate=API_REFRESH_RATE)
             self.updater_thread.start()
 
     def _set_addresses_used(self, addresses):
@@ -269,7 +273,7 @@ class Wallet:
     def unspent_outputs(self):
         return self.data_store.get_value('UNSPENT_OUTS')
 
-    # attributes below require a password to return for more security
+    # attributes below require a password to return for more security when implemented
 
     def get_address_wifkey_pairs(self, password):
 

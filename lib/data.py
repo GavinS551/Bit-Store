@@ -5,7 +5,7 @@ import json
 
 import cryptography.fernet as fernet
 
-from . import config
+from . import config, zero_mem
 from .exceptions.data_exceptions import *
 
 
@@ -13,8 +13,8 @@ class Crypto:
 
     def __init__(self, password):
         self._fernet = fernet.Fernet(self.key_from_password(password))
-        # delete password variable
-        del password  # TODO: figure out if this does anything
+        # delete password variable from memory
+        zero_mem.zeromem(password)
 
     @staticmethod
     def key_from_password(password, iterations=100_000):
