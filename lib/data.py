@@ -33,12 +33,12 @@ class Crypto:
         return string_.decode('utf-8')
 
 
-# TODO: check if this class needs to actually check for existence of file
 class DataStore(Crypto):
 
     def __init__(self, file_path, password):
         super().__init__(password)
         self.file_path = file_path
+        self.json_blank_template = json.dumps(config.STANDARD_DATA_FORMAT)
 
         if not os.path.exists(self.file_path):
             raise ValueError(f'{self.file_path} does not exist!')
@@ -47,7 +47,7 @@ class DataStore(Crypto):
         with open(self.file_path, 'r') as d:
             if d.read() == '':
                 with open(self.file_path, 'w') as dw:
-                    dw.write(self.encrypt(self.json_blank_template()))
+                    dw.write(self.encrypt(self.json_blank_template))
 
         if not self.check_password():
             raise IncorrectPasswordError('Entered password is incorrect')
@@ -66,10 +66,6 @@ class DataStore(Crypto):
         json.dumps(data)
         with open(self.file_path, 'w') as d:
             d.write(self.encrypt(json.dumps(data)))
-
-    @staticmethod
-    def json_blank_template():
-        return json.dumps(config.STANDARD_DATA_FORMAT)
 
     def write_value(self, allow_new_key=False, **kwargs):
         data = self._data
