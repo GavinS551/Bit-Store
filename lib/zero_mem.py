@@ -3,7 +3,7 @@ import sys
 import ctypes
 import platform
 
-# TODO: ADD TO BIP32
+
 def zeromem(string):
     if platform.system() == 'Windows':
         location = id(string) + 20
