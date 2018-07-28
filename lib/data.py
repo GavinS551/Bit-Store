@@ -11,10 +11,16 @@ from .exceptions.data_exceptions import *
 
 class Crypto:
 
-    def __init__(self, password):
+    def __init__(self, password, preserve_password=False):
+        # preserve password arg is used in situations like
+        # wallet creation in wallet.py, where two data_store objects
+        # are created in quick succession (in new_wallet cls method and __init__)
+
         self._fernet = fernet.Fernet(self.key_from_password(password))
-        # delete password variable from memory
-        zero_mem.zeromem(password)
+
+        # delete password variable from memory if not preserve_password
+        if not preserve_password:
+            zero_mem.zeromem(password)
 
     @staticmethod
     def key_from_password(password, iterations=100_000):
@@ -35,8 +41,8 @@ class Crypto:
 
 class DataStore(Crypto):
 
-    def __init__(self, file_path, password):
-        super().__init__(password)
+    def __init__(self, file_path, password, preserve_password=False):
+        super().__init__(password, preserve_password=preserve_password)
         self.file_path = file_path
         self.json_blank_template = json.dumps(config.STANDARD_DATA_FORMAT)
 
