@@ -95,7 +95,7 @@ class Bip32:
         word_indexes = [int(b, 2) for b in split_bits]
 
         with open(WORDLIST, 'r') as w:
-            word_list = w.readlines()
+            word_list = w.read().split()
             mnemonic = []
             for i in word_indexes:
                 mnemonic.append(word_list[i])
