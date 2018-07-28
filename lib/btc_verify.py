@@ -8,7 +8,7 @@ from base58 import alphabet
 def decode_base58(bc, length):
     n = 0
     for char in bc:
-        n = n * 58 + alphabet.index(char)
+        n = n * 58 + alphabet.decode().index(char)
     return n.to_bytes(length, 'big')
 
 
