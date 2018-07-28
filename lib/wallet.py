@@ -126,7 +126,9 @@ class Wallet:
             with open(data_file_path, 'w+'):
                 pass
 
-            d_store = data.DataStore(data_file_path, password)
+            # password is preserved so it can be passed into __init__ of Wallet,
+            # where it will then be removed in self.data_store initialisation
+            d_store = data.DataStore(data_file_path, password, preserve_password=True)
 
             # only gen addresses once, and not twice for receiving and change
             addresses = bip32_obj.addresses()
