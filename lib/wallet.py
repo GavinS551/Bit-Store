@@ -8,7 +8,6 @@ import requests.exceptions
 
 from . import data, bip32, config, blockchain, price, tx
 from .exceptions.wallet_exceptions import *
-from .exceptions.data_exceptions import IncorrectPasswordError
 
 
 API_REFRESH_RATE = 10
@@ -282,7 +281,7 @@ class Wallet:
             return _bip32.address_wifkey_pairs()
 
         else:
-            raise IncorrectPasswordError
+            raise data.IncorrectPasswordError
 
     def get_mnemonic(self, password):
 
@@ -290,7 +289,7 @@ class Wallet:
             return self.data_store.get_value('MNEMONIC')
 
         else:
-            raise IncorrectPasswordError
+            raise data.IncorrectPasswordError
 
     def get_xpriv(self, password):
 
@@ -298,4 +297,4 @@ class Wallet:
             return self.data_store.get_value('XPRIV')
 
         else:
-            raise IncorrectPasswordError
+            raise data.IncorrectPasswordError
