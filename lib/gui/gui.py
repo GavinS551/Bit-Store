@@ -74,51 +74,6 @@ class WalletSelect(ttk.Frame):
         # attributes below will be defined in gui_draw() method
         self.wallet_list = None
 
-        # self.title_label = ttk.Label(self, text='Select Wallet:',
-        #                              font=(config.FONT, 14, 'bold'))
-        # self.title_label.grid(row=0, column=0, sticky='n', pady=5)
-        #
-        # self.wallet_list = tk.Listbox(self, width=30, height=10, font=(config.FONT, 14))
-        # for i, w in enumerate(self.wallets):
-        #     self.wallet_list.insert(i, w)
-        #
-        # self.wallet_list.grid(row=1, column=0, pady=10, padx=10, rowspan=3)
-        #
-        # self.scroll_bar = ttk.Scrollbar(self)
-        # self.scroll_bar.grid(row=1, column=1, rowspan=3, sticky='nsw')
-        # self.scroll_bar.config(command=self.wallet_list.yview)
-        #
-        # self.wallet_list.config(yscrollcommand=self.scroll_bar.set)
-        #
-        # self.options_frame = ttk.Frame(self)
-        # self.options_frame.grid(row=1, column=2)
-        #
-        # self.options_label = ttk.Label(self.options_frame, text='Options:',
-        #                                font=(config.FONT, 14, 'bold'))
-        # self.options_label.grid(row=0, column=0, padx=10)
-        #
-        # self.select_button = ttk.Button(self.options_frame, text='Select Wallet',
-        #                                 command=self.select_wallet)
-        # self.select_button.grid(row=1, column=0, pady=20, sticky='ew')
-        #
-        # # binds a double click on listbox to trigger same method as button
-        # # not sure why this only works with a lambda and one arg...
-        # self.wallet_list.bind('<Double-1>', lambda x: self.select_wallet())
-        #
-        # self.new_wallet_button = ttk.Button(self.options_frame, text='New Wallet',
-        #                                     command=lambda: self.root.show_frame(WalletCreation))
-        # self.new_wallet_button.grid(row=2, column=0, sticky='ew')
-        #
-        # self.import_wallet_button = ttk.Button(self.options_frame, text='Import Wallet')
-        # self.import_wallet_button.grid(row=3, column=0, sticky='ew')
-        #
-        # self.edit_wallet_button = ttk.Button(self.options_frame, text='Edit Wallet')
-        # self.edit_wallet_button.grid(row=4, column=0, sticky='ew')
-        #
-        # self.settings_button = ttk.Button(self.options_frame, text='Settings',
-        #                                   command=lambda: Settings(self.root))
-        # self.settings_button.grid(row=5, column=0, pady=20, sticky='ew')
-
     def gui_draw(self):
         title_label = ttk.Label(self, text='Select Wallet:',
                                 font=(config.FONT, 14, 'bold'))
@@ -196,66 +151,6 @@ class WalletCreation(ttk.Frame):
         self.segwit_check = None
         self.name_entry = None
         self.mnemonic_passphrase_entry = None
-
-        # self.title = ttk.Label(self, text='Wallet Creation:', font=(config.FONT, 14, 'bold'))
-        # self.title.grid(row=0, column=0, sticky='n', pady=10)
-        #
-        # self.required_label = ttk.Label(self, text='* Required entries', font=self.tiny_font)
-        # self.required_label.grid(row=0, column=1)
-        #
-        # self.name_label = ttk.Label(self, text='Enter Name:*', font=self.small_font)
-        # self.name_label.grid(row=1, column=0, sticky='w')
-        #
-        # self.name_entry = ttk.Entry(self)
-        # self.name_entry.grid(row=1, column=1, pady=5)
-        #
-        # self.password_label = ttk.Label(self, text='Enter Password:*', font=self.small_font)
-        # self.password_label.grid(row=2, column=0, sticky='w')
-        #
-        # self.password_entry = ttk.Entry(self, show='*')
-        # self.password_entry.grid(row=2, column=1, pady=5)
-        #
-        # self.confirm_pass_label = ttk.Label(self, text='Confirm Password:*', font=self.small_font)
-        # self.confirm_pass_label.grid(row=3, column=0, sticky='w')
-        #
-        # self.confirm_pass_entry = ttk.Entry(self, show='*')
-        # self.confirm_pass_entry.grid(row=3, column=1, pady=5)
-        #
-        # self.path_label = ttk.Label(self, text='Custom Derivation Path:', font=self.small_font)
-        # self.path_label.grid(row=4, column=0, sticky='w')
-        #
-        # self.path_entry = ttk.Entry(self)
-        # self.path_entry.insert(tk.END, config.BIP32_PATHS['bip49path'])
-        # self.path_entry.grid(row=4, column=1, pady=5)
-        #
-        # self.optional_label0 = ttk.Label(self, text='(optional)', font=self.tiny_font)
-        # self.optional_label0.grid(row=4, column=2, padx=5)
-        #
-        # self.segwit_label = ttk.Label(self, text='Segwit Enabled:', font=self.small_font)
-        # self.segwit_label.grid(row=5, column=0, sticky='w')
-        #
-        # self.segwit_check = tk.IntVar(value=1)
-        # self.segwit_enabled_check = ttk.Checkbutton(self, variable=self.segwit_check)
-        # self.segwit_enabled_check.grid(row=5, column=1, pady=5)
-        #
-        # self.recommend_label = ttk.Label(self, text='(recommended)', font=self.tiny_font)
-        # self.recommend_label.grid(row=5, column=2)
-        #
-        # self.mnemonic_passphrase_label = ttk.Label(self, text='Mnemonic Passphrase:', font=self.small_font)
-        # self.mnemonic_passphrase_label.grid(row=6, column=0, sticky='w')
-        #
-        # self.mnemonic_passphrase_entry = ttk.Entry(self)
-        # self.mnemonic_passphrase_entry.grid(row=6, column=1, pady=5)
-        #
-        # self.optional_label1 = ttk.Label(self, text='(optional)', font=self.tiny_font)
-        # self.optional_label1.grid(row=6, column=2, padx=5)
-        #
-        # self.back_button = ttk.Button(self, text='Back',
-        #                               command=lambda: self.root.show_frame(WalletSelect))
-        # self.back_button.grid(row=7, column=0, sticky='sw', pady=20)
-        #
-        # self.create_button = ttk.Button(self, text='Create Wallet', command=self.create_wallet)
-        # self.create_button.grid(row=7, column=1, sticky='se', pady=20)
 
     def gui_draw(self):
         title = ttk.Label(self, text='Wallet Creation:', font=(config.FONT, 14, 'bold'))
