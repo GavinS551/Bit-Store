@@ -3,13 +3,32 @@ from tkinter import ttk, messagebox
 
 import os
 
+from . import ttk_simpledialog as simpledialog
+
 from .. import wallet, config, bip32
+from ..exceptions.data_exceptions import IncorrectPasswordError
 
 
 ICON = os.path.join(os.path.dirname(__file__), 'assets', 'bc_logo.ico')
 
 
+class TTKSimpleDialog(simpledialog._QueryString):
+    """ sub-classed _QueryString that sets the project icon """
+
+    def body(self, master):
+        super().body(master)
+        self.iconbitmap(ICON)
+
+    @staticmethod
+    def askstring(title, prompt, **kwargs):
+        d = TTKSimpleDialog(title, prompt, **kwargs)
+        return d.result
+
+
 class RootApplication(tk.Tk):
+
+    small_font = (config.FONT, 10)
+    tiny_font = (config.FONT, 8)
 
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
@@ -17,7 +36,7 @@ class RootApplication(tk.Tk):
         self.wm_title('Bit-Store')
         self.iconbitmap(ICON)
 
-        self.master_frame = ttk.Frame(self)
+        self.master_frame = ttk.Frame(self, padding=20)
 
         self.master_frame.grid_columnconfigure(0, weight=1)
         self.master_frame.grid_rowconfigure(0, weight=1)
@@ -34,7 +53,7 @@ class RootApplication(tk.Tk):
         # starting frame
         self.show_frame(WalletSelect)
 
-        # init will be done later, this is a placeholder
+        # init will be done in other frames, this is a placeholder
         self.btc_wallet = wallet.Wallet
 
     def show_frame(self, frame):
@@ -46,6 +65,10 @@ class RootApplication(tk.Tk):
     def wallet_init(self, name, password):
         self.btc_wallet = wallet.Wallet(name=name, password=password)
 
+    def password_prompt(self):
+        return TTKSimpleDialog.askstring('Password Entry', 'Enter Password:',
+                                         show='*', parent=self.master_frame)
+
 
 class Settings(tk.Toplevel):
 
@@ -53,12 +76,6 @@ class Settings(tk.Toplevel):
         tk.Toplevel.__init__(self, root.master_frame)
         self.wm_title('Settings')
         self.wm_iconbitmap(ICON)
-
-
-class PasswordPrompt(tk.Toplevel):
-
-    def __init__(self, root):
-        tk.Toplevel.__init__(self, root.master_frame)
 
 
 class MainWallet(ttk.Frame):
@@ -69,7 +86,7 @@ class WalletSelect(ttk.Frame):
 
     def __init__(self, root):
         self.root = root
-        ttk.Frame.__init__(self, self.root.master_frame, padding=10)
+        ttk.Frame.__init__(self, self.root.master_frame)
 
         # attributes below will be defined in gui_draw() method
         self.wallet_list = None
@@ -129,20 +146,26 @@ class WalletSelect(ttk.Frame):
     def select_wallet(self):
         try:
             selected_wallet = self.wallets[self.wallet_list.curselection()[0]]
-            print(selected_wallet)
 
-        except IndexError:
-            messagebox.showerror('Error', 'No wallet selected!')
+            password = self.root.password_prompt()
+
+            self.root.btc_wallet = wallet.Wallet(name=selected_wallet,
+                                                 password=password)
+            print(self.root.btc_wallet.all_addresses)
+
+        except (IndexError, IncorrectPasswordError) as ex:
+            if isinstance(ex, IndexError):
+                messagebox.showerror('Error', 'No wallet selected!')
+
+            if isinstance(ex, IncorrectPasswordError):
+                messagebox.showerror('Error', 'Incorrect Password!')
 
 
 class WalletCreation(ttk.Frame):
 
     def __init__(self, root):
         self.root = root
-        ttk.Frame.__init__(self, self.root.master_frame, padding=10)
-
-        self.small_font = (config.FONT, 10)
-        self.tiny_font = (config.FONT, 8)
+        ttk.Frame.__init__(self, self.root.master_frame)
 
         # attributes below will be defined in gui_draw()
         self.password_entry = None
@@ -156,62 +179,62 @@ class WalletCreation(ttk.Frame):
         title = ttk.Label(self, text='Wallet Creation:', font=(config.FONT, 14, 'bold'))
         title.grid(row=0, column=0, sticky='n', pady=10)
 
-        required_label = ttk.Label(self, text='* Required entries', font=self.tiny_font)
+        required_label = ttk.Label(self, text='* Required entries', font=self.root.tiny_font)
         required_label.grid(row=0, column=1)
 
-        name_label = ttk.Label(self, text='Enter Name:*', font=self.small_font)
+        name_label = ttk.Label(self, text='Enter Name:*', font=self.root.small_font)
         name_label.grid(row=1, column=0, sticky='w')
 
         name_entry = ttk.Entry(self)
         name_entry.grid(row=1, column=1, pady=5)
 
-        password_label = ttk.Label(self, text='Enter Password:*', font=self.small_font)
+        password_label = ttk.Label(self, text='Enter Password:*', font=self.root.small_font)
         password_label.grid(row=2, column=0, sticky='w')
 
         self.password_entry = ttk.Entry(self, show='*')
         self.password_entry.grid(row=2, column=1, pady=5)
 
-        confirm_pass_label = ttk.Label(self, text='Confirm Password:*', font=self.small_font)
+        confirm_pass_label = ttk.Label(self, text='Confirm Password:*', font=self.root.small_font)
         confirm_pass_label.grid(row=3, column=0, sticky='w')
 
         self.confirm_pass_entry = ttk.Entry(self, show='*')
         self.confirm_pass_entry.grid(row=3, column=1, pady=5)
 
-        path_label = ttk.Label(self, text='Custom Derivation Path:', font=self.small_font)
+        path_label = ttk.Label(self, text='Custom Derivation Path:', font=self.root.small_font)
         path_label.grid(row=4, column=0, sticky='w')
 
         self.path_entry = ttk.Entry(self)
         self.path_entry.insert(tk.END, config.BIP32_PATHS['bip49path'])
         self.path_entry.grid(row=4, column=1, pady=5)
 
-        optional_label0 = ttk.Label(self, text='(optional)', font=self.tiny_font)
+        optional_label0 = ttk.Label(self, text='(optional)', font=self.root.tiny_font)
         optional_label0.grid(row=4, column=2, padx=5)
 
-        segwit_label = ttk.Label(self, text='Segwit Enabled:', font=self.small_font)
+        segwit_label = ttk.Label(self, text='Segwit Enabled:', font=self.root.small_font)
         segwit_label.grid(row=5, column=0, sticky='w')
 
         self.segwit_check = tk.IntVar(value=1)
         segwit_enabled_check = ttk.Checkbutton(self, variable=self.segwit_check)
         segwit_enabled_check.grid(row=5, column=1, pady=5)
 
-        recommend_label = ttk.Label(self, text='(recommended)', font=self.tiny_font)
+        recommend_label = ttk.Label(self, text='(recommended)', font=self.root.tiny_font)
         recommend_label.grid(row=5, column=2)
 
-        mnemonic_passphrase_label = ttk.Label(self, text='Mnemonic Passphrase:', font=self.small_font)
+        mnemonic_passphrase_label = ttk.Label(self, text='Mnemonic Passphrase:', font=self.root.small_font)
         mnemonic_passphrase_label.grid(row=6, column=0, sticky='w')
 
         self.mnemonic_passphrase_entry = ttk.Entry(self)
         self.mnemonic_passphrase_entry.grid(row=6, column=1, pady=5)
 
-        optional_label1 = ttk.Label(self, text='(optional)', font=self.tiny_font)
+        optional_label1 = ttk.Label(self, text='(optional)', font=self.root.tiny_font)
         optional_label1.grid(row=6, column=2, padx=5)
 
         back_button = ttk.Button(self, text='Back',
                                  command=lambda: self.root.show_frame(WalletSelect))
-        back_button.grid(row=7, column=0, sticky='sw', pady=20)
+        back_button.grid(row=7, column=0, sticky='e', padx=10, pady=20)
 
         create_button = ttk.Button(self, text='Create Wallet', command=self.create_wallet)
-        create_button.grid(row=7, column=1, sticky='se', pady=20)
+        create_button.grid(row=7, column=1, sticky='w', padx=10, pady=20)
 
     def _verify_password(self):
         return self.password_entry.get() == self.confirm_pass_entry.get()
