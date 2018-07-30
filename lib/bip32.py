@@ -58,6 +58,9 @@ class Bip32:
         # in the standard testnet format
         self.is_testnet = self.bip32.testnet
 
+        # account child key only needs to be retrieved once
+        self.account_ck = self._get_account_ck()
+
     @staticmethod
     def gen_mnemonic(length=12):
         """ Returns a new mnemonic"""
@@ -173,6 +176,7 @@ class Bip32:
 
         return ck
 
+    # methods wipes as much data from ram as is possible using python
     def delete_sensitive_data(self):
         zero_mem.zeromem(self.master_private_key)
 
@@ -181,22 +185,22 @@ class Bip32:
 
         self.bip32.SetPublic()
         del self.bip32
+        del self.account_ck
 
     def addresses(self):
         """ Returns a tuple of receiving and change addresses up to the limit specified"""
         receiving = []
         change = []
-        ck = self._get_account_ck()
+        ck = self.account_ck
 
         if self.is_segwit:
             for i in range(self.gap_limit):
                 receiving.append(ck.ChildKey(0).ChildKey(i).P2WPKHoP2SHAddress())
-            for i in range(self.gap_limit):
                 change.append(ck.ChildKey(1).ChildKey(i).P2WPKHoP2SHAddress())
+
         else:
             for i in range(self.gap_limit):
                 receiving.append(ck.ChildKey(0).ChildKey(i).Address())
-            for i in range(self.gap_limit):
                 change.append(ck.ChildKey(1).ChildKey(i).Address())
 
         return receiving, change
@@ -208,30 +212,13 @@ class Bip32:
 
         receiving = []
         change = []
-        ck = self._get_account_ck()
+        ck = self.account_ck
 
         for i in range(self.gap_limit):
             receiving.append(ck.ChildKey(0).ChildKey(i).WalletImportFormat())
-        for i in range(self.gap_limit):
             change.append(ck.ChildKey(1).ChildKey(i).WalletImportFormat())
 
         return receiving, change
-
-    # def raw_private_keys(self):
-    #     """ Returns hex bitcoin private keys"""
-    #     if not self.is_private:
-    #         raise WatchOnlyWallet('Can\'t derive private key from watch-only wallet')
-    #
-    #     receiving = []
-    #     change = []
-    #     ck = self._get_account_ck()
-    #
-    #     for i in range(self.gap_limit):
-    #         receiving.append(ck.ChildKey(0).ChildKey(i).PrivateKey().hex())
-    #     for i in range(self.gap_limit):
-    #         change.append(ck.ChildKey(1).ChildKey(i).PrivateKey().hex())
-    #
-    #     return receiving, change
 
     def address_wifkey_pairs(self):
         """ Returns a list of tuples with addresses mapped to their WIF keys """
