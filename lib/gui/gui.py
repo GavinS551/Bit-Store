@@ -7,6 +7,7 @@ from . import ttk_simpledialog as simpledialog
 
 from .. import wallet, config, bip32
 from ..exceptions.data_exceptions import IncorrectPasswordError
+from ..exceptions.gui_exceptions import *
 
 
 ICON = os.path.join(os.path.dirname(__file__), 'assets', 'bc_logo.ico')
@@ -19,6 +20,7 @@ class TTKSimpleDialog(simpledialog._QueryString):
         super().body(master)
         self.iconbitmap(ICON)
         self.geometry('250x90')
+        self.resizable(False, False)
 
     @staticmethod
     def askstring(title, prompt, **kwargs):
@@ -98,8 +100,14 @@ class WalletSelect(ttk.Frame):
         title_label.grid(row=0, column=0, sticky='n', pady=5)
 
         self.wallet_list = tk.Listbox(self, width=30, height=10, font=(config.FONT, 14))
+
+        # fill wallet_list with all wallets
         for i, w in enumerate(self.wallets):
             self.wallet_list.insert(i, w)
+
+        # make a create wallet option if there are no wallets
+        if not self.wallets:
+            self.wallet_list.insert(0, '<NEW WALLET>')
 
         self.wallet_list.grid(row=1, column=0, pady=10, padx=10, rowspan=3)
 
@@ -146,15 +154,29 @@ class WalletSelect(ttk.Frame):
 
     def select_wallet(self):
         try:
-            selected_wallet = self.wallets[self.wallet_list.curselection()[0]]
+            if self.wallet_list.curselection():
+                selected_wallet = self.wallet_list.get(tk.ACTIVE)
+
+                # if <CREATE WALLET> is selected, go to wallet creation frame
+                if selected_wallet == '<NEW WALLET>':
+                    self.root.show_frame(WalletCreation)
+                    return
+
+            else:
+                raise NoWalletSelectedError
 
             password = self.root.password_prompt()
+
+            # if the password prompt window is exited without submitting,
+            # password will be None and will raise an Exception
+            if password is None:
+                return
 
             self.root.btc_wallet = wallet.Wallet(name=selected_wallet,
                                                  password=password)
 
-        except (IndexError, IncorrectPasswordError) as ex:
-            if isinstance(ex, IndexError):
+        except (NoWalletSelectedError, IncorrectPasswordError) as ex:
+            if isinstance(ex, NoWalletSelectedError):
                 messagebox.showerror('Error', 'No wallet selected')
 
             if isinstance(ex, IncorrectPasswordError):
