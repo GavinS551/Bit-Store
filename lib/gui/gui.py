@@ -18,6 +18,7 @@ class TTKSimpleDialog(simpledialog._QueryString):
     def body(self, master):
         super().body(master)
         self.iconbitmap(ICON)
+        self.geometry('250x90')
 
     @staticmethod
     def askstring(title, prompt, **kwargs):
@@ -154,10 +155,10 @@ class WalletSelect(ttk.Frame):
 
         except (IndexError, IncorrectPasswordError) as ex:
             if isinstance(ex, IndexError):
-                messagebox.showerror('Error', 'No wallet selected!')
+                messagebox.showerror('Error', 'No wallet selected')
 
             if isinstance(ex, IncorrectPasswordError):
-                messagebox.showerror('Error', 'Incorrect Password!')
+                messagebox.showerror('Error', 'Incorrect Password')
 
 
 class WalletCreation(ttk.Frame):
@@ -176,7 +177,7 @@ class WalletCreation(ttk.Frame):
 
     def gui_draw(self):
         title = ttk.Label(self, text='Wallet Creation:', font=(config.FONT, 14, 'bold'))
-        title.grid(row=0, column=0, sticky='n', pady=10)
+        title.grid(row=0, column=0, sticky='w', pady=10)
 
         required_label = ttk.Label(self, text='* Required entries', font=self.root.tiny_font)
         required_label.grid(row=0, column=1)
@@ -184,8 +185,8 @@ class WalletCreation(ttk.Frame):
         name_label = ttk.Label(self, text='Enter Name:*', font=self.root.small_font)
         name_label.grid(row=1, column=0, sticky='w')
 
-        name_entry = ttk.Entry(self)
-        name_entry.grid(row=1, column=1, pady=5)
+        self.name_entry = ttk.Entry(self)
+        self.name_entry.grid(row=1, column=1, pady=5)
 
         password_label = ttk.Label(self, text='Enter Password:*', font=self.root.small_font)
         password_label.grid(row=2, column=0, sticky='w')
@@ -199,7 +200,7 @@ class WalletCreation(ttk.Frame):
         self.confirm_pass_entry = ttk.Entry(self, show='*')
         self.confirm_pass_entry.grid(row=3, column=1, pady=5)
 
-        path_label = ttk.Label(self, text='Custom Derivation Path:', font=self.root.small_font)
+        path_label = ttk.Label(self, text='Custom Derivation Path:  m/', font=self.root.small_font)
         path_label.grid(row=4, column=0, sticky='w')
 
         self.path_entry = ttk.Entry(self)
@@ -253,15 +254,15 @@ class WalletCreation(ttk.Frame):
 
             # error checking
             if not name:
-                raise ValueError('No name entered!')
+                raise ValueError('No name entered')
 
             if not password:
-                raise ValueError('No password entered!')
+                raise ValueError('No password entered')
 
             if not self._verify_password():
                 self.password_entry.delete(0, 'end')
                 self.confirm_pass_entry.delete(0, 'end')
-                raise ValueError('Passwords don\'t match!')
+                raise ValueError('Passwords don\'t match')
 
             if not bip32.Bip32.check_path(path):
                 raise ValueError(f'Invalid path entered: ({path})')
