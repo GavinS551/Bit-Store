@@ -151,7 +151,6 @@ class WalletSelect(ttk.Frame):
 
             self.root.btc_wallet = wallet.Wallet(name=selected_wallet,
                                                  password=password)
-            print(self.root.btc_wallet.all_addresses)
 
         except (IndexError, IncorrectPasswordError) as ex:
             if isinstance(ex, IndexError):
