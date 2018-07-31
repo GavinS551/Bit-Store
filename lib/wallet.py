@@ -210,6 +210,14 @@ class Wallet:
 
         return txn.unsigned_txn
 
+    def change_gap_limit(self, password):
+        if self.data_store.validate_password(password):
+            pass
+
+        else:
+            raise data.IncorrectPasswordError
+
+
     @property
     def xpub(self):
         return self.data_store.get_value('XPUB')
@@ -274,7 +282,7 @@ class Wallet:
 
     def get_address_wifkey_pairs(self, password):
 
-        if self.data_store.validate_password_hash(password):
+        if self.data_store.validate_password(password):
 
             _bip32 = bip32.Bip32(key=self.get_xpriv(password), path=self.path,
                                  segwit=self.is_segwit, gap_limit=self.gap_limit)
@@ -286,7 +294,7 @@ class Wallet:
 
     def get_mnemonic(self, password):
 
-        if self.data_store.validate_password_hash(password):
+        if self.data_store.validate_password(password):
             return self.data_store.get_value('MNEMONIC')
 
         else:
@@ -294,7 +302,7 @@ class Wallet:
 
     def get_xpriv(self, password):
 
-        if self.data_store.validate_password_hash(password):
+        if self.data_store.validate_password(password):
             return self.data_store.get_value('XPRIV')
 
         else:
