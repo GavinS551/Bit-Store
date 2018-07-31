@@ -106,7 +106,7 @@ class Wallet:
             raise ValueError('bip32_obj must be an instance of Bip32 class')
 
         dir_ = os.path.join(config.DATA_DIR, name)
-        data_file_path = os.path.join(dir_, 'wallet_data.json')
+        data_file_path = os.path.join(dir_, 'wallet_data')
 
         # Everything is in a try/except block so files get cleaned up
         # before exception is raised
@@ -160,7 +160,7 @@ class Wallet:
             raise
 
     def __init__(self, name, password, offline=False):
-        data_file_path = os.path.join(config.DATA_DIR, name, 'wallet_data.json')
+        data_file_path = os.path.join(config.DATA_DIR, name, 'wallet_data')
         self.data_store = data.DataStore(data_file_path, password)
 
         # offline for debugging purposes
