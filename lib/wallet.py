@@ -168,6 +168,8 @@ class Wallet:
             self.updater_thread = self._create_api_updater_thread(refresh_rate=API_REFRESH_RATE)
             self.updater_thread.start()
 
+        self.name = name
+
     def _set_addresses_used(self, addresses):
         r_addrs = self.receiving_addresses
         c_addrs = self.change_addresses
