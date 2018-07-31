@@ -2,19 +2,22 @@
 
 from hashlib import sha256
 
-from base58 import alphabet
+
+digits58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 
 
 def decode_base58(bc, length):
     n = 0
     for char in bc:
-        n = n * 58 + alphabet.decode().index(char)
+        n = n * 58 + digits58.index(char)
     return n.to_bytes(length, 'big')
 
 
 def check_bc(bc):
     if isinstance(bc, list):
         valid_list = []
+        if not bc:
+            raise Exception('Empty List')
         try:
 
             for a in bc:
@@ -24,7 +27,8 @@ def check_bc(bc):
             return all(valid_list)
 
         except Exception:
-            return False
+            # return False
+            raise
     else:
 
         try:
