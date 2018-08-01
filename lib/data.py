@@ -97,7 +97,7 @@ class DataStore(Crypto):
             self._write_to_file(data)
 
     def get_value(self, key):
-        if key in config.SENSITIVE_DATA:
+        if key.upper() in config.SENSITIVE_DATA:
             return self.decrypt(self._data[key.upper()])
 
         else:
