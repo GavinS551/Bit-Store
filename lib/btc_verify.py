@@ -18,21 +18,15 @@ def check_bc(bc):
         valid_list = []
         if not bc:
             raise Exception('Empty List')
-        try:
 
-            for a in bc:
-                bcbytes = decode_base58(a, 25)
-                valid_list.append(bcbytes[-4:] == sha256(sha256(bcbytes[:-4]).digest()).digest()[:4])
+        for a in bc:
+            bcbytes = decode_base58(a, 25)
+            valid_list.append(bcbytes[-4:] == sha256(sha256(bcbytes[:-4]).digest()).digest()[:4])
 
-            return all(valid_list)
+        return all(valid_list)
 
-        except Exception:
-            return False
     else:
 
-        try:
-            bcbytes = decode_base58(bc, 25)
-            return bcbytes[-4:] == sha256(sha256(bcbytes[:-4]).digest()).digest()[:4]
+        bcbytes = decode_base58(bc, 25)
+        return bcbytes[-4:] == sha256(sha256(bcbytes[:-4]).digest()).digest()[:4]
 
-        except Exception:
-            return False
