@@ -27,8 +27,7 @@ def check_bc(bc):
             return all(valid_list)
 
         except Exception:
-            # return False
-            raise
+            return False
     else:
 
         try:
