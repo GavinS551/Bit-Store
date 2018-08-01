@@ -32,7 +32,7 @@ class Bip32:
         return cls(BIP32Key.fromEntropy(seed, testnet=testnet).ExtendedKey(),
                    path, segwit, mnemonic, gap_limit)
 
-    def __init__(self, key, path=config.BIP32_PATHS['bip49path'], segwit=True,
+    def __init__(self, key, path, segwit=True,
                  mnemonic=None, gap_limit=20):
 
         if not self.check_path(path):
