@@ -18,7 +18,7 @@ class Bip32:
     """ Implementation of the BIP32 Deterministic Wallet standard"""
 
     @classmethod
-    def from_mnemonic(cls, mnemonic, passphrase='', path=config.BIP32_PATHS['bip49path'],
+    def from_mnemonic(cls, mnemonic, path, passphrase='',
                       segwit=True, gap_limit=20, testnet=False):
         """ Generates a bip32 class from a mnemonic """
 
