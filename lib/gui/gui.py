@@ -2,18 +2,17 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 import os
+from dataclasses import dataclass
+from typing import Any
 
 from . import ttk_simpledialog as simpledialog
-
 from .. import wallet, config, bip32
+
 from ..exceptions.data_exceptions import IncorrectPasswordError
 from ..exceptions.gui_exceptions import *
 
 
 ICON = os.path.join(os.path.dirname(__file__), 'assets', 'bc_logo.ico')
-
-
-# TODO make different frames have their own sizes, so they won't keep the window stretched
 
 
 class TTKSimpleDialog(simpledialog._QueryString):
@@ -53,7 +52,10 @@ class RootApplication(tk.Tk):
         self.frames = {}
 
         # adding all frames to self.frames dict, and adding them to master_grid
-        for f in (WalletSelect, WalletCreation):
+        for f in (WalletSelect, WalletCreation, MainWallet,
+                  WalletCreationLoading, WalletCreationShowMnemonic,
+                  WalletCreationVerifyMnemonic):
+
             frame = f(self)
             self.frames[f] = frame
             frame.grid(row=0, column=0, sticky='nsew')
@@ -90,7 +92,15 @@ class Settings(tk.Toplevel):
 
 
 class MainWallet(ttk.Frame):
-    pass
+
+    def __init__(self, root):
+        self.root = root
+        ttk.Frame.__init__(self, self.root.master_frame)
+
+    def gui_draw(self):
+        title_label = ttk.Label(self, text=self.root.btc_wallet.name,
+                                font=self.root.bold_title_font)
+        title_label.grid(row=0, column=0)
 
 
 class WalletSelect(ttk.Frame):
@@ -145,6 +155,7 @@ class WalletSelect(ttk.Frame):
         new_wallet_button.grid(row=2, column=0, sticky='ew')
 
         import_wallet_button = ttk.Button(options_frame, text='Import Wallet')
+        import_wallet_button['state'] = tk.DISABLED
         import_wallet_button.grid(row=3, column=0, sticky='ew')
 
         edit_wallet_button = ttk.Button(options_frame, text='Edit Wallet')
@@ -180,8 +191,9 @@ class WalletSelect(ttk.Frame):
             if password is None:
                 return
 
-            self.root.btc_wallet = wallet.Wallet(name=selected_wallet,
-                                                 password=password)
+            self.root.wallet_init(name=selected_wallet, password=password)
+
+            self.root.show_frame(MainWallet)
 
         except (NoWalletSelectedError, IncorrectPasswordError) as ex:
             if isinstance(ex, NoWalletSelectedError):
@@ -197,7 +209,7 @@ class WalletCreation(ttk.Frame):
         self.root = root
         ttk.Frame.__init__(self, self.root.master_frame)
 
-        self.grid_columnconfigure(2, {'minsize':100})
+        self.grid_columnconfigure(2, {'minsize': 100})
 
         # attributes below will be defined in gui_draw()
         self.password_entry = None
@@ -261,13 +273,15 @@ class WalletCreation(ttk.Frame):
                                  command=lambda: self.root.show_frame(WalletSelect))
         back_button.grid(row=7, column=0, sticky='e', padx=10, pady=20)
 
-        create_button = ttk.Button(self, text='Create Wallet', command=self.create_wallet)
+        create_button = ttk.Button(self, text='Create', command=self.create_wallet)
         create_button.grid(row=7, column=1, sticky='w', padx=10, pady=20)
 
     def _verify_password(self):
         return self.password_entry.get() == self.confirm_pass_entry.get()
 
-    def create_wallet(self):
+    # custom mnemonic and xkey params are meant for subclassing this class when
+    # implementing wallet import feature
+    def create_wallet(self, mnemonic=bip32.Bip32.gen_mnemonic(), xkey=None):
         try:
             name = self.name_entry.get()
             password = self.password_entry.get()
@@ -300,17 +314,74 @@ class WalletCreation(ttk.Frame):
             if not bip32.Bip32.check_path(path):
                 raise ValueError(f'Invalid path entered: ({path})')
 
-            mnemonic = bip32.Bip32.gen_mnemonic()
-            bip32_ = bip32.Bip32.from_mnemonic(mnemonic, passphrase=passphrase,
-                                               path=path, segwit=is_segwit)
+            if mnemonic is not None and xkey is not None:
+                raise ValueError('Either "mnemonic" or "xkey" arguments must be None')
+            elif mnemonic is None and xkey is None:
+                raise ValueError('Either "mnemonic" or "xkey" arguments must have a value')
 
-            new_wallet = wallet.Wallet.new_wallet(name=name, password=password,
-                                                  bip32_obj=bip32_)
+            # show loading frame after all error checks are complete
+            self.root.show_frame(WalletCreationLoading)
 
+            @dataclass
+            class WalletCreationData:
 
+                name: str
+                password: str
+                passphrase: str
+                is_segwit: bool
+                path: str
+                mnemonic: Any
+                xkey: Any
+
+            wd = WalletCreationData(name, password, passphrase,
+                                    is_segwit, path, mnemonic, xkey)
 
         except Exception as ex:
             tk.messagebox.showerror('Error', f'{ex.__str__()}')
+
+            # if an exception was raised during wallet creation, the frame will
+            # have to be re-shown as the loading frame was raised after error-
+            # checking entry fields
+            self.root.show_frame(WalletCreation)
+
+
+class WalletCreationLoading(ttk.Frame):
+
+    def __init__(self, root):
+        self.root = root
+        ttk.Frame.__init__(self, self.root.master_frame)
+
+        self.grid_rowconfigure(0, {'minsize': 50})
+        self.grid_columnconfigure(0, {'minsize': 35})
+
+    def gui_draw(self):
+        title = ttk.Label(self, text='Creating Wallet, Please Wait...',
+                          font=self.root.bold_title_font)
+        title.grid(row=1, column=1, sticky='n')
+
+        loading_bar = ttk.Progressbar(self, orient=tk.HORIZONTAL, length=400, mode='indeterminate')
+        loading_bar.grid(row=2, column=1, pady=40, padx=20)
+        loading_bar.start()
+
+
+class WalletCreationShowMnemonic(ttk.Frame):
+
+    def __init__(self, root):
+        self.root = root
+        ttk.Frame.__init__(self, self.root.master_frame)
+
+    def gui_draw(self):
+        pass
+
+
+class WalletCreationVerifyMnemonic(ttk.Frame):
+
+    def __init__(self, root):
+        self.root = root
+        ttk.Frame.__init__(self, self.root.master_frame)
+
+    def gui_draw(self):
+        pass
 
 
 def main():

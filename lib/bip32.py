@@ -6,7 +6,7 @@ import string
 import bitstring
 from .bip32utils_updated.BIP32Key import BIP32Key, BIP32_HARDEN
 
-from . import config, zero_mem
+from . import zero_mem
 from .exceptions.bip32_exceptions import *
 
 

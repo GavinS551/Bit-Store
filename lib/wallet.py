@@ -1,7 +1,5 @@
 import os
 import threading
-import signal
-import sys
 import shutil
 
 import requests.exceptions
@@ -32,23 +30,12 @@ class Wallet:
             if refresh_rate < 10:
                 raise ValueError('Refresh rate must be at least 10 seconds')
 
-            super().__init__(name='API_DATA_UPDATER')
+            threading.Thread.__init__(self, name='API_DATA_UPDATER')
             self.event = threading.Event()
             self.wallet_instance = wallet_instance
             self.refresh_rate = refresh_rate
             # a requests Exception, stored if the last data request failed
             self.connection_error = None
-
-            self.set_handlers()
-
-        def set_handlers(self):
-
-            def _handler(_, __):
-                self.event.set()
-                sys.exit(0)
-
-            signal.signal(signal.SIGINT, _handler)
-            signal.signal(signal.SIGTERM, _handler)
 
         def run(self):
 
@@ -60,9 +47,14 @@ class Wallet:
 
                 self.wallet_instance.data_store.write_value(**data_dict)
 
-            # if the main thread is dead then self.event can never change as
-            # only a SIGINT or SIGTERM from the main thread can set self.event
-            while not self.event.is_set() and threading.main_thread().is_alive():
+            # sets event if main thread has died. Used during below while loop
+            # to minimize time that the thread is alive while the main thread
+            # is dead, when it would be safe to kill
+            def conditional_set_event():
+                if not threading.main_thread().is_alive():
+                    self.event.set()
+
+            while threading.main_thread().is_alive():
 
                 addresses = self.wallet_instance.all_addresses
 
@@ -84,11 +76,16 @@ class Wallet:
                         requests.exceptions.HTTPError) as ex:
 
                     self.connection_error = ex
+
+                    conditional_set_event()
                     self.event.wait(self.refresh_rate)
+
                     continue
 
                 # data that needs to be updated
                 old_keys = [k for k in api_data if self.wallet_instance.data_store.get_value(k) != api_data[k]]
+
+                conditional_set_event()
 
                 # if old_keys isn't an empty list
                 if old_keys and not self.event.is_set():
@@ -97,6 +94,8 @@ class Wallet:
                 # if new transactions have been updated, used addresses are set appropriately
                 self.wallet_instance._set_used_addresses_()
 
+
+                conditional_set_event()
                 self.event.wait(self.refresh_rate)
 
     @classmethod
@@ -145,9 +144,6 @@ class Wallet:
 
             d_store.write_value(**info)
 
-            bip32_obj.delete_sensitive_data()
-            del bip32_obj
-
             return cls(name, password, offline=offline)
 
         except BaseException as ex:
@@ -163,7 +159,6 @@ class Wallet:
         data_file_path = os.path.join(config.DATA_DIR, name, 'wallet_data')
         self.data_store = data.DataStore(data_file_path, password)
 
-        # offline for debugging purposes
         if not offline:
             self.updater_thread = self._create_api_updater_thread(refresh_rate=API_REFRESH_RATE)
             self.updater_thread.start()
