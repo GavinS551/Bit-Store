@@ -175,13 +175,7 @@ class Bip32:
 
         return ck
 
-    # methods wipes as much data from ram as is possible using python
     def delete_sensitive_data(self):
-        zero_mem.zeromem(self.master_private_key)
-
-        if self.mnemonic is not None:
-            zero_mem.zeromem(self.mnemonic)
-
         self.bip32.SetPublic()
         del self.bip32
         del self.account_ck

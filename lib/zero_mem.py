@@ -4,6 +4,10 @@ import ctypes
 import platform
 
 
+# this function does not work in threads, so it is not in use currently
+# TODO: get it working
+
+
 def zeromem(string):
     if platform.system() == 'Windows':
         location = id(string) + 20
