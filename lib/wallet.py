@@ -144,6 +144,9 @@ class Wallet:
 
             d_store.write_value(**info)
 
+            bip32_obj.delete_sensitive_data()
+            del bip32_obj
+
             return cls(name, password, offline=offline)
 
         except BaseException as ex:
