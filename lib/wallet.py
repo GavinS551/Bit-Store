@@ -31,6 +31,7 @@ class Wallet:
                 raise ValueError('Refresh rate must be at least 10 seconds')
 
             threading.Thread.__init__(self, name='API_DATA_UPDATER')
+            # event will be set outside of this class
             self.event = threading.Event()
             self.wallet_instance = wallet_instance
             self.refresh_rate = refresh_rate
@@ -47,14 +48,7 @@ class Wallet:
 
                 self.wallet_instance.data_store.write_value(**data_dict)
 
-            # sets event if main thread has died. Used during below while loop
-            # to minimize time that the thread is alive while the main thread
-            # is dead, when it would be safe to kill
-            def conditional_set_event():
-                if not threading.main_thread().is_alive():
-                    self.event.set()
-
-            while threading.main_thread().is_alive():
+            while threading.main_thread().is_alive() and self.event.is_set():
 
                 addresses = self.wallet_instance.all_addresses
 
@@ -77,15 +71,12 @@ class Wallet:
 
                     self.connection_error = ex
 
-                    conditional_set_event()
                     self.event.wait(self.refresh_rate)
 
                     continue
 
                 # data that needs to be updated
                 old_keys = [k for k in api_data if self.wallet_instance.data_store.get_value(k) != api_data[k]]
-
-                conditional_set_event()
 
                 # if old_keys isn't an empty list
                 if old_keys and not self.event.is_set():
@@ -94,8 +85,6 @@ class Wallet:
                 # if new transactions have been updated, used addresses are set appropriately
                 self.wallet_instance._set_used_addresses_()
 
-
-                conditional_set_event()
                 self.event.wait(self.refresh_rate)
 
     @classmethod
