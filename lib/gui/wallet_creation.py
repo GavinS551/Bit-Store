@@ -18,23 +18,6 @@ def threaded(func):
     return wrapper
 
 
-@threaded
-def _build_wallet_instance_thread(root, wallet_data):
-    if wallet_data.xkey is None:
-        bip32_ = bip32.Bip32.from_mnemonic(wallet_data.mnemonic,
-                                           wallet_data.path,
-                                           wallet_data.passphrase,
-                                           wallet_data.is_segwit)
-    else:
-        bip32_ = bip32.Bip32(wallet_data.xkey,
-                             wallet_data.path,
-                             wallet_data.is_segwit)
-
-    w = wallet.Wallet.new_wallet(wallet_data.name, wallet_data.password, bip32_)
-    root.btc_wallet = w
-    root.show_frame('MainWallet')
-
-
 class WalletCreation(ttk.Frame):
 
     def __init__(self, root):
@@ -168,7 +151,7 @@ class WalletCreation(ttk.Frame):
             wd = WalletCreationData(name, password, passphrase,
                                     is_segwit, path, mnemonic, xkey)
 
-            _build_wallet_instance_thread(self.root, wd)
+            self._build_wallet_instance_thread(wd)
 
         except Exception as ex:
             messagebox.showerror('Error', f'{ex.__str__()}')
@@ -177,6 +160,22 @@ class WalletCreation(ttk.Frame):
             # have to be re-shown as the loading frame was raised after error-
             # checking entry fields
             self.root.show_frame('WalletCreation')
+
+    @threaded
+    def _build_wallet_instance_thread(self, wallet_data):
+        if wallet_data.xkey is None:
+            bip32_ = bip32.Bip32.from_mnemonic(wallet_data.mnemonic,
+                                               wallet_data.path,
+                                               wallet_data.passphrase,
+                                               wallet_data.is_segwit)
+        else:
+            bip32_ = bip32.Bip32(wallet_data.xkey,
+                                 wallet_data.path,
+                                 wallet_data.is_segwit)
+
+        w = wallet.Wallet.new_wallet(wallet_data.name, wallet_data.password, bip32_)
+        self.root.btc_wallet = w
+        self.root.show_frame('WalletCreationShowMnemonic')
 
 
 class WalletCreationLoading(ttk.Frame):
