@@ -34,6 +34,7 @@ class Transaction:
 
         self.change_amount = 0
         self.chosen_inputs = self._choose_input_addresses()
+        self.unsigned_txn = self._get_unsigned_txn()
 
     @staticmethod
     def _get_pubkey_hash(address):
@@ -73,8 +74,7 @@ class Transaction:
         else:
             raise NotImplementedError
 
-    @property
-    def unsigned_txn(self):
+    def _get_unsigned_txn(self):
 
         # adding change address to outputs, if there is leftover balance
         if self.change_amount > 0:
