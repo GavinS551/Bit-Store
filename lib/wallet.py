@@ -186,10 +186,10 @@ class Wallet:
         u_addrs = [a for a in self.non_used_addresses if a in self.transactions]
         self._set_addresses_used(u_addrs)
 
-    def make_txn(self, receivers_amounts, fee, use_least_inputs=True, locktime=0):
+    def make_txn(self, outs_amounts, fee, use_least_inputs=True, locktime=0):
 
         txn = tx.Transaction(inputs_amounts=self.address_balances,
-                             outputs_amounts=receivers_amounts,
+                             outputs_amounts=outs_amounts,
                              change_address=self.change_addresses[0],
                              fee=fee,
                              is_segwit=self.is_segwit,
@@ -197,7 +197,7 @@ class Wallet:
                              use_least_inputs=use_least_inputs,
                              locktime=locktime)
 
-        return txn.unsigned_txn
+        return txn
 
     def change_gap_limit(self, password):
         if self.data_store.validate_password(password):
