@@ -129,6 +129,7 @@ class Wallet:
                 'SEGWIT': bip32_obj.is_segwit,
                 'ADDRESSES_RECEIVING': addresses[0],
                 'ADDRESSES_CHANGE': addresses[1],
+                'ADDRESS_WIF_KEYS': dict(zip(addresses, bip32_obj.wif_keys()))
             }
 
             d_store.write_value(**info)

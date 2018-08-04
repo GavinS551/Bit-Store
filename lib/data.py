@@ -5,7 +5,7 @@ import json
 
 import cryptography.fernet as fernet
 
-from . import config, zero_mem
+from . import config
 from .exceptions.data_exceptions import *
 
 
@@ -23,7 +23,6 @@ class Crypto:
 
     def encrypt(self, string_):
         token = self._fernet.encrypt(string_.encode('utf-8'))
-        zero_mem.zeromem(string_)
         return token.decode('utf-8')
 
     def decrypt(self, token):
@@ -78,10 +77,14 @@ class DataStore(Crypto):
                                      f'{type(config.STANDARD_DATA_FORMAT[k])}')
 
                 else:
+                    # if key is in sensitive data list, it will be encrypted twice
+                    # to limit its exposure in ram, unencrypted
                     if k in config.SENSITIVE_DATA:
-                        # if key is in sensitive data list, it will be encrypted twice
-                        # to limit its exposure in ram, unencrypted
-                        data[k] = self.encrypt(v)
+                        # if value is a dict, encrypt all values
+                        if isinstance(v, dict):
+                            data[k] = {x:self.encrypt(y) for x, y in v.items()}
+                        else:
+                            data[k] = self.encrypt(v)
 
                     else:
                         data[k] = v
@@ -90,7 +93,14 @@ class DataStore(Crypto):
 
     def get_value(self, key):
         if key.upper() in config.SENSITIVE_DATA:
-            return self.decrypt(self._data[key.upper()])
+            # if value is a dict, values wont be decrypted as that will be
+            # done only when needed to sign txns (only key that is currently
+            # implemented is a dict stores address/wif keys)
+            if isinstance(self._data[key.upper()], dict):
+                return self._data[key.upper()]
+
+            else:
+                return self.decrypt(self._data[key.upper()])
 
         else:
             return self._data[key.upper()]

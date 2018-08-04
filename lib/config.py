@@ -77,7 +77,8 @@ STANDARD_DATA_FORMAT = {
     'PRICE': 0.0,
     'WALLET_BAL': 0,
     'UNSPENT_OUTS': {},
-    'PASSWORD_HASH': ''
+    'PASSWORD_HASH': '',
+    'ADDRESS_WIF_KEYS': {}
 }
 
 
@@ -86,6 +87,7 @@ STANDARD_DATA_FORMAT = {
 SENSITIVE_DATA = [
     'MNEMONIC',
     'XPRIV',
+    'ADDRESS_WIF_KEYS'
 ]
 
 
