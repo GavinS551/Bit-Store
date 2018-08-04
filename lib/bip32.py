@@ -30,7 +30,6 @@ class IterableQueue:
 
 
 class Bip32:
-    """ Implementation of the BIP32 Deterministic Wallet standard"""
 
     @classmethod
     def from_mnemonic(cls, mnemonic, path, passphrase='',
