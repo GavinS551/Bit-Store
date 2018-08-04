@@ -53,7 +53,6 @@ class WalletSelect(ttk.Frame):
         select_button.grid(row=1, column=0, pady=20, sticky='ew')
 
         # binds a double click on listbox to trigger same method as button
-        # not sure why this only works with a lambda and one arg...
         self.wallet_list.bind('<Double-1>', lambda x: self.select_wallet())
 
         new_wallet_button = ttk.Button(options_frame, text='New Wallet',

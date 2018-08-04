@@ -82,7 +82,7 @@ class _Settings(tk.Toplevel):
         self.wm_title('Settings')
         self.wm_iconbitmap(ICON)
 
-        self.frame = ttk.Frame()
+        self.frame = ttk.Frame(self)
         self.frame.pack(expand=True)
 
 
