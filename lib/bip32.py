@@ -73,7 +73,9 @@ class Bip32:
         self.is_testnet = self.bip32.testnet
 
         # account child key only needs to be retrieved once
-        self.account_ck = self._get_account_ck()
+        self._account_ck = self._get_account_ck()
+        self._external_chain_ck = self._account_ck.ChildKey(0)
+        self._internal_chain_ck = self._account_ck.ChildKey(1)
 
         # for multiprocessing gen of addresses/wif_keys
         _manager = multiprocessing.Manager()
@@ -198,15 +200,15 @@ class Bip32:
     def delete_sensitive_data(self):
         self.bip32.SetPublic()
         del self.bip32
-        del self.account_ck
+        del self._account_ck
 
     def _gen_addresses(self, idx):
         if self.is_segwit:
-            r_address = self.account_ck.ChildKey(0).ChildKey(idx).P2WPKHoP2SHAddress()
-            c_address = self.account_ck.ChildKey(1).ChildKey(idx).P2WPKHoP2SHAddress()
+            r_address = self._external_chain_ck.ChildKey(idx).P2WPKHoP2SHAddress()
+            c_address = self._internal_chain_ck.ChildKey(idx).P2WPKHoP2SHAddress()
         else:
-            r_address = self.account_ck.ChildKey(0).ChildKey(idx).Address()
-            c_address = self.account_ck.ChildKey(1).ChildKey(idx).Address()
+            r_address = self._external_chain_ck.ChildKey(idx).Address()
+            c_address = self._internal_chain_ck.ChildKey(idx).Address()
 
         self._address_queue.put((idx, r_address, c_address))
 
@@ -226,8 +228,8 @@ class Bip32:
         return receiving, change
 
     def _gen_wif_keys(self, idx):
-        r_keys = self.account_ck.ChildKey(0).ChildKey(idx).WalletImportFormat()
-        c_keys = self.account_ck.ChildKey(1).ChildKey(idx).WalletImportFormat()
+        r_keys = self._external_chain_ck.ChildKey(idx).WalletImportFormat()
+        c_keys = self._internal_chain_ck.ChildKey(idx).WalletImportFormat()
 
         self._wif_key_queue.put((idx, r_keys, c_keys))
 
