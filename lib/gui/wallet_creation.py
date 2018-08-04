@@ -153,7 +153,7 @@ class WalletCreation(ttk.Frame):
 
             self._build_wallet_instance_thread(wd)
 
-        except Exception as ex:
+        except ValueError as ex:
             messagebox.showerror('Error', f'{ex.__str__()}')
 
             # if an exception was raised during wallet creation, the frame will

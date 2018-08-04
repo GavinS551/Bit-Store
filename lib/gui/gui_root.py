@@ -1,7 +1,15 @@
-from . import ttk_simpledialog as simpledialog
+import tkinter as tk
+from tkinter import ttk, messagebox
 
-from .wallet_select import *
-from .wallet_creation import *
+import os
+import traceback
+
+from . import ttk_simpledialog as simpledialog
+from .. import config, wallet
+
+from .wallet_select import WalletSelect
+from .wallet_creation import (WalletCreation, WalletCreationLoading,
+                              WalletCreationShowMnemonic, WalletCreationVerifyMnemonic)
 
 
 ICON = os.path.join(os.path.dirname(__file__), 'assets', 'bc_logo.ico')
@@ -57,6 +65,13 @@ class RootApplication(tk.Tk):
 
         # init will be done in other frames, this is a placeholder
         self.btc_wallet = None
+
+    def report_callback_exception(self, exc_type, exc_value, exc_traceback):
+        """ this will show an error window in the gui displaying any unhandled exception """
+        message = ''.join(traceback.format_exception(exc_type,
+                                                     exc_value,
+                                                     exc_traceback))
+        messagebox.showerror('Error', message)
 
     def show_frame(self, frame):
         f = self.frames[frame]
