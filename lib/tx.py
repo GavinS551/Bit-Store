@@ -37,11 +37,7 @@ class Transaction:
         self.unsigned_txn = self._get_unsigned_txn()
 
     @staticmethod
-    def _get_pubkey_hash(address):
-        return base58.b58decode_check(address)[1:]
-
-    @staticmethod
-    def _get_redeemscript_hash(address):
+    def _get_hash160(address):
         return base58.b58decode_check(address)[1:]
 
     def _choose_input_addresses(self):
@@ -84,22 +80,19 @@ class Transaction:
         for i, (addr, amount) in enumerate(self.outputs_amounts.items()):
 
             if addr[0] == '1':
-                outputs.append(TxOut(
-                    value=amount,
-                    n=i,
-                    script_pubkey=P2pkhScript(bytearray(self._get_pubkey_hash(addr)))
-                ))
+                out_script = P2pkhScript
 
             elif addr[0] == '3':
-                outputs.append(TxOut(
-                    value=amount,
-                    n=i,
-                    script_pubkey=P2shScript(bytearray(self._get_redeemscript_hash(addr)))
-                ))
+                out_script = P2shScript
 
             else:
                 raise ValueError('Couldn\'t generate a scriptPubKey for entered address')
 
+            outputs.append(TxOut(
+                value=amount,
+                n=i,
+                script_pubkey=out_script(bytearray(self._get_hash160(addr)))
+            ))
 
         if self.is_segwit:
             # PLACEHOLDER
