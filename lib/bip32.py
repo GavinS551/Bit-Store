@@ -2,6 +2,9 @@ import os
 import hashlib
 import binascii
 import string
+import multiprocessing
+from queue import Empty
+from operator import itemgetter
 
 import bitstring
 from .bip32utils_updated.BIP32Key import BIP32Key, BIP32_HARDEN
@@ -11,6 +14,19 @@ from .exceptions.bip32_exceptions import *
 
 WORDLIST = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'wordlist.txt')
 PBKDF2_HMAC_ITERATIONS = 2048  # used when converting mnemonic to seed
+
+
+class IterableQueue:
+
+    def __init__(self, queue):
+        self.queue = queue
+
+    def __iter__(self):
+        while True:
+            try:
+                yield self.queue.get_nowait()
+            except Empty:
+                break
 
 
 class Bip32:
@@ -58,6 +74,11 @@ class Bip32:
 
         # account child key only needs to be retrieved once
         self.account_ck = self._get_account_ck()
+
+        # for multiprocessing gen of addresses/wif_keys
+        _manager = multiprocessing.Manager()
+        self._address_queue = _manager.Queue()
+        self._wif_key_queue = _manager.Queue()
 
     @staticmethod
     def gen_mnemonic(length=12):
@@ -179,23 +200,36 @@ class Bip32:
         del self.bip32
         del self.account_ck
 
+    def _gen_addresses(self, idx):
+        if self.is_segwit:
+            r_address = self.account_ck.ChildKey(0).ChildKey(idx).P2WPKHoP2SHAddress()
+            c_address = self.account_ck.ChildKey(1).ChildKey(idx).P2WPKHoP2SHAddress()
+        else:
+            r_address = self.account_ck.ChildKey(0).ChildKey(idx).Address()
+            c_address = self.account_ck.ChildKey(1).ChildKey(idx).Address()
+
+        self._address_queue.put((idx, r_address, c_address))
+
     def addresses(self):
         """ Returns a tuple of receiving and change addresses up to the limit specified"""
         receiving = []
         change = []
-        ck = self.account_ck
 
-        if self.is_segwit:
-            for i in range(self.gap_limit):
-                receiving.append(ck.ChildKey(0).ChildKey(i).P2WPKHoP2SHAddress())
-                change.append(ck.ChildKey(1).ChildKey(i).P2WPKHoP2SHAddress())
+        pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+        pool.map(self._gen_addresses, range(self.gap_limit))
 
-        else:
-            for i in range(self.gap_limit):
-                receiving.append(ck.ChildKey(0).ChildKey(i).Address())
-                change.append(ck.ChildKey(1).ChildKey(i).Address())
+        sorted_addresses = sorted(IterableQueue(self._address_queue), key=itemgetter(0))
+        for a in sorted_addresses:
+            receiving.append(a[1])
+            change.append(a[2])
 
         return receiving, change
+
+    def _gen_wif_keys(self, idx):
+        r_keys = self.account_ck.ChildKey(0).ChildKey(idx).WalletImportFormat()
+        c_keys = self.account_ck.ChildKey(1).ChildKey(idx).WalletImportFormat()
+
+        self._wif_key_queue.put((idx, r_keys, c_keys))
 
     def wif_keys(self):
         """ Returns a tuple of receiving and change WIF keys up to the limit specified """
@@ -204,11 +238,14 @@ class Bip32:
 
         receiving = []
         change = []
-        ck = self.account_ck
 
-        for i in range(self.gap_limit):
-            receiving.append(ck.ChildKey(0).ChildKey(i).WalletImportFormat())
-            change.append(ck.ChildKey(1).ChildKey(i).WalletImportFormat())
+        pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+        pool.map(self._gen_wif_keys, range(self.gap_limit))
+
+        sorted_keys = sorted(IterableQueue(self._wif_key_queue), key=itemgetter(0))
+        for w in sorted_keys:
+            receiving.append(w[1])
+            change.append(w[2])
 
         return receiving, change
 
