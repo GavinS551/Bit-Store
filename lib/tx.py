@@ -5,6 +5,9 @@ from btcpy.structs.script import P2pkhScript, P2shScript, Script
 from btcpy.structs.sig import ScriptSig, P2pkhSolver
 from btcpy.structs.hd import PrivateKey
 
+from .exceptions.tx_exceptions import *
+
+
 class Transaction:
 
     def __init__(self, inputs_amounts, outputs_amounts, change_address,
@@ -28,10 +31,9 @@ class Transaction:
         self.locktime = locktime
         self.transaction_data = transaction_data
 
-        self._utxo_data = self._get_utxo_data()
-
         self.change_amount = 0
         self.chosen_inputs = self._choose_input_addresses()
+        self._utxo_data = self._get_utxo_data()
         self.unsigned_txn = self._get_unsigned_txn()
 
     @staticmethod
@@ -41,6 +43,7 @@ class Transaction:
          """
         return base58.b58decode_check(address)[1:]
 
+    # TODO: Rework the way inputs are chosen. try to use least amount, but also smallest possible. this only uses least amount
     def _choose_input_addresses(self):
         """ chose which addresses to spend in txn """
 
@@ -52,22 +55,34 @@ class Transaction:
         if total_to_spend <= 0:
             raise ValueError('amount to send has to be > 0')
 
+        # finds what int in a list of tuples, where int is [1] in a tuple, is closest to n
+        def closest_int(n, list_):
+            num_list = [x for _, x in list_]
+            return min(num_list, key=lambda x: abs(x - n))
+
         addresses = []
-        # sorts the input addresses by biggest to smallest, so the least amount
-        # of inputs are spent for the transaction
-        for address, amount in sorted(self.inputs_amounts.items(),
-                                      key=lambda x: x[1], reverse=True):
 
-            addresses.append(address)
-            total_to_spend -= amount
+        # inputs_amounts can be modified without changing class attribute
+        inputs_amounts = list(self.inputs_amounts.items())
 
+        # inputs_amounts evaluates to True while it is not empty,
+        # when it is empty, all inputs have been added to addresses
+        while total_to_spend > 0 and inputs_amounts:
+
+            closest = list(filter(lambda x: x[1] == closest_int(total_to_spend, inputs_amounts), inputs_amounts))
+
+            # if there are more than 1 tuple that is 'closest', just take the one at [0]
+            addresses.append(closest[0][0])
+            total_to_spend -= closest[0][1]
+
+            inputs_amounts.remove(closest[0])
+
+        else:
             if total_to_spend <= 0:
-                # the leftover change will be sent to the provided change address later
                 self.change_amount = abs(total_to_spend)
                 return addresses
-
-        # reached if total_to_spend is never <= 0
-        raise ValueError('Balances of input address(es) too small for output amount(s)')
+            else:
+                raise InsufficientFundsError('Not enough input funds to cover output values')
 
     def _get_utxo_data(self):
         """ returns the utxo data needed to build signed transactions
@@ -202,3 +217,17 @@ class Transaction:
             signed = unsigned.spend(tx_outs, solvers)
 
             return signed
+
+    def change_fee(self, fee):
+        self.fee = fee
+        # re-run all logic that will be effected by fee change, i.e there might
+        # need to be more chosen inputs to make up for the increased fee
+        self.chosen_inputs = self._choose_input_addresses()
+        self._utxo_data = self._get_utxo_data()
+        self.unsigned_txn = self._get_unsigned_txn()
+
+    def validate_transaction(self, tx):
+        """ accepts a btcpy txn to compare to class attributes such as the
+        outputs, and makes sure they match
+        """
+        pass
