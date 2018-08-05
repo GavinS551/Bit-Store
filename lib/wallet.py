@@ -8,7 +8,7 @@ from . import data, bip32, config, blockchain, price, tx
 from .exceptions.wallet_exceptions import *
 
 
-API_REFRESH_RATE = 10
+API_REFRESH_RATE = 5
 
 
 class Wallet:
@@ -27,8 +27,8 @@ class Wallet:
                 raise ValueError('Refresh rate must be an int')
 
             # due to api request limits
-            if refresh_rate < 10:
-                raise ValueError('Refresh rate must be at least 10 seconds')
+            if refresh_rate < 5:
+                raise ValueError('Refresh rate must be at least 5 seconds')
 
             threading.Thread.__init__(self, name='API_DATA_UPDATER')
             # event will be set outside of this class
@@ -36,6 +36,7 @@ class Wallet:
             self.wallet_instance = wallet_instance
             self.refresh_rate = refresh_rate
             # a requests Exception, stored if the last data request failed
+            # if last request was successful, store False
             self.connection_error = None
 
         def run(self):
@@ -48,7 +49,7 @@ class Wallet:
 
                 self.wallet_instance.data_store.write_value(**data_dict)
 
-            while threading.main_thread().is_alive() and self.event.is_set():
+            while threading.main_thread().is_alive() and not self.event.is_set():
 
                 addresses = self.wallet_instance.all_addresses
 
