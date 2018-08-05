@@ -113,8 +113,6 @@ class Wallet:
             with open(data_file_path, 'w+'):
                 pass
 
-            # password is preserved so it can be passed into __init__ of Wallet,
-            # where it will then be removed in self.data_store initialisation
             d_store = data.DataStore(data_file_path, password)
 
             # only gen addresses once, and not twice for receiving and change
@@ -187,7 +185,7 @@ class Wallet:
         u_addrs = [a for a in self.non_used_addresses if a in self.transactions]
         self._set_addresses_used(u_addrs)
 
-    def make_txn(self, outs_amounts, fee, locktime=0):
+    def _make_unsigned_transaction(self, outs_amounts, fee, locktime=0):
 
         txn = tx.Transaction(inputs_amounts=self.address_balances,
                              outputs_amounts=outs_amounts,
@@ -199,13 +197,20 @@ class Wallet:
 
         return txn
 
+    def make_signed_transaction(self, password, outs_amounts, fee, locktime=0):
+
+        txn = self._make_unsigned_transaction(outs_amounts, fee, locktime)
+        input_addresses = txn.chosen_inputs
+        wif_keys = self.get_wif_keys(password, input_addresses)
+
+        return txn.signed_txn(wif_keys)
+
     def change_gap_limit(self, password):
         if self.data_store.validate_password(password):
             pass
 
         else:
             raise data.IncorrectPasswordError
-
 
     @property
     def xpub(self):
@@ -267,7 +272,7 @@ class Wallet:
     def unspent_outputs(self):
         return self.data_store.get_value('UNSPENT_OUTS')
 
-    # attributes below require a password to return for more security when implemented
+    # attributes below require a password to return
 
     def get_address_wifkey_pairs(self, password):
 
@@ -296,3 +301,19 @@ class Wallet:
 
         else:
             raise data.IncorrectPasswordError
+
+    def get_wif_keys(self, password, addresses):
+
+        if self.data_store.validate_password(password):
+            wif_keys = []
+            addr_wif_keys = self.data_store.get_value('ADDRESS_WIF_KEYS')
+
+            for a in addresses:
+                # only decrypt the values that we need
+                wif_keys.append(self.data_store.decrypt(addr_wif_keys[a]))
+
+            return dict(zip(addresses, wif_keys))
+
+        else:
+            raise data.IncorrectPasswordError
+

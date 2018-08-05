@@ -21,12 +21,12 @@ class Crypto:
         b_key = hashlib.pbkdf2_hmac('sha256', b_password, b'', iterations)
         return base64.urlsafe_b64encode(b_key)
 
-    def encrypt(self, string_):
-        token = self._fernet.encrypt(string_.encode('utf-8'))
+    def encrypt(self, string):
+        token = self._fernet.encrypt(string.encode('utf-8'))
         return token.decode('utf-8')
 
-    def decrypt(self, token):
-        string = self._fernet.decrypt(token.encode('utf-8'))
+    def decrypt(self, string_token):
+        string = self._fernet.decrypt(string_token.encode('utf-8'))
         return string.decode('utf-8')
 
 
