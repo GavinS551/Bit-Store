@@ -8,7 +8,7 @@ from btcpy.structs.hd import PrivateKey
 class Transaction:
 
     def __init__(self, inputs_amounts, outputs_amounts, change_address,
-                 fee, is_segwit, transaction_data, use_least_inputs=True, locktime=0):
+                 fee, is_segwit, transaction_data, locktime=0):
         """
         :param inputs_amounts: dict of input addresses and balances (class will chose which ones to use if more than
                                 necessary is provided)
@@ -17,7 +17,6 @@ class Transaction:
         :param fee: txn fee
         :param is_segwit: bool
         :param transaction_data: unspent_outputs property of wallet class
-        :param use_least_inputs: True if the least num of inputs should be spent
         :param locktime: locktime of btc txn
         """
 
@@ -26,51 +25,85 @@ class Transaction:
         self.change_address = change_address
         self.fee = fee
         self.is_segwit = is_segwit
-        self.use_least_inputs = use_least_inputs
         self.locktime = locktime
         self.transaction_data = transaction_data
 
-        self._utxo_data = None
+        self._utxo_data = self._get_utxo_data()
 
         self.change_amount = 0
         self.chosen_inputs = self._choose_input_addresses()
         self.unsigned_txn = self._get_unsigned_txn()
 
     @staticmethod
-    def _get_hash160(address):
+    def get_hash160(address):
+        """ hash160 of a btc address is the b58_check decoded bytes of the
+         address, minus the beginning network byte
+         """
         return base58.b58decode_check(address)[1:]
 
     def _choose_input_addresses(self):
         """ chose which addresses to spend in txn """
-        if self.use_least_inputs:
 
-            total_to_spend = 0
-            for i in self.outputs_amounts.values():
-                total_to_spend += i
-            total_to_spend += self.fee
+        total_to_spend = 0  # total amount of satoshis that will be spent
+        for i in self.outputs_amounts.values():
+            total_to_spend += i
+        total_to_spend += self.fee  # factoring in the fee to the total amount
+
+        if total_to_spend <= 0:
+            raise ValueError('amount to send has to be > 0')
+
+        addresses = []
+        # sorts the input addresses by biggest to smallest, so the least amount
+        # of inputs are spent for the transaction
+        for address, amount in sorted(self.inputs_amounts.items(),
+                                      key=lambda x: x[1], reverse=True):
+
+            addresses.append(address)
+            total_to_spend -= amount
 
             if total_to_spend <= 0:
-                raise ValueError('amount to send has to be > 0')
+                # the leftover change will be sent to the provided change address later
+                self.change_amount = abs(total_to_spend)
+                return addresses
 
-            addresses = []
-            for address, amount in sorted(self.inputs_amounts.items(),
-                                          key=lambda x: x[1], reverse=True):
+        # reached if total_to_spend is never <= 0
+        raise ValueError('Balances of input address(es) too small for output amount(s)')
 
-                addresses.append(address)
-                total_to_spend -= amount
+    def _get_utxo_data(self):
+        """ returns the utxo data needed to build signed transactions
+         using btcpy's spend() method of MutableTransaction
+         """
+        utxo_data = []
+        for addr in self.chosen_inputs:
 
-                if total_to_spend <= 0:
-                    self.change_amount = abs(total_to_spend)
-                    return addresses
+            # txn data of particular address
+            txn_data = self.transaction_data[addr]
 
-            # reached if total_to_spend is never <= 0
-            raise ValueError('Balances of input address(es) too small for output amount(s)')
+            # getting tx ids and output number for all UTXOs to be spent
+            for tx in txn_data:
 
-        # reserved if another method of choosing inputs is needed
-        else:
-            raise NotImplementedError
+                # getting the transaction id
+                txid = tx['hash']
+
+                # variables will be None if they aren't assigned in below loop
+                out_num = None
+                scriptpubkey = None
+                value = None
+
+                for out in tx['out']:
+                    if out['addr'] == addr:
+                        out_num = out['n']
+                        scriptpubkey = Script.unhexlify(out['script'])
+                        value = out['value']  # value of output in satoshis
+                        break
+
+                utxo_data.append((txid, out_num, addr, scriptpubkey, value))
+
+        return utxo_data
 
     def _get_unsigned_txn(self):
+
+        TX_VERSION = 1
 
         # adding change address to outputs, if there is leftover balance
         if self.change_amount > 0:
@@ -79,9 +112,11 @@ class Transaction:
         outputs = []
         for i, (addr, amount) in enumerate(self.outputs_amounts.items()):
 
+            # normal, P2PKH btc addresses begin with '1'
             if addr[0] == '1':
                 out_script = P2pkhScript
 
+            # and P2SH addresses begin with '3' (applies to non-native segwit addresses as well)
             elif addr[0] == '3':
                 out_script = P2shScript
 
@@ -91,7 +126,7 @@ class Transaction:
             outputs.append(TxOut(
                 value=amount,
                 n=i,
-                script_pubkey=out_script(bytearray(self._get_hash160(addr)))
+                script_pubkey=out_script(bytearray(self.get_hash160(addr)))
             ))
 
         if self.is_segwit:
@@ -101,44 +136,21 @@ class Transaction:
         else:
 
             inputs = []
-            for addr in self.chosen_inputs:
 
-                # txn data of particular address
-                txn_data = self.transaction_data[addr]
+            for t in self._utxo_data:
 
-                # list of tuples with txid, output number and address of unspent output
-                self._utxo_data = []
+                # build inputs using the UTXO data in self._utxo_data,
+                # script_sig is empty as the transaction will be signed later
+                inputs.append(
 
-                # getting tx ids and output number for all UTXOs to be spent
-                for tx in txn_data:
-
-                    txid = tx['hash']
-                    # so pycharm will shut up, defining var before loop
-                    out_num = None
-                    scriptpubkey = None
-                    value = None
-
-                    for out in tx['out']:
-                        if out['addr'] == addr:
-                            out_num = out['n']
-                            scriptpubkey = Script.unhexlify(out['script'])
-                            value = out['value']
-                            break
-
-                    self._utxo_data.append((txid, out_num, addr, scriptpubkey, value))
-
-                for idx in self._utxo_data:
-
-                    inputs.append(
-
-                        TxIn(txid=idx[0],
-                             txout=idx[1],
-                             script_sig=ScriptSig.empty(),
-                             sequence=Sequence.max())
-                    )
+                    TxIn(txid=t[0],
+                         txout=t[1],
+                         script_sig=ScriptSig.empty(),
+                         sequence=Sequence.max())
+                )
 
             transaction = MutableTransaction(
-                version=1,
+                version=TX_VERSION,
                 ins=inputs,
                 outs=outputs,
                 locktime=Locktime(self.locktime)
@@ -150,8 +162,8 @@ class Transaction:
         """ :param wif_keys: list of wif keys corresponding with
         self.chosen_inputs addresses, in same order
         """
-        solvers = []
-        tx_outs = []
+        unordered_solvers = []
+        unordered_tx_outs = []
         unsigned = self.unsigned_txn
 
         if self.is_segwit:
@@ -159,28 +171,34 @@ class Transaction:
 
         else:
             for key in wif_keys:
+                # create btcpy PrivateKeys from input WIF format keys
                 private_key = PrivateKey.from_wif(key)
-                solvers.append(P2pkhSolver(private_key))
+                # create btcpy P2PKH Solvers from those PrivateKeys
+                unordered_solvers.append(P2pkhSolver(private_key))
 
-            addresses_solvers = zip(self.chosen_inputs, solvers)
+            # a dict that matches the addresses (which are ordered the same as
+            # their above WIF Keys) to their solvers
+            addresses_solvers = dict(zip(self.chosen_inputs, unordered_solvers))
 
+            # from self._utxo_data, take the output num, value and scriptPubKey
+            # and create TxOuts representing the UTXO's that will be spent.
+            # In a tuple with the address of the UTXO so the correct solver
+            # can be found later
             for t in self._utxo_data:
-                tx_outs.append((t, TxOut(value=t[4], n=t[1], script_pubkey=t[3])))
+                unordered_tx_outs.append((t[2], TxOut(value=t[4], n=t[1], script_pubkey=t[3])))
 
-            def find_solver(address):
-                for s in addresses_solvers:
-                    if s[0] == address:
-                        return s[1]
+            # unlike the lists defined at the top of the method, these are in
+            # order i.e the solver in solvers[0] is the solver for the TxOut of
+            # tx_outs[0]. this is required to pass them into the spend() method
+            tx_outs = []
+            solvers = []
 
-            _txouts = []
-            _solvers = []
+            for t in unordered_tx_outs:
+                address = t[0]
 
-            for t in tx_outs:
-                address = t[0][2]
+                tx_outs.append(t[1])
+                solvers.append(addresses_solvers[address])
 
-                _txouts.append(t[1])
-                _solvers.append(find_solver(address))
-
-            signed = unsigned.spend(_txouts, _solvers)
+            signed = unsigned.spend(tx_outs, solvers)
 
             return signed
