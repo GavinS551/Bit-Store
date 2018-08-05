@@ -186,7 +186,9 @@ class Wallet:
         u_addrs = [a for a in self.non_used_addresses if a in self.transactions]
         self._set_addresses_used(u_addrs)
 
-    def _make_unsigned_transaction(self, outs_amounts, fee, locktime=0):
+    # fee will be modified later using transactions change_fee method, as the
+    # size of the transaction is currently unknown
+    def make_unsigned_transaction(self, outs_amounts, fee=0, locktime=0):
 
         txn = tx.Transaction(inputs_amounts=self.address_balances,
                              outputs_amounts=outs_amounts,
@@ -198,13 +200,12 @@ class Wallet:
 
         return txn
 
-    def make_signed_transaction(self, password, outs_amounts, fee, locktime=0):
+    def make_signed_transaction(self, password, unsigned_txn):
 
-        txn = self._make_unsigned_transaction(outs_amounts, fee, locktime)
-        input_addresses = txn.chosen_inputs
+        input_addresses = unsigned_txn.chosen_inputs
         wif_keys = self.get_wif_keys(password, input_addresses)
 
-        return txn.signed_txn(wif_keys)
+        return unsigned_txn.signed_txn(wif_keys)
 
     def change_gap_limit(self, password):
         if self.data_store.validate_password(password):
