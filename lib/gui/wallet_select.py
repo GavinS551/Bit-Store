@@ -50,25 +50,25 @@ class WalletSelect(ttk.Frame):
 
         select_button = ttk.Button(options_frame, text='Select Wallet',
                                    command=self.select_wallet)
-        select_button.grid(row=1, column=0, pady=20, sticky='ew')
+        select_button.grid(row=1, column=0, pady=20, padx=5, sticky='ew')
 
         # binds a double click on listbox to trigger same method as button
         self.wallet_list.bind('<Double-1>', lambda x: self.select_wallet())
 
         new_wallet_button = ttk.Button(options_frame, text='New Wallet',
                                        command=lambda: self.root.show_frame('WalletCreation'))
-        new_wallet_button.grid(row=2, column=0, sticky='ew')
+        new_wallet_button.grid(row=2, column=0, padx=5, sticky='ew')
 
         import_wallet_button = ttk.Button(options_frame, text='Import Wallet')
         import_wallet_button['state'] = tk.DISABLED
-        import_wallet_button.grid(row=3, column=0, sticky='ew')
+        import_wallet_button.grid(row=3, column=0, padx=5, sticky='ew')
 
         edit_wallet_button = ttk.Button(options_frame, text='Edit Wallet')
-        edit_wallet_button.grid(row=4, column=0, sticky='ew')
+        edit_wallet_button.grid(row=4, column=0, padx=5, sticky='ew')
 
         settings_button = ttk.Button(options_frame, text='Settings',
                                      command=self.root.settings_prompt)
-        settings_button.grid(row=5, column=0, pady=20, sticky='ew')
+        settings_button.grid(row=5, column=0, pady=20, padx=5, sticky='ew')
 
     @property
     def wallets(self):
