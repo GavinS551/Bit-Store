@@ -55,10 +55,15 @@ class Transaction:
         if total_to_spend <= 0:
             raise ValueError('amount to send has to be > 0')
 
-        # finds what int in a list of tuples, where int is [1] in a tuple, is closest to n
+        # finds what non-zero int in a list of tuples,
+        # where the int is idx [1] in a tuple, is closest to n
         def closest_int(n, list_):
             num_list = [x for _, x in list_]
-            return min(num_list, key=lambda x: abs(x - n))
+            m = min(num_list, key=lambda x: abs(x - n))
+            if m == 0:
+                raise ValueError(f'closest int to {n}, in the list of tuples {list_}, is 0')
+
+            return m
 
         addresses = []
 
@@ -69,6 +74,7 @@ class Transaction:
         # when it is empty, all inputs have been added to addresses
         while total_to_spend > 0 and inputs_amounts:
 
+            # finds what input has the closest value to total_to_spend
             closest = list(filter(lambda x: x[1] == closest_int(total_to_spend, inputs_amounts), inputs_amounts))
 
             # if there are more than 1 tuple that is 'closest', just take the one at [0]

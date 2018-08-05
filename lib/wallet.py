@@ -190,7 +190,9 @@ class Wallet:
     # size of the transaction is currently unknown
     def make_unsigned_transaction(self, outs_amounts, fee=0, locktime=0):
 
-        txn = tx.Transaction(inputs_amounts=self.address_balances,
+        non_zero_address_bals = {a:b for a, b in self.address_balances.items() if b > 0}
+
+        txn = tx.Transaction(inputs_amounts=non_zero_address_bals,
                              outputs_amounts=outs_amounts,
                              change_address=self.change_addresses[0],
                              fee=fee,
