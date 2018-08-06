@@ -73,8 +73,13 @@ class RootApplication(tk.Tk):
                                                      exc_traceback))
         messagebox.showerror('Error', message)
 
-    def show_frame(self, frame):
+    # kwargs is used to pass data into frame objects
+    def show_frame(self, frame, **kwargs):
         f = self.frames[frame]
+
+        for k, v in kwargs.items():
+            setattr(f, k, v)
+
         f.gui_draw()
         f.tkraise()
         self.update_idletasks()
