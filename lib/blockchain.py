@@ -2,6 +2,7 @@ import time
 import abc
 
 import requests
+from btcpy.structs.script import Script
 
 from . import btc_verify
 from . import config
@@ -46,6 +47,7 @@ class BlockchainApiInterface(metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
     def unspent_outputs(self):
+        """ format = tuple(txid, out_num, address, scriptPubKey{btcpy struct}, value) """
         raise NotImplementedError
 
 
@@ -203,4 +205,27 @@ class BlockchainInfo(BlockchainApiInterface):
 
             unspent_outs[address] = addr_unspent_outs
 
-        return unspent_outs
+        utxo_data = []
+        for addr, data in unspent_outs.items():
+
+            # getting tx ids and output number for all UTXOs to be spent
+            for tx in data:
+
+                # getting the transaction id
+                txid = tx['hash']
+
+                # variables will be None if they aren't assigned in below loop
+                out_num = None
+                scriptpubkey = None
+                value = None
+
+                for out in tx['out']:
+                    if out['addr'] == addr:
+                        out_num = out['n']
+                        scriptpubkey = Script.unhexlify(out['script'])
+                        value = out['value']  # value of output in satoshis
+                        break
+
+                utxo_data.append((txid, out_num, addr, scriptpubkey, value))
+
+        return utxo_data

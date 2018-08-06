@@ -197,7 +197,7 @@ class Wallet:
                              change_address=self.change_addresses[0],
                              fee=fee,
                              is_segwit=self.is_segwit,
-                             transaction_data=self.unspent_outputs,
+                             utxo_data=self.unspent_outputs,
                              locktime=locktime)
 
         return txn
