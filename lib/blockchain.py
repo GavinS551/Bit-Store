@@ -2,7 +2,6 @@ import time
 import abc
 
 import requests
-from btcpy.structs.script import Script
 
 from . import btc_verify
 from . import config
@@ -39,6 +38,7 @@ class BlockchainApiInterface(metaclass=abc.ABCMeta):
     def address_balances(self):
         raise NotImplementedError
 
+    # TODO: REFACTOR THIS METHOD TO RETURN VALUES THAT ARE THE SAME REGARDLESS OF API USED, SEE UNSPENT_OUTPUTS
     @property
     @abc.abstractmethod
     def address_transactions(self):
@@ -47,7 +47,7 @@ class BlockchainApiInterface(metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
     def unspent_outputs(self):
-        """ format = tuple(txid, out_num, address, scriptPubKey{btcpy struct}, value) """
+        """ format = tuple(txid, out_num, address, scriptPubKey{hex string}, value) """
         raise NotImplementedError
 
 
@@ -222,7 +222,7 @@ class BlockchainInfo(BlockchainApiInterface):
                 for out in tx['out']:
                     if out['addr'] == addr:
                         out_num = out['n']
-                        scriptpubkey = Script.unhexlify(out['script'])
+                        scriptpubkey = out['script']
                         value = out['value']  # value of output in satoshis
                         break
 

@@ -1,7 +1,7 @@
 import base58
 
 from btcpy.structs.transaction import MutableTransaction, MutableSegWitTransaction, TxIn, TxOut, Locktime, Sequence
-from btcpy.structs.script import P2pkhScript, P2shScript
+from btcpy.structs.script import P2pkhScript, P2shScript, Script
 from btcpy.structs.sig import ScriptSig, P2pkhSolver
 from btcpy.structs.hd import PrivateKey
 
@@ -186,7 +186,7 @@ class Transaction:
             # In a tuple with the address of the UTXO so the correct solver
             # can be found later
             for t in self.specific_utxo_data:
-                unordered_tx_outs.append((t[2], TxOut(value=t[4], n=t[1], script_pubkey=t[3])))
+                unordered_tx_outs.append((t[2], TxOut(value=t[4], n=t[1], script_pubkey=Script.unhexlify(t[3]))))
 
             # unlike the lists defined at the top of the method, these are in
             # order i.e the solver in solvers[0] is the solver for the TxOut of

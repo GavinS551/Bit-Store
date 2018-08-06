@@ -76,7 +76,7 @@ STANDARD_DATA_FORMAT = {
     'TXNS': {},
     'PRICE': 0.0,
     'WALLET_BAL': 0,
-    'UNSPENT_OUTS': {},
+    'UNSPENT_OUTS': [],
     'PASSWORD_HASH': '',
     'ADDRESS_WIF_KEYS': {}
 }
