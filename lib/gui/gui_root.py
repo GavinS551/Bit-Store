@@ -43,6 +43,8 @@ class RootApplication(tk.Tk):
 
         self.wm_title('Bit-Store')
         self.iconbitmap(ICON)
+        self.style = ttk.Style()
+        self.set_style()
 
         self.master_frame = ttk.Frame(self, padding=20)
 
@@ -84,6 +86,9 @@ class RootApplication(tk.Tk):
         f.gui_draw()
         f.tkraise()
         self.update_idletasks()
+
+    def set_style(self):
+        self.style.configure('Treeview.Heading', font=(config.FONT, 10))
 
     def wallet_init(self, name, password):
         self.btc_wallet = wallet.Wallet(name=name, password=password)
