@@ -43,7 +43,6 @@ class Transaction:
          """
         return base58.b58decode_check(address)[1:]
 
-    # TODO: Rework the way inputs are chosen. try to use least amount, but also smallest possible. this only uses least amount
     def _choose_input_addresses(self):
         """ chose which addresses to spend in txn """
 

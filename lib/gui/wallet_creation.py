@@ -175,7 +175,7 @@ class WalletCreation(ttk.Frame):
 
         w = wallet.Wallet.new_wallet(wallet_data.name, wallet_data.password, bip32_)
         self.root.btc_wallet = w
-        self.root.show_frame('WalletCreationShowMnemonic')
+        self.root.show_frame('WalletCreationShowMnemonic', mnemonic=wallet_data.mnemonic)
 
 
 class WalletCreationLoading(ttk.Frame):
@@ -201,10 +201,28 @@ class WalletCreationShowMnemonic(ttk.Frame):
 
     def __init__(self, root):
         self.root = root
+        self.mnemonic = None  # mnemonic will be set from show_frame
         ttk.Frame.__init__(self, self.root.master_frame)
 
     def gui_draw(self):
-        pass
+        title_label = ttk.Label(self, text='Wallet Mnemonic Seed:', font=self.root.bold_title_font)
+        title_label.grid(row=0, column=0, sticky='n', pady=20)
+
+        info_label = ttk.Label(self, text='Please write down the mnemonic seed-phrase below '
+                                     'and keep it in a safe place as it contains all information '
+                                     'needed to spend your Bitcoin. This is how you can recover '
+                                     'your wallet in the future.',
+                               font=self.root.small_font,
+                               justify=tk.CENTER, wrap=520)
+        info_label.grid(row=1, column=0)
+
+        mnemonic_label = ttk.Label(self, text=self.mnemonic, font=('Courier New', 14, 'bold'),
+                                   wrap=350, justify=tk.CENTER)
+        mnemonic_label.grid(row=2, column=0, pady=40)
+
+        continue_button = ttk.Button(self, text='Continue',
+                                     command=lambda: self.root.show_frame('WalletCreationVerify'))
+        continue_button.grid(row=3, column=0, sticky='s')
 
 
 class WalletCreationVerifyMnemonic(ttk.Frame):
