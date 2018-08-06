@@ -10,6 +10,7 @@ from .. import config, wallet
 from .wallet_select import WalletSelect
 from .wallet_creation import (WalletCreation, WalletCreationLoading,
                               WalletCreationShowMnemonic, WalletCreationVerifyMnemonic)
+from .main_wallet import MainWallet
 
 
 ICON = os.path.join(os.path.dirname(__file__), 'assets', 'bc_logo.ico')
@@ -104,18 +105,6 @@ class _Settings(tk.Toplevel):
 
         self.frame = ttk.Frame(self)
         self.frame.pack(expand=True)
-
-
-class MainWallet(ttk.Frame):
-
-    def __init__(self, root):
-        self.root = root
-        ttk.Frame.__init__(self, self.root.master_frame)
-
-    def gui_draw(self):
-        title_label = ttk.Label(self, text=self.root.btc_wallet.name,
-                                font=self.root.bold_title_font)
-        title_label.grid(row=0, column=0)
 
 
 def main():
