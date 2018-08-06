@@ -196,7 +196,7 @@ class BlockchainInfo(BlockchainApiInterface):
 
             for tx in address_txns:
                 for out in tx['out']:
-                    if out['spent'] is False:
+                    if out['spent'] is False and out['addr'] == address:
                         addr_unspent_outs.append(tx)
 
             # continue if there is no unspent outs for a particular address
@@ -224,6 +224,7 @@ class BlockchainInfo(BlockchainApiInterface):
                         out_num = out['n']
                         scriptpubkey = out['script']
                         value = out['value']  # value of output in satoshis
+
                         break
 
                 utxo_data.append((txid, out_num, addr, scriptpubkey, value))
