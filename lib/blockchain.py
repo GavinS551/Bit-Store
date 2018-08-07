@@ -59,7 +59,7 @@ class BlockchainApiInterface(metaclass=abc.ABCMeta):
             'fee': int,
             'size': int,
             'inputs': [{'value': int, 'address': str, 'n': int}, ...]
-            'outputs': [{'value': int, 'address': str, 'n': int}, ...]
+            'outputs': [{'value': int, 'address': str, 'n': int, 'spent': bool}, ...]
             'wallet_amount': int
 
         }, ...]
@@ -232,6 +232,7 @@ class BlockchainInfo(BlockchainApiInterface):
                 o['value'] = output['value']
                 o['address'] = output['addr']
                 o['n'] = output['n']
+                o['spent'] = output['spent']
 
                 outs.append(o)
 
