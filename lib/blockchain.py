@@ -69,7 +69,7 @@ class BlockchainApiInterface(metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
     def unspent_outputs(self):
-        """ format = tuple(txid, out_num, address, scriptPubKey{hex string}, value) """
+        """ format = tuple(txid, output_num, address, script, value) """
         raise NotImplementedError
 
 
@@ -137,41 +137,6 @@ class BlockchainInfo(BlockchainApiInterface):
         return list(zip(self.addresses, num_txns))
 
     @property
-    def _address_transactions(self):
-        """ Returns a dict with addresses as keys and all txns associated with them as values"""
-
-        txns = []
-
-        for tx in self._blockchain_data['txs']:
-            txns.append(tx)
-
-        addresses_with_txns = [a for a, n in self._address_num_transactions if n > 0]
-
-        transaction_dict = {}
-        for a in addresses_with_txns:
-            tx_list = []
-
-            for tx in txns:
-                # flag used to make sure a txn won't be added twice if an address
-                # acted as both an input and as an output. I.E if an address
-                # is in both tx['inputs'] and tx['out']
-                tx_caught_flag = False
-
-                for i in tx['inputs']:
-                    if a == i['prev_out']['addr']:
-                        tx_list.append(tx)
-                        tx_caught_flag = True
-
-                if not tx_caught_flag:
-                    for i in tx['out']:
-                        if a == i['addr']:
-                            tx_list.append(tx)
-
-            transaction_dict[a] = tx_list
-
-        return transaction_dict
-
-    @property
     def wallet_balance(self):
         """ Combined balance of all addresses (in satoshis)"""
         return self._blockchain_data['wallet']['final_balance']
@@ -193,7 +158,7 @@ class BlockchainInfo(BlockchainApiInterface):
 
         for tx in data['txs']:
 
-            transaction = {}
+            transaction = dict()
 
             transaction['txid'] = tx['hash']
 
@@ -215,7 +180,7 @@ class BlockchainInfo(BlockchainApiInterface):
 
             ins = []
             for input_ in tx['inputs']:
-                i = {}
+                i = dict()
 
                 i['value'] = input_['prev_out']['value']
                 i['address'] = input_['prev_out']['addr']
@@ -227,12 +192,13 @@ class BlockchainInfo(BlockchainApiInterface):
 
             outs = []
             for output in tx['out']:
-                o = {}
+                o = dict()
 
                 o['value'] = output['value']
                 o['address'] = output['addr']
                 o['n'] = output['n']
                 o['spent'] = output['spent']
+                o['script'] = output['script']
 
                 outs.append(o)
 
@@ -256,53 +222,24 @@ class BlockchainInfo(BlockchainApiInterface):
 
     @property
     def unspent_outputs(self):
+        # utxo_data.append((txid, out_num, address, script, value))
 
-        unspent_outs = {}
-        addr_txns = self._address_transactions
-
-        for address in self.addresses:
-
-            if address in addr_txns:
-                address_txns = addr_txns[address]
-            else:
-                continue
-
-            addr_unspent_outs = []
-
-            for tx in address_txns:
-                for out in tx['out']:
-                    if out['spent'] is False and out['addr'] == address:
-                        addr_unspent_outs.append(tx)
-
-            # continue if there is no unspent outs for a particular address
-            if not addr_unspent_outs:
-                continue
-
-            unspent_outs[address] = addr_unspent_outs
-
+        txns = self.transactions
         utxo_data = []
-        for addr, data in unspent_outs.items():
 
-            # getting tx ids and output number for all UTXOs to be spent
-            for tx in data:
+        for txn in txns:
 
-                # getting the transaction id
-                txid = tx['hash']
+            for out in txn['outputs']:
+                # if the output isn't spent and it relates to an address in self.addresses
+                if out['spent'] is False and out['address'] in self.addresses:
 
-                # variables will be None if they aren't assigned in below loop
-                out_num = None
-                scriptpubkey = None
-                value = None
+                    txid = txn['txid']
+                    output_num = out['n']
+                    address = out['address']
+                    script = out['script']
+                    value = out['value']
 
-                for out in tx['out']:
-                    if out['addr'] == addr:
-                        out_num = out['n']
-                        scriptpubkey = out['script']
-                        value = out['value']  # value of output in satoshis
-
-                        break
-
-                utxo_data.append((txid, out_num, addr, scriptpubkey, value))
+                    utxo_data.append((txid, output_num, address, script, value))
 
         return utxo_data
 
