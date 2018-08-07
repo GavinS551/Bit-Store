@@ -128,29 +128,6 @@ class BlockchainInfo(BlockchainApiInterface):
             return self.last_requested_data
 
     @property
-    def _address_num_transactions(self):
-        """ Returns a list of tuples containing address/amount of txns """
-        num_txns = []
-        for address in self.addresses:
-            num_txns.append(self._find_address_data(address, 'n_tx'))
-
-        return list(zip(self.addresses, num_txns))
-
-    @property
-    def wallet_balance(self):
-        """ Combined balance of all addresses (in satoshis)"""
-        return self._blockchain_data['wallet']['final_balance']
-
-    @property
-    def address_balances(self):
-        """ returns a list of tuples with address/balance(in satoshis) """
-        balances = {}
-        for address in self.addresses:
-            balances[address] = self._find_address_data(address, 'final_balance')
-
-        return balances
-
-    @property
     def transactions(self):
         """ returns all txns associated with the entered addresses in standard format"""
         data = self._blockchain_data
@@ -219,6 +196,20 @@ class BlockchainInfo(BlockchainApiInterface):
             transactions.append(transaction)
 
         return transactions
+
+    @property
+    def wallet_balance(self):
+        """ Combined balance of all addresses (in satoshis)"""
+        return self._blockchain_data['wallet']['final_balance']
+
+    @property
+    def address_balances(self):
+        """ returns a list of tuples with address/balance(in satoshis) """
+        balances = {}
+        for address in self.addresses:
+            balances[address] = self._find_address_data(address, 'final_balance')
+
+        return balances
 
     @property
     def unspent_outputs(self):
