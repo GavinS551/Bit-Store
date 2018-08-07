@@ -9,6 +9,13 @@ from . import config
 
 def blockchain_api(addresses, source=config.BLOCKCHAIN_API_SOURCE, timeout=10):
 
+    # input validation
+    if not isinstance(addresses, list):
+        raise ValueError('Address(es) must be in a list!')
+
+    if not btc_verify.check_bc(addresses):
+        raise ValueError('Invalid Address entered')
+
     sources = {
         'blockchain.info': BlockchainInfo
     }
@@ -56,12 +63,6 @@ class BlockchainInfo(BlockchainApiInterface):
     def __init__(self, addresses, timeout=10):
 
         self.TIME_INTERVAL = 10  # leaves 10 seconds between api requests
-
-        if not isinstance(addresses, list):
-            raise ValueError('Address(es) must be in a list!')
-
-        if not btc_verify.check_bc(addresses):
-            raise ValueError('Invalid Address entered')
 
         self.addresses = addresses
         self.URL = 'https://blockchain.info/multiaddr?active='
