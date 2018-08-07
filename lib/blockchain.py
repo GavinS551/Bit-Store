@@ -1,4 +1,5 @@
 import time
+import datetime
 import abc
 
 import requests
@@ -7,7 +8,7 @@ from . import btc_verify
 from . import config
 
 
-def blockchain_api(addresses, source=config.BLOCKCHAIN_API_SOURCE, timeout=10):
+def blockchain_api(addresses, refresh_rate, source=config.BLOCKCHAIN_API_SOURCE):
 
     # input validation
     if not isinstance(addresses, list):
@@ -23,14 +24,15 @@ def blockchain_api(addresses, source=config.BLOCKCHAIN_API_SOURCE, timeout=10):
     if source.lower() not in sources:
         raise NotImplementedError(f'{source} is an invalid source')
 
-    return sources[source](addresses, timeout)
+    return sources[source](addresses, refresh_rate)
 
+# TODO CHANGE ALL METHODS TO USE STANDARD TXN FORMAT, THEN ONLY TRANSACTIONS METHOD WILL BE API SPECIFIC
 
 class BlockchainApiInterface(metaclass=abc.ABCMeta):
     """
     A blockchain api class must accept two arguments: 1. addresses (a list
-    of bitcoin addresses) and 2. timeout (an int (seconds) that sets the timeout
-    for an api call)
+    of bitcoin addresses i.e a "wallet") and 2. timeout (an int (seconds)
+    that sets the refresh rate of the api calls)
 
     BALANCES SHOULD ALWAYS BE IN SATOSHIS, AS AN INT
     """
@@ -45,21 +47,29 @@ class BlockchainApiInterface(metaclass=abc.ABCMeta):
     def address_balances(self):
         raise NotImplementedError
 
-    # TODO: REFACTOR THIS METHOD TO RETURN VALUES THAT ARE THE SAME REGARDLESS OF API USED, SEE UNSPENT_OUTPUTS
     @property
     @abc.abstractmethod
-    def address_transactions(self):
+    def transactions(self):
+        """ format: [ {
+
+            'txid': str,
+            'date': str,
+            'block_height': int,
+            'confirmations': int,
+            'fee': int,
+            'size': int,
+            'inputs': [{'value': int, 'address': str, 'n': int}, ...]
+            'outputs': [{'value': int, 'address': str, 'n': int}, ...]
+            'wallet_amount': int
+
+        }, ...]
+        """
         raise NotImplementedError
 
     @property
     @abc.abstractmethod
     def unspent_outputs(self):
         """ format = tuple(txid, out_num, address, scriptPubKey{hex string}, value) """
-        raise NotImplementedError
-
-    @property
-    @abc.abstractmethod
-    def blockchain_height(self):
         raise NotImplementedError
 
 
@@ -127,21 +137,7 @@ class BlockchainInfo(BlockchainApiInterface):
         return list(zip(self.addresses, num_txns))
 
     @property
-    def wallet_balance(self):
-        """ Combined balance of all addresses (in satoshis)"""
-        return self._blockchain_data['wallet']['final_balance']
-
-    @property
-    def address_balances(self):
-        """ returns a list of tuples with address/balance(in satoshis) """
-        balances = {}
-        for address in self.addresses:
-            balances[address] = self._find_address_data(address, 'final_balance')
-
-        return balances
-
-    @property
-    def address_transactions(self):
+    def _address_transactions(self):
         """ Returns a dict with addresses as keys and all txns associated with them as values"""
 
         txns = []
@@ -176,10 +172,91 @@ class BlockchainInfo(BlockchainApiInterface):
         return transaction_dict
 
     @property
+    def wallet_balance(self):
+        """ Combined balance of all addresses (in satoshis)"""
+        return self._blockchain_data['wallet']['final_balance']
+
+    @property
+    def address_balances(self):
+        """ returns a list of tuples with address/balance(in satoshis) """
+        balances = {}
+        for address in self.addresses:
+            balances[address] = self._find_address_data(address, 'final_balance')
+
+        return balances
+
+    @property
+    def transactions(self):
+        """ returns all txns associated with the entered addresses in standard format"""
+        data = self._blockchain_data
+        transactions = []
+        transaction = {}
+
+        for tx in data['txs']:
+
+            transaction['txid'] = tx['hash']
+
+            # getting date as local time from unix timestamp
+            utc_time = datetime.datetime.utcfromtimestamp(tx['time'])
+            local_time = utc_time.astimezone()
+            transaction['date'] = local_time.strftime('%Y-%m-%d %H:%M:%S (%Z)')
+
+            transaction['block_height'] = tx['block_height']
+
+            # if a block isn't confirmed yet, there will be no block_height key
+            try:
+                transaction['confirmations'] = self.blockchain_height - tx['block_height']
+            except KeyError:
+                transaction['confirmations'] = 0
+
+            transaction['fee'] = tx['fee']
+            transaction['size'] = tx['size']
+
+            ins = []
+            for input_ in tx['inputs']:
+                i = {}
+
+                i['value'] = input_['prev_out']['value']
+                i['address'] = input_['prev_out']['addr']
+                i['n'] = input_['prev_out']['n']
+
+                ins.append(i)
+
+            transaction['inputs'] = ins
+
+            outs = []
+            for output in tx['out']:
+                o = {}
+
+                o['value'] = output['value']
+                o['address'] = output['addr']
+                o['n'] = output['n']
+
+                outs.append(o)
+
+            transaction['outputs'] = outs
+
+            # finding the wallet_amount, + or -, for the txn (wallet being all addresses passed into class)
+            # i.e the overall change in wallet funds after the txn. any input
+            amount = 0
+            for i in ins:
+                if i['address'] in self.addresses:
+                    amount -= i['value']
+            for o in outs:
+                if o['address'] in self.addresses:
+                    amount += o['value']
+
+            transaction['wallet_amount'] = amount
+
+            transactions.append(transaction)
+
+        return transactions
+
+    @property
     def unspent_outputs(self):
 
         unspent_outs = {}
-        addr_txns = self.address_transactions
+        addr_txns = self._address_transactions
 
         for address in self.addresses:
 

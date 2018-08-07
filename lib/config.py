@@ -73,7 +73,7 @@ STANDARD_DATA_FORMAT = {
     'ADDRESSES_CHANGE': [],
     'ADDRESSES_USED': [],
     'ADDRESS_BALS': {},
-    'TXNS': {},
+    'TXNS': [],
     'PRICE': 0.0,
     'WALLET_BAL': 0,
     'UNSPENT_OUTS': [],
