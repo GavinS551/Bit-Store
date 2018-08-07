@@ -213,8 +213,6 @@ class BlockchainInfo(BlockchainApiInterface):
 
     @property
     def unspent_outputs(self):
-        # utxo_data.append((txid, out_num, address, script, value))
-
         txns = self.transactions
         utxo_data = []
 
