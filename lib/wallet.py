@@ -53,13 +53,13 @@ class Wallet:
 
                 addresses = self.wallet_instance.all_addresses
 
-                bd = blockchain.blockchain_api(addresses)
+                bd = blockchain.blockchain_api(addresses, self.refresh_rate)
                 price_data = price.BitcoinPrice()
 
                 try:
                     api_data = {
                         'WALLET_BAL': bd.wallet_balance,
-                        'TXNS': bd.address_transactions,
+                        'TXNS': bd.transactions,
                         'ADDRESS_BALS': bd.address_balances,
                         'PRICE': price_data.price,
                         'UNSPENT_OUTS': bd.unspent_outputs
