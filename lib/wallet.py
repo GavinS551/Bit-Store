@@ -316,7 +316,7 @@ class Wallet:
                 # only decrypt the values that we need
                 wif_keys.append(self.data_store.decrypt(addr_wif_keys[a]))
 
-            return dict(zip(addresses, wif_keys))
+            return wif_keys
 
         else:
             raise data.IncorrectPasswordError

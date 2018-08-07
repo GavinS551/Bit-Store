@@ -1,9 +1,9 @@
 import base58
 
 from btcpy.structs.transaction import MutableTransaction, MutableSegWitTransaction, TxIn, TxOut, Locktime, Sequence
-from btcpy.structs.script import P2pkhScript, P2shScript, Script
-from btcpy.structs.sig import ScriptSig, P2pkhSolver
-from btcpy.structs.hd import PrivateKey
+from btcpy.structs.script import P2pkhScript, P2shScript, Script, P2wpkhV0Script, ScriptSig
+from btcpy.structs.sig import P2pkhSolver, P2shSolver, P2wpkhV0Solver
+from btcpy.structs.crypto import PrivateKey
 
 from .exceptions.tx_exceptions import *
 
@@ -19,7 +19,7 @@ class Transaction:
         :param change_address: change address of txn (will only be used if necessary)
         :param fee: txn fee
         :param is_segwit: bool
-        :param utxo_data: unspent_outputs property of wallet class
+        :param utxo_data: list of unspent outs tuples formatted [(txid, out_num, addr, scriptPubkey, value)]
         :param locktime: locktime of btc txn
         """
 
@@ -30,6 +30,7 @@ class Transaction:
         self.is_segwit = is_segwit
         self.locktime = locktime
         self.utxo_data = utxo_data
+        self.is_signed = False
 
 
         self.change_amount = 0
@@ -130,25 +131,30 @@ class Transaction:
                 script_pubkey=out_script(bytearray(self.get_hash160(addr)))
             ))
 
+        inputs = []
+
+        for t in self.specific_utxo_data:
+
+            # build inputs using the UTXO data in self.specific_utxo_data,
+            # script_sig is empty as the transaction will be signed later
+            inputs.append(
+
+                TxIn(txid=t[0],
+                     txout=t[1],
+                     script_sig=ScriptSig.empty(),
+                     sequence=Sequence.max())
+            )
+
         if self.is_segwit:
-            # PLACEHOLDER
-            transaction = MutableSegWitTransaction
+
+            transaction = MutableSegWitTransaction(
+                version=TX_VERSION,
+                ins=inputs,
+                outs=outputs,
+                locktime=Locktime(self.locktime)
+            )
 
         else:
-
-            inputs = []
-
-            for t in self.specific_utxo_data:
-
-                # build inputs using the UTXO data in self.specific_utxo_data,
-                # script_sig is empty as the transaction will be signed later
-                inputs.append(
-
-                    TxIn(txid=t[0],
-                         txout=t[1],
-                         script_sig=ScriptSig.empty(),
-                         sequence=Sequence.max())
-                )
 
             transaction = MutableTransaction(
                 version=TX_VERSION,
@@ -167,13 +173,20 @@ class Transaction:
         unordered_tx_outs = []
         unsigned = self.unsigned_txn
 
-        if self.is_segwit:
-            pass
+        for key in wif_keys:
+            # create btcpy PrivateKeys from input WIF format keys
+            private_key = PrivateKey.from_wif(key)
 
-        else:
-            for key in wif_keys:
-                # create btcpy PrivateKeys from input WIF format keys
-                private_key = PrivateKey.from_wif(key)
+            if self.is_segwit:
+                pub_key = private_key.pub(compressed=True)
+
+                s_solver = P2shSolver(
+                    P2wpkhV0Script(pub_key),
+                    P2wpkhV0Solver(private_key)
+                )
+
+                unordered_solvers.append(s_solver)
+            else:
                 # create btcpy P2PKH Solvers from those PrivateKeys
                 unordered_solvers.append(P2pkhSolver(private_key))
 
