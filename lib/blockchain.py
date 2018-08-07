@@ -57,12 +57,15 @@ class BlockchainApiInterface(metaclass=abc.ABCMeta):
         """ format = tuple(txid, out_num, address, scriptPubKey{hex string}, value) """
         raise NotImplementedError
 
+    @property
+    @abc.abstractmethod
+    def blockchain_height(self):
+        raise NotImplementedError
+
 
 class BlockchainInfo(BlockchainApiInterface):
 
-    def __init__(self, addresses, timeout=10):
-
-        self.TIME_INTERVAL = 10  # leaves 10 seconds between api requests
+    def __init__(self, addresses, refresh_rate):
 
         self.addresses = addresses
         self.URL = 'https://blockchain.info/multiaddr?active='
@@ -70,7 +73,7 @@ class BlockchainInfo(BlockchainApiInterface):
         self.last_request_time = 0
         self.last_requested_data = {}
 
-        self.timeout = timeout
+        self.refresh_rate = refresh_rate
 
     def _check_address(self, address):
         if address not in self.addresses:
@@ -96,14 +99,14 @@ class BlockchainInfo(BlockchainApiInterface):
     @property
     def _blockchain_data(self):
         # leaves TIME_INTERVAL seconds between api requests
-        if not time.time() - self.last_request_time < self.TIME_INTERVAL:
+        if not time.time() - self.last_request_time < self.refresh_rate:
 
             url = self.URL
 
             for address in self.addresses:
                 url += f'{address}|'
 
-            data = requests.get(url, timeout=self.timeout).json()
+            data = requests.get(url, timeout=10).json()
             self.last_request_time = time.time()
             self.last_requested_data = data
 
@@ -141,20 +144,12 @@ class BlockchainInfo(BlockchainApiInterface):
     def address_transactions(self):
         """ Returns a dict with addresses as keys and all txns associated with them as values"""
 
-        # number of total txns needed so the correct amount of txns are added to the txns list
-        num_txns = 0
-
-        # addr_num_txns is created because I will be calling it twice, and don't
-        # want a second API call to possibly happen like it could calling self._address_num_transactions
-        addr_num_txns = self._address_num_transactions
-        for _, n in addr_num_txns:
-            num_txns += n
-
         txns = []
-        for i in range(num_txns):
-            txns.append(self._blockchain_data['txs'][i])
 
-        addresses_with_txns = [a for a, n in addr_num_txns if n > 0]
+        for tx in self._blockchain_data['txs']:
+            txns.append(tx)
+
+        addresses_with_txns = [a for a, n in self._address_num_transactions if n > 0]
 
         transaction_dict = {}
         for a in addresses_with_txns:
@@ -231,3 +226,7 @@ class BlockchainInfo(BlockchainApiInterface):
                 utxo_data.append((txid, out_num, addr, scriptpubkey, value))
 
         return utxo_data
+
+    @property
+    def blockchain_height(self):
+        return self._blockchain_data['info']['latest_block']['height']
