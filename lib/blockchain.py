@@ -190,9 +190,10 @@ class BlockchainInfo(BlockchainApiInterface):
         """ returns all txns associated with the entered addresses in standard format"""
         data = self._blockchain_data
         transactions = []
-        transaction = {}
 
         for tx in data['txs']:
+
+            transaction = {}
 
             transaction['txid'] = tx['hash']
 
@@ -205,7 +206,7 @@ class BlockchainInfo(BlockchainApiInterface):
 
             # if a block isn't confirmed yet, there will be no block_height key
             try:
-                transaction['confirmations'] = self.blockchain_height - tx['block_height']
+                transaction['confirmations'] = (self.blockchain_height - tx['block_height']) + 1  # blockchains start at 0
             except KeyError:
                 transaction['confirmations'] = 0
 
