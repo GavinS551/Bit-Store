@@ -119,6 +119,7 @@ class BlockchainInfo(_BlockchainInterface):
 
             for address in self.addresses:
                 url += f'{address}|'
+            url += '&n=100'  # show up to 100 (max) transactions
 
             data = requests.get(url, timeout=10).json()
             self.last_request_time = time.time()
