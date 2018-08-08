@@ -78,8 +78,9 @@ class _BlockchainInterface:
                     address = out['address']
                     script = out['script']
                     value = out['value']
+                    confirmations = txn['confirmations']
 
-                    utxo_data.append([txid, output_num, address, script, value])
+                    utxo_data.append([txid, output_num, address, script, value, confirmations])
 
         return utxo_data
 

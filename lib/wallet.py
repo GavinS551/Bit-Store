@@ -84,7 +84,7 @@ class Wallet:
                     _update_api_data(old_keys)
 
                 # if new transactions have been updated, used addresses are set appropriately
-                self.wallet_instance._set_used_addresses_()
+                self.wallet_instance.set_used_addresses()
 
                 self.event.wait(self.refresh_rate)
 
@@ -181,7 +181,7 @@ class Wallet:
                                        'ADDRESSES_CHANGE': c_addrs,
                                        'ADDRESSES_USED': u_addrs})
 
-    def _set_used_addresses_(self):
+    def set_used_addresses(self):
         """ sets all addresses with txns associated with them as used"""
         u_addrs = [a for a in self.non_used_addresses if a in self.transactions]
         self._set_addresses_used(u_addrs)
