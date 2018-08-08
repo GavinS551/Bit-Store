@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 @dataclass
 class UTXOData:
+    """ dataclass that makes handling utxo data in standard format easier """
     txid: str
     output_num: int
     address: str
