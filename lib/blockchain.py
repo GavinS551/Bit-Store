@@ -86,7 +86,7 @@ class _BlockchainInterface:
 
     @property
     def address_balances(self):
-        """ returns a list of lists with address/balance(in satoshis) using UTXO data """
+        """ returns a dicts of addresses/balances(in satoshis) using UTXO data """
 
         balances = []
         unspent_outs = self.unspent_outputs
@@ -99,9 +99,9 @@ class _BlockchainInterface:
                     value += utxo[4]
                     unspent_outs.remove(utxo)
 
-            balances.append([address, value])
+            balances.append((address, value))
 
-        return balances
+        return dict(balances)
 
     @property
     def wallet_balance(self):
