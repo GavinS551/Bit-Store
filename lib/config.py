@@ -72,7 +72,7 @@ STANDARD_DATA_FORMAT = {
     'ADDRESSES_RECEIVING': [],
     'ADDRESSES_CHANGE': [],
     'ADDRESSES_USED': [],
-    'ADDRESS_BALS': {},
+    'ADDRESS_BALS': [],
     'TXNS': [],
     'PRICE': 0.0,
     'WALLET_BAL': 0,

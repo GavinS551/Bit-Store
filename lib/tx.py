@@ -19,7 +19,7 @@ class Transaction:
         :param change_address: change address of txn (will only be used if necessary)
         :param fee: txn fee
         :param is_segwit: bool
-        :param utxo_data: list of unspent outs tuples formatted [(txid, output_num, address, script, value)]
+        :param utxo_data: list of unspent outs tuples formatted [[txid, output_num, address, script, value], ...]
         :param locktime: locktime of btc txn
         """
 

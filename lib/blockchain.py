@@ -26,7 +26,6 @@ def blockchain_api(addresses, refresh_rate, source=config.BLOCKCHAIN_API_SOURCE)
 
     return sources[source](addresses, refresh_rate)
 
-# TODO CHANGE ALL METHODS TO USE STANDARD TXN FORMAT, THEN ONLY TRANSACTIONS METHOD WILL BE API SPECIFIC
 
 class BlockchainApiInterface(metaclass=abc.ABCMeta):
     """
@@ -69,7 +68,7 @@ class BlockchainApiInterface(metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
     def unspent_outputs(self):
-        """ format = tuple(txid, output_num, address, script, value) """
+        """ format = [txid, output_num, address, script, value] """
         raise NotImplementedError
 
 
@@ -146,9 +145,11 @@ class BlockchainInfo(BlockchainApiInterface):
 
             transaction['block_height'] = tx['block_height']
 
+            blockchain_height = self._blockchain_data['info']['latest_block']['height']
+
             # if a block isn't confirmed yet, there will be no block_height key
             try:
-                transaction['confirmations'] = (self.blockchain_height - tx['block_height']) + 1  # blockchains start at 0
+                transaction['confirmations'] = (blockchain_height - tx['block_height']) + 1  # blockchains start at 0
             except KeyError:
                 transaction['confirmations'] = 0
 
@@ -198,21 +199,8 @@ class BlockchainInfo(BlockchainApiInterface):
         return transactions
 
     @property
-    def wallet_balance(self):
-        """ Combined balance of all addresses (in satoshis)"""
-        return self._blockchain_data['wallet']['final_balance']
-
-    @property
-    def address_balances(self):
-        """ returns a list of tuples with address/balance(in satoshis) """
-        balances = {}
-        for address in self.addresses:
-            balances[address] = self._find_address_data(address, 'final_balance')
-
-        return balances
-
-    @property
     def unspent_outputs(self):
+        """ returns a list of UTXOs in standard format"""
         txns = self.transactions
         utxo_data = []
 
@@ -228,10 +216,30 @@ class BlockchainInfo(BlockchainApiInterface):
                     script = out['script']
                     value = out['value']
 
-                    utxo_data.append((txid, output_num, address, script, value))
+                    utxo_data.append([txid, output_num, address, script, value])
 
         return utxo_data
 
     @property
-    def blockchain_height(self):
-        return self._blockchain_data['info']['latest_block']['height']
+    def address_balances(self):
+        """ returns a list of lists with address/balance(in satoshis) using UTXO data """
+
+        balances = []
+        unspent_outs = self.unspent_outputs
+
+        for address in self.addresses:
+            value = 0
+
+            for utxo in unspent_outs:
+                if utxo[2] == address:
+                    value += utxo[4]
+                    unspent_outs.remove(utxo)
+
+            balances.append([address, value])
+
+        return balances
+
+    @property
+    def wallet_balance(self):
+        """ Combined balance of all addresses (in satoshis)"""
+        return sum([b[1] for b in self.address_balances])
