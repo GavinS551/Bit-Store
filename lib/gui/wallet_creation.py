@@ -8,6 +8,9 @@ from typing import Any
 from .. import bip32, config, wallet
 
 
+MAX_NAME_LENGTH = 25
+
+
 def threaded(func):
 
     def wrapper(*args, **kwargs):
@@ -118,6 +121,13 @@ class WalletCreation(ttk.Frame):
             if not name:
                 raise ValueError('No name entered')
 
+            if len(name) > MAX_NAME_LENGTH:
+                raise ValueError(f'Name is too long (max={MAX_NAME_LENGTH})')
+
+            for w in self.root.frames['WalletSelect'].wallets:
+                if w.lower() == name.lower():
+                    raise ValueError('Wallet with same name already exists!')
+
             if not password:
                 raise ValueError('No password entered')
 
@@ -218,18 +228,50 @@ class WalletCreationShowMnemonic(ttk.Frame):
 
         mnemonic_label = ttk.Label(self, text=self.mnemonic, font=('Courier New', 14, 'bold'),
                                    wrap=350, justify=tk.CENTER)
-        mnemonic_label.grid(row=2, column=0, pady=40)
+        mnemonic_label.grid(row=2, column=0, pady=30)
 
         continue_button = ttk.Button(self, text='Continue',
-                                     command=lambda: self.root.show_frame('WalletCreationVerify'))
-        continue_button.grid(row=3, column=0, sticky='s')
+                                     command=lambda: self.root.show_frame('WalletCreationVerifyMnemonic', mnemonic=self.mnemonic))
+        continue_button.grid(row=3, column=0)
 
 
 class WalletCreationVerifyMnemonic(ttk.Frame):
 
     def __init__(self, root):
         self.root = root
+        self.mnemonic = None  # mnemonic will be set from WalletCreationShowMnemonic
         ttk.Frame.__init__(self, self.root.master_frame)
 
+        # attributes defined in gui_draw method
+        self.mnemonic_entry = None
+
     def gui_draw(self):
-        pass
+        title_label = ttk.Label(self, text='Mnemonic Verification:', font=self.root.bold_title_font)
+        title_label.grid(row=0, column=0, sticky='n', pady=20)
+
+        mnemonic_entry_label = ttk.Label(self, text='Please enter the mnemonic that you wrote down in the previous window, '
+                                                    'to verify that you took it down correctly:',
+                                         font=self.root.small_font, justify=tk.CENTER, wrap=520)
+        mnemonic_entry_label.grid(row=1, column=0)
+
+        self.mnemonic_entry = tk.Text(self, width=40, height=5, font=self.root.small_font)
+        self.mnemonic_entry.grid(row=2, column=0, pady=20, columnspan=2)
+
+        button_frame = ttk.Frame(self)
+
+        back_button = ttk.Button(button_frame, text='Back', command=lambda: self.root.show_frame('WalletCreationShowMnemonic'))
+        back_button.grid(row=0, column=0, padx=10)
+
+        continue_button = ttk.Button(button_frame, text='Continue', command=self._on_continue)
+        continue_button.grid(row=0, column=1, padx=10)
+
+        button_frame.grid(row=3, column=0, pady=20)
+
+    def _verify_mnemonic(self):
+        return self.mnemonic.lower() == self.mnemonic_entry.get(1.0, 'end-1c').lower()
+
+    def _on_continue(self):
+        if self._verify_mnemonic():
+            self.root.show_frame('MainWallet')
+        else:
+            messagebox.showerror('Incorrect Entry', 'Mnemonic entered incorrectly, try again.')
