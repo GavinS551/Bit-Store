@@ -106,7 +106,7 @@ class _BlockchainInterface:
     @property
     def wallet_balance(self):
         """ Combined balance of all addresses (in satoshis)"""
-        return sum([b[1] for b in self.address_balances])
+        return sum([b[1] for b in self.address_balances.items()])
 
 
 class BlockchainInfo(_BlockchainInterface):

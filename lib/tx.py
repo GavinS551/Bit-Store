@@ -5,7 +5,136 @@ from btcpy.structs.script import P2pkhScript, P2shScript, Script, P2wpkhV0Script
 from btcpy.structs.sig import P2pkhSolver, P2shSolver, P2wpkhV0Solver
 from btcpy.structs.crypto import PrivateKey
 
+from .data_handling import UTXOData
+from . import config
+
 from .exceptions.tx_exceptions import *
+
+
+class _UTXOChooser:
+    """ chooses what utxos to use, to spend {output_amount} """
+
+    def __init__(self, utxos, output_amount, use_unconfirmed=False, use_full_address_utxos=False):
+        """
+        :param utxos: UTXOs in standard format as shown in blockchain.py
+        :param output_amount: amount of satoshis to output
+        :param use_unconfirmed: should unconfirmed UTXO's be chosen
+        :param use_full_address_utxos: should all of an addresses UTXOs be chosen, and not cherry-picked
+        """
+
+        self._utxos = [UTXOData(*utxo) for utxo in utxos]
+        self._output_amount = output_amount
+        self._use_unconfirmed = use_unconfirmed
+        self._use_full_address_utxos = use_full_address_utxos
+
+        if not self._use_unconfirmed:
+            self._remove_unconfirmed()
+
+        self.change_amount = None
+        self.chosen_utxos = None
+        self.chosen_addresses = None
+
+        self._choose_utxos()
+
+    def _remove_unconfirmed(self):
+        for u in self._utxos:
+            if not u.is_confirmed():
+                self._utxos.remove(u)
+
+    @property
+    def _addresses(self):
+        """ returns all addresses associated with all utxos """
+        addresses = []
+
+        for u in self._utxos:
+            if u.address not in addresses:
+                addresses.append(u.address)
+
+        return addresses
+
+    @staticmethod
+    def _closest_int(int_list, n):
+        """ finds what non-zero int in int_list is closest to n """
+        non_zero_list = [i for i in int_list if i > 0]
+        m = min(non_zero_list, key=lambda x: abs(x - n))
+        return m
+
+    def _find_closest_value_utxo(self, value):
+        """ finds what utxo has a value closest to passed value"""
+        utxo_values = [u.value for u in self._utxos]
+        closest_value = self._closest_int(utxo_values, value)
+
+        for u in self._utxos:
+            if u.value == closest_value:
+                return u
+
+    def _get_address_utxos(self, address):
+        """ returns all utxos associated with a particular address """
+        utxos = [u for u in self._utxos if u.address == address]
+        return utxos
+
+    def _find_closest_value_address_utxos(self, value):
+        """ finds what utxos, grouped by address, has closest total value to passed value"""
+        address_balances = {}
+
+        # filling dict with all addresses
+        for a in self._addresses:
+            address_balances[a] = 0
+
+        # adding up all address balances
+        for u in self._utxos:
+            address_balances[u.address] += u.value
+
+        # making it into list so the keys can be found by values
+        address_balances_list = list(address_balances.items())
+
+        # list of the values to be passed into closest_int method
+        address_values = [v for _, v in address_balances_list]
+
+        closest_value = self._closest_int(address_values, value)
+
+        # if there is more than 1 address returned by the list comprehension,
+        # just take the first element as the value is the only important thing
+        closest_address = [a for a, v in address_balances_list if v == closest_value][0]
+
+        return self._get_address_utxos(closest_address)
+
+    def _choose_utxos(self):
+
+        chosen_utxos = []
+        output_amount = self._output_amount
+
+        while output_amount > 0 and self._utxos:
+
+            if self._use_full_address_utxos:
+                closest = self._find_closest_value_address_utxos(output_amount)
+
+                # closest is a list of utxos in this case
+                for u in closest:
+                    output_amount -= u.value
+                    chosen_utxos.append(u)
+
+                    self._utxos.remove(u)
+
+            else:
+                closest = self._find_closest_value_utxo(output_amount)
+
+                output_amount -= closest.value
+                chosen_utxos.append(closest)
+
+                self._utxos.remove(closest)
+
+        else:
+            if output_amount > 0:
+                raise InsufficientFundsError('Not enough UTXO value to match output amount')
+
+            else:
+                # change amount is the "overflow" satoshis after choosing utxos
+                self.change_amount = abs(output_amount)
+
+                standard_format_utxos = [u.standard_format() for u in chosen_utxos]
+                self.chosen_utxos = standard_format_utxos
+                self.chosen_addresses = [u.address for u in chosen_utxos]
 
 
 class Transaction:
@@ -14,29 +143,38 @@ class Transaction:
                  fee, is_segwit, utxo_data, locktime=0):
         """
         :param inputs_amounts: dict of input addresses and balances (class will chose which ones to use if more than
-                                necessary is provided)
+                               necessary is provided)
         :param outputs_amounts: dict of output addresses and amounts
         :param change_address: change address of txn (will only be used if necessary)
         :param fee: txn fee
         :param is_segwit: bool
-        :param utxo_data: list of unspent outs tuples formatted [[txid, output_num, address, script, value], ...]
+        :param utxo_data: list of unspent outs in standard format
         :param locktime: locktime of btc txn
         """
 
-        self.inputs_amounts = inputs_amounts
-        self.outputs_amounts = outputs_amounts
-        self.change_address = change_address
+        self._inputs_amounts = inputs_amounts
+        self._outputs_amounts = outputs_amounts
+        self._change_address = change_address
+        self._locktime = locktime
+        self._utxo_data = utxo_data
+
         self.fee = fee
         self.is_segwit = is_segwit
-        self.locktime = locktime
-        self.utxo_data = utxo_data
         self.is_signed = False
 
+        # these 3 attributes will be set by _choose_utxos method
+        self._change_amount = None
+        self.input_addresses = None
+        self._specific_utxo_data = None
 
-        self.change_amount = 0
-        self.chosen_inputs = self._choose_input_addresses()
-        self.specific_utxo_data = self._get_specific_utxo_data()
-        self.unsigned_txn = self._get_unsigned_txn()
+        self._choose_utxos()
+
+        self._unsigned_txn = self._get_unsigned_txn()
+
+        self.size = self._unsigned_txn.size
+        self.weight = self._unsigned_txn.weight
+
+        self.txn = self._unsigned_txn
 
     @staticmethod
     def get_hash160(address):
@@ -45,74 +183,28 @@ class Transaction:
          """
         return base58.b58decode_check(address)[1:]
 
-    def _choose_input_addresses(self):
-        """ chose which addresses to spend in txn """
+    def _choose_utxos(self):
+        output_amount = sum([v for v in self._outputs_amounts.values()]) + self.fee
 
-        total_to_spend = 0  # total amount of satoshis that will be spent
-        for i in self.outputs_amounts.values():
-            total_to_spend += i
-        total_to_spend += self.fee  # factoring in the fee to the total amount
+        chooser = _UTXOChooser(utxos=self._utxo_data,
+                               output_amount=output_amount,
+                               use_unconfirmed=config.SPEND_UNCONFIRMED_UTXOS,
+                               use_full_address_utxos=not config.SPEND_UTXOS_INDIVIDUALLY)
 
-        if total_to_spend <= 0:
-            raise ValueError('amount to send has to be > 0')
-
-        # finds what non-zero int in a list of tuples,
-        # where the int is idx [1] in a tuple, is closest to n
-        def closest_int(n, list_):
-            num_list = [x for _, x in list_]
-            m = min(num_list, key=lambda x: abs(x - n))
-            if m == 0:
-                raise ValueError(f'closest int to {n}, in the list of tuples {list_}, is 0')
-
-            return m
-
-        addresses = []
-
-        # inputs_amounts can be modified without changing class attribute
-        inputs_amounts = list(self.inputs_amounts.items())
-
-        # inputs_amounts evaluates to True while it is not empty,
-        # when it is empty, all inputs have been added to addresses
-        while total_to_spend > 0 and inputs_amounts:
-
-            # finds what input has the closest value to total_to_spend
-            closest = list(filter(lambda x: x[1] == closest_int(total_to_spend, inputs_amounts), inputs_amounts))
-
-            # if there are more than 1 tuple that is 'closest', just take the one at [0]
-            addresses.append(closest[0][0])
-            total_to_spend -= closest[0][1]
-
-            inputs_amounts.remove(closest[0])
-
-        else:
-            if total_to_spend <= 0:
-                self.change_amount = abs(total_to_spend)
-                return addresses
-            else:
-                raise InsufficientFundsError('Not enough input funds to cover output values')
-
-    def _get_specific_utxo_data(self):
-        """ returns the utxo data needed to build signed transactions
-         using btcpy's spend() method of MutableTransaction
-         """
-        utxo_data = []
-        for address in self.chosen_inputs:
-            for utxo in self.utxo_data:
-                if address in utxo:
-                    utxo_data.append(utxo)
-
-        return utxo_data
+        self._change_amount = chooser.change_amount
+        self.input_addresses = chooser.chosen_addresses
+        self._specific_utxo_data = chooser.chosen_utxos
 
     def _get_unsigned_txn(self):
 
         TX_VERSION = 1
 
         # adding change address to outputs, if there is leftover balance
-        if self.change_amount > 0:
-            self.outputs_amounts[self.change_address] = self.change_amount
+        if self._change_amount > 0:
+            self._outputs_amounts[self._change_address] = self._change_amount
 
         outputs = []
-        for i, (addr, amount) in enumerate(self.outputs_amounts.items()):
+        for i, (addr, amount) in enumerate(self._outputs_amounts.items()):
 
             # normal, P2PKH btc addresses begin with '1'
             if addr[0] == '1':
@@ -133,9 +225,9 @@ class Transaction:
 
         inputs = []
 
-        for t in self.specific_utxo_data:
+        for t in self._specific_utxo_data:
 
-            # build inputs using the UTXO data in self.specific_utxo_data,
+            # build inputs using the UTXO data in self._specific_utxo_data,
             # script_sig is empty as the transaction will be signed later
             inputs.append(
 
@@ -151,7 +243,7 @@ class Transaction:
                 version=TX_VERSION,
                 ins=inputs,
                 outs=outputs,
-                locktime=Locktime(self.locktime)
+                locktime=Locktime(self._locktime)
             )
 
         else:
@@ -160,18 +252,18 @@ class Transaction:
                 version=TX_VERSION,
                 ins=inputs,
                 outs=outputs,
-                locktime=Locktime(self.locktime)
+                locktime=Locktime(self._locktime)
             )
 
         return transaction
 
-    def signed_txn(self, wif_keys):
+    def _get_signed_txn(self, wif_keys):
         """ :param wif_keys: list of wif keys corresponding with
-        self.chosen_inputs addresses, in same order
+        self.input_addresses addresses, in same order
         """
         unordered_solvers = []
         unordered_tx_outs = []
-        unsigned = self.unsigned_txn
+        unsigned = self._unsigned_txn
 
         for key in wif_keys:
             # create btcpy PrivateKeys from input WIF format keys
@@ -192,13 +284,13 @@ class Transaction:
 
             # a dict that matches the addresses (which are ordered the same as
             # their above WIF Keys) to their solvers
-            addresses_solvers = dict(zip(self.chosen_inputs, unordered_solvers))
+            addresses_solvers = dict(zip(self.input_addresses, unordered_solvers))
 
-            # from self.specific_utxo_data, take the output num, value and scriptPubKey
+            # from self._specific_utxo_data, take the output num, value and scriptPubKey
             # and create TxOuts representing the UTXO's that will be spent.
             # In a tuple with the address of the UTXO so the correct solver
             # can be found later
-            for t in self.specific_utxo_data:
+            for t in self._specific_utxo_data:
                 unordered_tx_outs.append((t[2], TxOut(value=t[4], n=t[1], script_pubkey=Script.unhexlify(t[3]))))
 
             # unlike the lists defined at the top of the method, these are in
@@ -217,13 +309,15 @@ class Transaction:
 
             return signed
 
+    def sign(self, wif_keys):
+        self.txn = self._get_signed_txn(wif_keys)
+        self.is_signed = True
+
     def change_fee(self, fee):
         self.fee = fee
         # re-run all logic that will be effected by fee change, i.e there might
         # need to be more chosen inputs to make up for the increased fee
-        self.chosen_inputs = self._choose_input_addresses()
-        self.specific_utxo_data = self._get_specific_utxo_data()
-        self.unsigned_txn = self._get_unsigned_txn()
+        self._choose_utxos()
 
     def validate_transaction(self, tx):
         """ accepts a btcpy txn to compare to class attributes such as the

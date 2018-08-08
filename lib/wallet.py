@@ -202,12 +202,12 @@ class Wallet:
 
         return txn
 
-    def make_signed_transaction(self, password, unsigned_txn):
+    def sign_transaction(self, unsigned_txn, password):
 
-        input_addresses = unsigned_txn.chosen_inputs
+        input_addresses = unsigned_txn.input_addresses
         wif_keys = self.get_wif_keys(password, input_addresses)
 
-        return unsigned_txn.signed_txn(wif_keys)
+        unsigned_txn.sign(wif_keys)
 
     def change_gap_limit(self, password):
         if self.data_store.validate_password(password):

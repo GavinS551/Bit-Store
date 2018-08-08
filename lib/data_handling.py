@@ -14,4 +14,4 @@ class UTXOData:
 
     def standard_format(self):
         """ returns data in standard format as shown in blockchain.py """
-        return self.txid, self.output_num, self.address, self.script, self.value, self.confirmations
+        return [self.txid, self.output_num, self.address, self.script, self.value, self.confirmations]
