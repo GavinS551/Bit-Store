@@ -1,6 +1,5 @@
 import time
 import datetime
-import abc
 
 import requests
 
@@ -18,36 +17,33 @@ def blockchain_api(addresses, refresh_rate, source=config.BLOCKCHAIN_API_SOURCE)
         raise ValueError('Invalid Address entered')
 
     sources = {
-        'blockchain.info': BlockchainInfo
+        'blockchain.info': (BlockchainInfo, 'https://blockchain.info/multiaddr?active=')
     }
 
     if source.lower() not in sources:
         raise NotImplementedError(f'{source} is an invalid source')
 
-    return sources[source](addresses, refresh_rate)
+    source_cls = sources[source][0]
+    source_url = sources[source][1]
+
+    return source_cls(addresses, refresh_rate, source_url)
 
 
-class BlockchainApiInterface(metaclass=abc.ABCMeta):
-    """
-    A blockchain api class must accept two arguments: 1. addresses (a list
-    of bitcoin addresses i.e a "wallet") and 2. timeout (an int (seconds)
-    that sets the refresh rate of the api calls)
+class _BlockchainInterface:
+    """ subclasses need to overwrite transactions property and make
+     sure it returns transactions in data format seen in doc-string of the property"""
 
-    BALANCES SHOULD ALWAYS BE IN SATOSHIS, AS AN INT
-    """
+    def __init__(self, addresses, refresh_rate, url):
 
-    @property
-    @abc.abstractmethod
-    def wallet_balance(self):
-        raise NotImplementedError
+        self.addresses = addresses
+        self.url = url
 
-    @property
-    @abc.abstractmethod
-    def address_balances(self):
-        raise NotImplementedError
+        self.last_request_time = 0
+        self.last_requested_data = {}
+
+        self.refresh_rate = refresh_rate
 
     @property
-    @abc.abstractmethod
     def transactions(self):
         """ format: [ {
 
@@ -66,51 +62,60 @@ class BlockchainApiInterface(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @property
-    @abc.abstractmethod
     def unspent_outputs(self):
-        """ format = [txid, output_num, address, script, value] """
-        raise NotImplementedError
+        """ returns a list of UTXOs in standard format"""
+        txns = self.transactions
+        utxo_data = []
+
+        for txn in txns:
+
+            for out in txn['outputs']:
+                # if the output isn't spent and it relates to an address in self.addresses
+                if out['spent'] is False and out['address'] in self.addresses:
+
+                    txid = txn['txid']
+                    output_num = out['n']
+                    address = out['address']
+                    script = out['script']
+                    value = out['value']
+
+                    utxo_data.append([txid, output_num, address, script, value])
+
+        return utxo_data
+
+    @property
+    def address_balances(self):
+        """ returns a list of lists with address/balance(in satoshis) using UTXO data """
+
+        balances = []
+        unspent_outs = self.unspent_outputs
+
+        for address in self.addresses:
+            value = 0
+
+            for utxo in unspent_outs:
+                if utxo[2] == address:
+                    value += utxo[4]
+                    unspent_outs.remove(utxo)
+
+            balances.append([address, value])
+
+        return balances
+
+    @property
+    def wallet_balance(self):
+        """ Combined balance of all addresses (in satoshis)"""
+        return sum([b[1] for b in self.address_balances])
 
 
-class BlockchainInfo(BlockchainApiInterface):
-
-    def __init__(self, addresses, refresh_rate):
-
-        self.addresses = addresses
-        self.URL = 'https://blockchain.info/multiaddr?active='
-
-        self.last_request_time = 0
-        self.last_requested_data = {}
-
-        self.refresh_rate = refresh_rate
-
-    def _check_address(self, address):
-        if address not in self.addresses:
-            raise ValueError('Address entered is not in self.addresses')
-
-    def _find_address_index(self, address):
-        """ this is needed due to blockchain.info not sorting addresses
-            in the order they are passed in through the url """
-        self._check_address(address)
-
-        for e, i in enumerate(self._blockchain_data['addresses']):
-            if i['address'] == address:
-                return e
-
-    def _find_address_data(self, address, data):
-        self._check_address(address)
-
-        if data not in self._blockchain_data['addresses'][self._find_address_index(address)]:
-            raise ValueError(f'Data type:{data} is not a valid data type')
-        else:
-            return self._blockchain_data['addresses'][self._find_address_index(address)][data]
+class BlockchainInfo(_BlockchainInterface):
 
     @property
     def _blockchain_data(self):
-        # leaves TIME_INTERVAL seconds between api requests
+        # leaves self.refresh rate seconds between api requests
         if not time.time() - self.last_request_time < self.refresh_rate:
 
-            url = self.URL
+            url = self.url
 
             for address in self.addresses:
                 url += f'{address}|'
@@ -122,8 +127,8 @@ class BlockchainInfo(BlockchainApiInterface):
             return data
 
         else:
-            # if 10 seconds haven't passed since last api call, the last
-            # data received will be returned
+            # if self.refresh_rate seconds haven't passed since last api call,
+            # the last data received will be returned
             return self.last_requested_data
 
     @property
@@ -197,49 +202,3 @@ class BlockchainInfo(BlockchainApiInterface):
             transactions.append(transaction)
 
         return transactions
-
-    @property
-    def unspent_outputs(self):
-        """ returns a list of UTXOs in standard format"""
-        txns = self.transactions
-        utxo_data = []
-
-        for txn in txns:
-
-            for out in txn['outputs']:
-                # if the output isn't spent and it relates to an address in self.addresses
-                if out['spent'] is False and out['address'] in self.addresses:
-
-                    txid = txn['txid']
-                    output_num = out['n']
-                    address = out['address']
-                    script = out['script']
-                    value = out['value']
-
-                    utxo_data.append([txid, output_num, address, script, value])
-
-        return utxo_data
-
-    @property
-    def address_balances(self):
-        """ returns a list of lists with address/balance(in satoshis) using UTXO data """
-
-        balances = []
-        unspent_outs = self.unspent_outputs
-
-        for address in self.addresses:
-            value = 0
-
-            for utxo in unspent_outs:
-                if utxo[2] == address:
-                    value += utxo[4]
-                    unspent_outs.remove(utxo)
-
-            balances.append([address, value])
-
-        return balances
-
-    @property
-    def wallet_balance(self):
-        """ Combined balance of all addresses (in satoshis)"""
-        return sum([b[1] for b in self.address_balances])
