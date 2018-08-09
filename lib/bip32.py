@@ -262,7 +262,7 @@ class Bip32:
     def _multi_processed_wif_keys(self):
         """ Returns a tuple of receiving and change WIF keys up to the limit specified """
         if not self.is_private:
-            raise WatchOnlyWallet('Can\'t derive private key from watch-only wallet')
+            raise PublicBip32Object('Can\'t derive private key from watch-only wallet')
 
         receiving = []
         change = []
@@ -279,7 +279,7 @@ class Bip32:
 
     def _non_multi_processed_wif_keys(self):
         if not self.is_private:
-            raise WatchOnlyWallet('Can\'t derive private key from watch-only wallet')
+            raise PublicBip32Object('Can\'t derive private key from watch-only wallet')
 
         receiving = []
         change = []
@@ -305,7 +305,7 @@ class Bip32:
     def address_wifkey_pairs(self):
         """ Returns a list of tuples with addresses mapped to their WIF keys """
         if not self.is_private:
-            raise WatchOnlyWallet('Can\'t derive private key from watch-only wallet')
+            raise PublicBip32Object('Can\'t derive private key from watch-only wallet')
 
         addresses = self.addresses()
         wif_keys = self.wif_keys()

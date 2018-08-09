@@ -1,6 +1,6 @@
 import pytest
 
-from lib.bip32 import Bip32, WatchOnlyWallet, InvalidPath
+from lib.bip32 import Bip32, PublicBip32Object, InvalidPath
 
 
 VALID_MNEMONIC = 'lion harvest elbow beauty butter spirit park jungle dose need flock hobby'
@@ -24,7 +24,7 @@ def test_public():
     assert not public_bip32_.is_private
     assert public_bip32_.addresses()[0] == normal_addresses[0]
 
-    with pytest.raises(WatchOnlyWallet):
+    with pytest.raises(PublicBip32Object):
         _ = public_bip32_.wif_keys()
 
 def test_is_private():

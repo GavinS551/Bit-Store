@@ -1,4 +1,4 @@
-class WatchOnlyWallet(Exception):
+class PublicBip32Object(Exception):
     pass
 
 
