@@ -300,32 +300,32 @@ class Transaction:
                 # create btcpy P2PKH Solvers from those PrivateKeys
                 unordered_solvers.append(P2pkhSolver(private_key))
 
-            # a dict that matches the addresses (which are ordered the same as
-            # their above WIF Keys) to their solvers
-            addresses_solvers = dict(zip(self.input_addresses, unordered_solvers))
+        # a dict that matches the addresses (which are ordered the same as
+        # their above WIF Keys) to their solvers
+        addresses_solvers = dict(zip(self.input_addresses, unordered_solvers))
 
-            # from self._specific_utxo_data, take the output num, value and scriptPubKey
-            # and create TxOuts representing the UTXO's that will be spent.
-            # In a tuple with the address of the UTXO so the correct solver
-            # can be found later
-            for t in self._specific_utxo_data:
-                unordered_tx_outs.append((t[2], TxOut(value=t[4], n=t[1], script_pubkey=Script.unhexlify(t[3]))))
+        # from self._specific_utxo_data, take the output num, value and scriptPubKey
+        # and create TxOuts representing the UTXO's that will be spent.
+        # In a tuple with the address of the UTXO so the correct solver
+        # can be found later
+        for t in self._specific_utxo_data:
+            unordered_tx_outs.append((t[2], TxOut(value=t[4], n=t[1], script_pubkey=Script.unhexlify(t[3]))))
 
-            # unlike the lists defined at the top of the method, these are in
-            # order i.e the solver in solvers[0] is the solver for the TxOut of
-            # tx_outs[0]. this is required to pass them into the spend() method
-            tx_outs = []
-            solvers = []
+        # unlike the lists defined at the top of the method, these are in
+        # order i.e the solver in solvers[0] is the solver for the TxOut of
+        # tx_outs[0]. this is required to pass them into the spend() method
+        tx_outs = []
+        solvers = []
 
-            for t in unordered_tx_outs:
-                address = t[0]
+        for t in unordered_tx_outs:
+            address = t[0]
 
-                tx_outs.append(t[1])
-                solvers.append(addresses_solvers[address])
+            tx_outs.append(t[1])
+            solvers.append(addresses_solvers[address])
 
-            signed = unsigned.spend(tx_outs, solvers)
+        signed = unsigned.spend(tx_outs, solvers)
 
-            return signed
+        return signed
 
     def sign(self, wif_keys):
         self.txn = self._get_signed_txn(wif_keys)
