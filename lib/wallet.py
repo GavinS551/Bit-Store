@@ -9,6 +9,7 @@ from .exceptions.wallet_exceptions import *
 
 
 API_REFRESH_RATE = 5
+WALLET_DATA_FILE_NAME = 'wallet_data'
 
 
 class Wallet:
@@ -95,7 +96,7 @@ class Wallet:
             raise ValueError('hd_wallet_obj must be an instance of Bip32 class')
 
         dir_ = os.path.join(config.DATA_DIR, name)
-        data_file_path = os.path.join(dir_, 'wallet_data')
+        data_file_path = os.path.join(dir_, WALLET_DATA_FILE_NAME)
 
         # Everything is in a try/except block so files get cleaned up
         # before exception is raised
