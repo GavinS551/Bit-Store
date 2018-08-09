@@ -12,82 +12,80 @@ API_REFRESH_RATE = 5
 WALLET_DATA_FILE_NAME = 'wallet_data'
 
 
-class Wallet:
+class _ApiDataUpdaterThread(threading.Thread):
 
-    def _create_api_updater_thread(self, refresh_rate):
-        return self.ApiDataUpdaterThread(self, refresh_rate)
+    def __init__(self, wallet_instance, refresh_rate):
 
-    class ApiDataUpdaterThread(threading.Thread):
+        if not isinstance(wallet_instance, Wallet):
+            raise TypeError('wallet_instance must be an instance of Wallet class')
 
-        def __init__(self, wallet_instance, refresh_rate):
+        if not isinstance(refresh_rate, int):
+            raise ValueError('Refresh rate must be an int')
 
-            if not isinstance(wallet_instance, Wallet):
-                raise TypeError('wallet_instance must be an instance of Wallet class')
+        # due to api request limits
+        if refresh_rate < 5:
+            raise ValueError('Refresh rate must be at least 5 seconds')
 
-            if not isinstance(refresh_rate, int):
-                raise ValueError('Refresh rate must be an int')
+        threading.Thread.__init__(self, name='API_DATA_UPDATER')
+        # event will be set outside of this class
+        self.event = threading.Event()
+        self.wallet_instance = wallet_instance
+        self.refresh_rate = refresh_rate
+        # a requests Exception, stored if the last data request failed
+        # if last request was successful, store False
+        self.connection_error = None
 
-            # due to api request limits
-            if refresh_rate < 5:
-                raise ValueError('Refresh rate must be at least 5 seconds')
+    def run(self):
 
-            threading.Thread.__init__(self, name='API_DATA_UPDATER')
-            # event will be set outside of this class
-            self.event = threading.Event()
-            self.wallet_instance = wallet_instance
-            self.refresh_rate = refresh_rate
-            # a requests Exception, stored if the last data request failed
-            # if last request was successful, store False
-            self.connection_error = None
+        def _update_api_data(data_keys):
+            data_dict = {}
 
-        def run(self):
+            for d in data_keys:
+                data_dict[d] = api_data[d]
 
-            def _update_api_data(data_keys):
-                data_dict = {}
+            self.wallet_instance.data_store.write_value(**data_dict)
 
-                for d in data_keys:
-                    data_dict[d] = api_data[d]
+        while threading.main_thread().is_alive() and not self.event.is_set():
 
-                self.wallet_instance.data_store.write_value(**data_dict)
+            addresses = self.wallet_instance.all_addresses
 
-            while threading.main_thread().is_alive() and not self.event.is_set():
+            bd = blockchain.blockchain_api(addresses, self.refresh_rate, source=config.BLOCKCHAIN_API_SOURCE)
+            price_data = price.BitcoinPrice()
 
-                addresses = self.wallet_instance.all_addresses
+            try:
+                api_data = {
+                    'WALLET_BAL': bd.wallet_balance,
+                    'TXNS': bd.transactions,
+                    'ADDRESS_BALS': bd.address_balances,
+                    'PRICE': price_data.price,
+                    'UNSPENT_OUTS': bd.unspent_outputs
+                }
+                self.connection_error = False
 
-                bd = blockchain.blockchain_api(addresses, self.refresh_rate, source=config.BLOCKCHAIN_API_SOURCE)
-                price_data = price.BitcoinPrice()
+            except (requests.exceptions.ConnectionError,
+                    requests.exceptions.Timeout,
+                    requests.exceptions.HTTPError) as ex:
 
-                try:
-                    api_data = {
-                        'WALLET_BAL': bd.wallet_balance,
-                        'TXNS': bd.transactions,
-                        'ADDRESS_BALS': bd.address_balances,
-                        'PRICE': price_data.price,
-                        'UNSPENT_OUTS': bd.unspent_outputs
-                    }
-                    self.connection_error = False
-
-                except (requests.exceptions.ConnectionError,
-                        requests.exceptions.Timeout,
-                        requests.exceptions.HTTPError) as ex:
-
-                    self.connection_error = ex
-
-                    self.event.wait(self.refresh_rate)
-
-                    continue
-
-                # data that needs to be updated
-                old_keys = [k for k in api_data if self.wallet_instance.data_store.get_value(k) != api_data[k]]
-
-                # if old_keys isn't an empty list
-                if old_keys and not self.event.is_set():
-                    _update_api_data(old_keys)
-
-                # if new transactions have been updated, used addresses are set appropriately
-                self.wallet_instance.set_used_addresses()
+                self.connection_error = ex
 
                 self.event.wait(self.refresh_rate)
+
+                continue
+
+            # data that needs to be updated
+            old_keys = [k for k in api_data if self.wallet_instance.data_store.get_value(k) != api_data[k]]
+
+            # if old_keys isn't an empty list
+            if old_keys and not self.event.is_set():
+                _update_api_data(old_keys)
+
+            # if new transactions have been updated, used addresses are set appropriately
+            self.wallet_instance.set_used_addresses()
+
+            self.event.wait(self.refresh_rate)
+
+
+class Wallet:
 
     @classmethod
     def new_wallet(cls, name, password, hd_wallet_obj, offline=False):
@@ -157,6 +155,9 @@ class Wallet:
             self.updater_thread.start()
 
         self.name = name
+
+    def _create_api_updater_thread(self, refresh_rate):
+        return _ApiDataUpdaterThread(self, refresh_rate)
 
     def _set_addresses_used(self, addresses):
         r_addrs = self.receiving_addresses
