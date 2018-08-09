@@ -5,7 +5,7 @@ from btcpy.structs.script import P2pkhScript, P2shScript, Script, P2wpkhV0Script
 from btcpy.structs.sig import P2pkhSolver, P2shSolver, P2wpkhV0Solver
 from btcpy.structs.crypto import PrivateKey
 
-from .data_handling import UTXOData
+from .structs import UTXOData
 from . import config
 
 from .exceptions.tx_exceptions import *
