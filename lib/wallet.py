@@ -195,7 +195,9 @@ class Wallet:
                              change_address=self.change_addresses[0],
                              fee=fee,
                              is_segwit=self.is_segwit,
-                             locktime=locktime)
+                             locktime=locktime,
+                             use_unconfirmed_utxos=config.SPEND_UNCONFIRMED_UTXOS,
+                             use_full_address_utxos=not config.SPEND_UTXOS_INDIVIDUALLY)
 
         return txn
 

@@ -6,7 +6,6 @@ from btcpy.structs.sig import P2pkhSolver, P2shSolver, P2wpkhV0Solver
 from btcpy.structs.crypto import PrivateKey
 
 from .structs import UTXOData
-from . import config
 
 from .exceptions.tx_exceptions import *
 
@@ -147,8 +146,8 @@ class Transaction:
 
     def __init__(self, utxo_data, outputs_amounts, change_address,
                  fee, is_segwit, locktime=0,
-                 use_unconfirmed_utxos=config.SPEND_UNCONFIRMED_UTXOS,
-                 use_full_address_utxos=not config.SPEND_UTXOS_INDIVIDUALLY):
+                 use_unconfirmed_utxos=False,
+                 use_full_address_utxos=True):
         """
         :param utxo_data: list of unspent outs in standard format. which ones to be spend will be chosen in class
         :param outputs_amounts: dict of output addresses and amounts
