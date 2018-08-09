@@ -169,6 +169,7 @@ class WalletCreation(ttk.Frame):
             # if an exception was raised during wallet creation, the frame will
             # have to be re-shown as the loading frame was raised after error-
             # checking entry fields
+            # TODO make this work with exceptions in thread
             self.root.show_frame('WalletCreation')
 
     @threaded
@@ -275,3 +276,6 @@ class WalletCreationVerifyMnemonic(ttk.Frame):
             self.root.show_frame('MainWallet')
         else:
             messagebox.showerror('Incorrect Entry', 'Mnemonic entered incorrectly, try again.')
+
+            # redraw frame to clear mnemonic entry
+            self.root.show_frame('WalletCreationVerifyMnemonic')
