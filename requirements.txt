@@ -1,6 +1,6 @@
 base58
 bitstring
-chainside-btcpy
+chainside-btcpy==0.6.3
 cryptography
 requests
 pytest
