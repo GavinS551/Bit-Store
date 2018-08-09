@@ -318,3 +318,25 @@ class Wallet:
         else:
             raise data.IncorrectPasswordError
 
+
+class WatchOnlyWallet(Wallet):
+    @classmethod
+    def new_wallet(cls, name, password, bip32_obj, offline=False):
+        raise NotImplementedError
+
+    def sign_transaction(self, unsigned_txn, password):
+        raise NotImplementedError
+
+    def get_address_wifkey_pairs(self, password):
+        raise NotImplementedError
+
+    def get_mnemonic(self, password):
+        raise NotImplementedError
+
+    def get_xpriv(self, password):
+        raise NotImplementedError
+
+    def get_wif_keys(self, password, addresses):
+        raise NotImplementedError
+
+
