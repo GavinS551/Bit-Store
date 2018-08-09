@@ -12,7 +12,7 @@ MAX_NAME_LENGTH = 25
 
 
 def threaded(func):
-
+    """ wrapper that returns a thread object with its target set to wrapped function """
     def wrapper(*args, **kwargs):
         t = threading.Thread(target=func, args=args, kwargs=kwargs)
         t.start()
