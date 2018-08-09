@@ -33,7 +33,7 @@ class Bip32:
 
     @classmethod
     def from_mnemonic(cls, mnemonic, path, passphrase='',
-                      segwit=True, gap_limit=20, testnet=False):
+                      segwit=True, gap_limit=20, testnet=False, multi_processing=True):
         """ Generates a bip32 class from a mnemonic """
 
         if not cls.check_mnemonic(mnemonic):
@@ -44,9 +44,9 @@ class Bip32:
                                    PBKDF2_HMAC_ITERATIONS)
 
         return cls(BIP32Key.fromEntropy(seed, testnet=testnet).ExtendedKey(),
-                   path, segwit, mnemonic, gap_limit)
+                   path, segwit, mnemonic, gap_limit, multi_processing)
 
-    def __init__(self, key, path, segwit=True, mnemonic=None, gap_limit=20):
+    def __init__(self, key, path, segwit=True, mnemonic=None, gap_limit=20, multi_processing=True):
 
         if not self.check_path(path):
             raise InvalidPath(f'{path} is not a valid path')
@@ -55,8 +55,6 @@ class Bip32:
             raise ValueError('Gap limit must be a positive int')
 
         self.is_private = False if key[1:4] == 'pub' else True
-        if not self.is_private:
-            raise NotImplementedError
 
         self.is_segwit = segwit
         self.bip32 = BIP32Key.fromExtendedKey(key, public=not self.is_private)
@@ -73,6 +71,15 @@ class Bip32:
         # to generate a testnet class from an extended key, the key must be
         # in the standard testnet format
         self.is_testnet = self.bip32.testnet
+
+        self.multi_processed = multi_processing
+
+        # multiprocessing currently causes issues when deriving keys from public keys.
+        # But due to the fact that only addresses can be generated from a public key,
+        # the performance hit is tolerable. If a watch only wallet is ever implemented
+        # using this class, the slight performance hit at creation is acceptable
+        if not self.is_private:
+            self.multi_processed = False
 
         # account child key only needs to be retrieved once
         self._account_ck = self._get_account_ck()
@@ -205,6 +212,7 @@ class Bip32:
         del self._account_ck
 
     def _gen_addresses(self, idx):
+        """ used with multiprocessing """
         if self.is_segwit:
             r_address = self._external_chain_ck.ChildKey(idx).P2WPKHoP2SHAddress()
             c_address = self._internal_chain_ck.ChildKey(idx).P2WPKHoP2SHAddress()
@@ -214,7 +222,7 @@ class Bip32:
 
         self._address_queue.put((idx, r_address, c_address))
 
-    def addresses(self):
+    def _multi_processed_addresses(self):
         """ Returns a tuple of receiving and change addresses up to the limit specified"""
         receiving = []
         change = []
@@ -229,13 +237,29 @@ class Bip32:
 
         return receiving, change
 
+    def _non_multi_processed_addresses(self):
+        """ deriving from a public key does not currently work with multiprocessing"""
+        receiving = []
+        change = []
+
+        for i in range(self.gap_limit):
+            if self.is_segwit:
+                receiving.append(self._external_chain_ck.ChildKey(i).P2WPKHoP2SHAddress())
+                change.append(self._internal_chain_ck.ChildKey(i).P2WPKHoP2SHAddress())
+            else:
+                receiving.append(self._external_chain_ck.ChildKey(i).Address())
+                change.append(self._internal_chain_ck.ChildKey(i).Address())
+
+        return receiving, change
+
     def _gen_wif_keys(self, idx):
+        """ used with multiprocessing """
         r_keys = self._external_chain_ck.ChildKey(idx).WalletImportFormat()
         c_keys = self._internal_chain_ck.ChildKey(idx).WalletImportFormat()
 
         self._wif_key_queue.put((idx, r_keys, c_keys))
 
-    def wif_keys(self):
+    def _multi_processed_wif_keys(self):
         """ Returns a tuple of receiving and change WIF keys up to the limit specified """
         if not self.is_private:
             raise WatchOnlyWallet('Can\'t derive private key from watch-only wallet')
@@ -252,6 +276,31 @@ class Bip32:
             change.append(w[2])
 
         return receiving, change
+
+    def _non_multi_processed_wif_keys(self):
+        if not self.is_private:
+            raise WatchOnlyWallet('Can\'t derive private key from watch-only wallet')
+
+        receiving = []
+        change = []
+
+        for i in range(self.gap_limit):
+            receiving.append(self._external_chain_ck.ChildKey(i).WalletImportFormat())
+            change.append(self._internal_chain_ck.ChildKey(i).WalletImportFormat())
+
+        return receiving, change
+
+    def addresses(self):
+        if self.multi_processed:
+            return self._multi_processed_addresses()
+        else:
+            return self._non_multi_processed_addresses()
+
+    def wif_keys(self):
+        if self.multi_processed:
+            return self._multi_processed_wif_keys()
+        else:
+            return self._non_multi_processed_wif_keys()
 
     def address_wifkey_pairs(self):
         """ Returns a list of tuples with addresses mapped to their WIF keys """

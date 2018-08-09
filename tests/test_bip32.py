@@ -5,27 +5,27 @@ from lib.bip32 import *
 
 VALID_MNEMONIC = 'lion harvest elbow beauty butter spirit park jungle dose need flock hobby'
 GAP_LIMIT = 1
-# PUBLIC_KEY = 'xpub6BatUMSehnFR2LztXnt9DxasXRTLn2pfY32C6oJZqfAVyqdBu4J24kpaZsLr5DUXVYgL2c6w4sgZXgShMbdpcwHszDBThX8tMAQ8BMPNoRY'
+PUBLIC_KEY = 'xpub661MyMwAqRbcFT711SemYJjjp83d3XnzDWeemB2wH1wSW7vjkxUaan6yDkDCam4HDEr8dDtG2b2XjkHKceEx52hfCmBG64cBk88ATr72oWa'
 
 bip32_ = Bip32.from_mnemonic(VALID_MNEMONIC, '0', gap_limit=GAP_LIMIT, segwit=False)
 segwit_bip32_ = Bip32.from_mnemonic(VALID_MNEMONIC, "49'/0'/0'", gap_limit=GAP_LIMIT, segwit=True)
-# public_bip32_ = Bip32(PUBLIC_KEY, '0', gap_limit=GAP_LIMIT, segwit=False)
+public_bip32_ = Bip32(PUBLIC_KEY, '0', gap_limit=GAP_LIMIT, segwit=False)
 
 normal_addresses = bip32_.addresses()
 segwit_addresses = segwit_bip32_.addresses()
 
 normal_wif_keys = bip32_.wif_keys()
 segwit_wif_keys = segwit_bip32_.wif_keys()
-#
-# public_addresses = public_bip32_.addresses()
-#
-#
-# def test_public():
-#     assert not public_bip32_.is_private
-#     assert public_bip32_.addresses() == normal_addresses
-#
-#     with pytest.raises(WatchOnlyWallet):
-#         _ = public_bip32_.wif_keys()
+
+public_addresses = public_bip32_.addresses()
+
+
+def test_public():
+    assert not public_bip32_.is_private
+    assert public_bip32_.addresses()[0] == normal_addresses[0]
+
+    with pytest.raises(WatchOnlyWallet):
+        _ = public_bip32_.wif_keys()
 
 def test_is_private():
     assert bip32_.is_private
