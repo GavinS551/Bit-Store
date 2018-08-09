@@ -46,12 +46,21 @@ class DataStore(Crypto):
                 with open(self.file_path, 'w') as dw:
                     dw.write(self.encrypt(self.json_blank_template))
 
-        if not self.check_password():
+        if not self._check_password():
             raise IncorrectPasswordError('Entered password is incorrect')
 
         # Storing password hash for password validation independent of
         # this class i.e Wallet class for sensitive information
         self.write_value(PASSWORD_HASH=hashlib.sha256(password.encode('utf-8')).hexdigest())
+
+    def _check_password(self):
+        try:
+            # tries to decrypt data
+            _ = self._data
+            return True
+
+        except fernet.InvalidToken:
+            return False
 
     @property
     def _data(self):
@@ -104,15 +113,6 @@ class DataStore(Crypto):
 
         else:
             return self._data[key.upper()]
-
-    def check_password(self):
-        try:
-            # tries to decrypt data
-            _ = self._data
-            return True
-
-        except fernet.InvalidToken:
-            return False
 
     # for use outside this class, where the password isn't actually used
     # to decrypt the file, but still needs to be verified for security
