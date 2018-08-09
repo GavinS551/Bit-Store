@@ -3,3 +3,4 @@ bitstring
 chainside-btcpy
 cryptography
 requests
+pytest

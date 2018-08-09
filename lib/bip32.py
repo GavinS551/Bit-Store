@@ -55,8 +55,11 @@ class Bip32:
             raise ValueError('Gap limit must be a positive int')
 
         self.is_private = False if key[1:4] == 'pub' else True
+        if not self.is_private:
+            raise NotImplementedError
+
         self.is_segwit = segwit
-        self.bip32 = BIP32Key.fromExtendedKey(key)
+        self.bip32 = BIP32Key.fromExtendedKey(key, public=not self.is_private)
         self.path = path
 
         self.master_private_key = self.bip32.ExtendedKey() if self.is_private else None
@@ -192,7 +195,7 @@ class Bip32:
             if i[-1] == "'":
                 ck = ck.ChildKey(int(i[:-1]) + BIP32_HARDEN)
             else:
-                ck = ck.ChildKey(int(i[:-1]))
+                ck = ck.ChildKey(int(i))
 
         return ck
 
