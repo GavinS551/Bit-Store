@@ -1,6 +1,6 @@
 import base58
 
-from btcpy.structs.transaction import MutableTransaction, MutableSegWitTransaction, TxIn, TxOut, Locktime, Sequence
+from btcpy.structs.transaction import MutableTransaction, MutableSegWitTransaction, TxIn, TxOut, Locktime, Sequence, Witness
 from btcpy.structs.script import P2pkhScript, P2shScript, Script, P2wpkhV0Script, ScriptSig
 from btcpy.structs.sig import P2pkhSolver, P2shSolver, P2wpkhV0Solver
 from btcpy.structs.crypto import PrivateKey
@@ -146,20 +146,17 @@ class _UTXOChooser:
 
 class Transaction:
 
-    def __init__(self, inputs_amounts, outputs_amounts, change_address,
-                 fee, is_segwit, utxo_data, locktime=0):
+    def __init__(self, utxo_data, outputs_amounts, change_address,
+                 fee, is_segwit, locktime=0):
         """
-        :param inputs_amounts: dict of input addresses and balances (class will chose which ones to use if more than
-                               necessary is provided)
+        :param utxo_data: list of unspent outs in standard format. which ones to be spend will be chosen in class
         :param outputs_amounts: dict of output addresses and amounts
-        :param change_address: change address of txn (will only be used if necessary)
+        :param change_address: change address of txn (if needed)
         :param fee: txn fee
         :param is_segwit: bool
-        :param utxo_data: list of unspent outs in standard format
         :param locktime: locktime of btc txn
         """
 
-        self._inputs_amounts = inputs_amounts
         self._outputs_amounts = outputs_amounts
         self._change_address = change_address
         self._locktime = locktime
@@ -241,7 +238,8 @@ class Transaction:
                 TxIn(txid=t[0],
                      txout=t[1],
                      script_sig=ScriptSig.empty(),
-                     sequence=Sequence.max())
+                     sequence=Sequence.max(),
+                     witness='' if self.is_segwit else None)  # if witness is None in SegwitTransaction, then it cannot be converted to hex
             )
 
         if self.is_segwit:
