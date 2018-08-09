@@ -4,10 +4,9 @@ import datetime
 import requests
 
 from . import btc_verify
-from . import config
 
 
-def blockchain_api(addresses, refresh_rate, source=config.BLOCKCHAIN_API_SOURCE):
+def blockchain_api(addresses, refresh_rate, source):
 
     # input validation
     if not isinstance(addresses, list):

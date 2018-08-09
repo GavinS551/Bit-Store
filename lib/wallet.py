@@ -53,7 +53,7 @@ class Wallet:
 
                 addresses = self.wallet_instance.all_addresses
 
-                bd = blockchain.blockchain_api(addresses, self.refresh_rate)
+                bd = blockchain.blockchain_api(addresses, self.refresh_rate, source=config.BLOCKCHAIN_API_SOURCE)
                 price_data = price.BitcoinPrice()
 
                 try:
