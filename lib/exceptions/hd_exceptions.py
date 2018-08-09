@@ -1,4 +1,4 @@
-class PublicBip32Object(Exception):
+class PublicHDWalletObject(Exception):
     pass
 
 

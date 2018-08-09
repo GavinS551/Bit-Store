@@ -9,7 +9,7 @@ from operator import itemgetter
 import bitstring
 from .bip32utils_updated.BIP32Key import BIP32Key, BIP32_HARDEN
 
-from .exceptions.bip32_exceptions import *
+from .exceptions.hd_exceptions import *
 
 
 WORDLIST = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'wordlist.txt')
@@ -29,12 +29,13 @@ class IterableQueue:
                 break
 
 
-class Bip32:
+class HDWallet:
+    """ implementation of the hierarchical deterministic wallet, using BIP39 mnemonic standard, and BIP32 standard """
 
     @classmethod
     def from_mnemonic(cls, mnemonic, path, passphrase='',
                       segwit=True, gap_limit=20, testnet=False, multi_processing=True):
-        """ Generates a bip32 class from a mnemonic """
+        """ Generates a HDWallet class from a mnemonic """
 
         if not cls.check_mnemonic(mnemonic):
             raise InvalidMnemonic(f'{mnemonic} is not a valid mnemonic')
@@ -262,7 +263,7 @@ class Bip32:
     def _multi_processed_wif_keys(self):
         """ Returns a tuple of receiving and change WIF keys up to the limit specified """
         if not self.is_private:
-            raise PublicBip32Object('Can\'t derive private key from watch-only wallet')
+            raise PublicHDWalletObject('Can\'t derive private key from watch-only wallet')
 
         receiving = []
         change = []
@@ -279,7 +280,7 @@ class Bip32:
 
     def _non_multi_processed_wif_keys(self):
         if not self.is_private:
-            raise PublicBip32Object('Can\'t derive private key from watch-only wallet')
+            raise PublicHDWalletObject('Can\'t derive private key from watch-only wallet')
 
         receiving = []
         change = []
@@ -305,7 +306,7 @@ class Bip32:
     def address_wifkey_pairs(self):
         """ Returns a list of tuples with addresses mapped to their WIF keys """
         if not self.is_private:
-            raise PublicBip32Object('Can\'t derive private key from watch-only wallet')
+            raise PublicHDWalletObject('Can\'t derive private key from watch-only wallet')
 
         addresses = self.addresses()
         wif_keys = self.wif_keys()

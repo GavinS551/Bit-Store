@@ -5,7 +5,7 @@ import threading
 from dataclasses import dataclass
 from typing import Any
 
-from .. import bip32, config, wallet
+from .. import hd, config, wallet
 
 
 MAX_NAME_LENGTH = 25
@@ -99,7 +99,7 @@ class WalletCreation(ttk.Frame):
 
     # custom mnemonic and xkey params are meant for subclassing this class when
     # implementing wallet import feature
-    def create_wallet(self, mnemonic=bip32.Bip32.gen_mnemonic(), xkey=None):
+    def create_wallet(self, mnemonic=hd.HDWallet.gen_mnemonic(), xkey=None):
         try:
             name = self.name_entry.get()
             password = self.password_entry.get()
@@ -136,7 +136,7 @@ class WalletCreation(ttk.Frame):
                 self.confirm_pass_entry.delete(0, 'end')
                 raise ValueError('Passwords don\'t match')
 
-            if not bip32.Bip32.check_path(path):
+            if not hd.HDWallet.check_path(path):
                 raise ValueError(f'Invalid path entered: ({path})')
 
             if not None in [mnemonic, xkey]:
@@ -175,16 +175,16 @@ class WalletCreation(ttk.Frame):
     @threaded
     def _build_wallet_instance_thread(self, wallet_data):
         if wallet_data.xkey is None:
-            bip32_ = bip32.Bip32.from_mnemonic(wallet_data.mnemonic,
+            hd_ = hd.HDWallet.from_mnemonic(wallet_data.mnemonic,
                                                wallet_data.path,
                                                wallet_data.passphrase,
                                                wallet_data.is_segwit)
         else:
-            bip32_ = bip32.Bip32(wallet_data.xkey,
+            hd_ = hd.HDWallet(wallet_data.xkey,
                                  wallet_data.path,
                                  wallet_data.is_segwit)
 
-        w = wallet.Wallet.new_wallet(wallet_data.name, wallet_data.password, bip32_)
+        w = wallet.Wallet.new_wallet(wallet_data.name, wallet_data.password, hd_)
         self.root.btc_wallet = w
         self.root.show_frame('WalletCreationShowMnemonic', mnemonic=wallet_data.mnemonic)
 

@@ -4,7 +4,7 @@ import shutil
 
 import requests.exceptions
 
-from . import data, bip32, config, blockchain, price, tx
+from . import data, hd, config, blockchain, price, tx
 from .exceptions.wallet_exceptions import *
 
 
@@ -89,10 +89,10 @@ class Wallet:
                 self.event.wait(self.refresh_rate)
 
     @classmethod
-    def new_wallet(cls, name, password, bip32_obj, offline=False):
+    def new_wallet(cls, name, password, hd_wallet_obj, offline=False):
 
-        if not isinstance(bip32_obj, bip32.Bip32):
-            raise ValueError('bip32_obj must be an instance of Bip32 class')
+        if not isinstance(hd_wallet_obj, hd.HDWallet):
+            raise ValueError('hd_wallet_obj must be an instance of Bip32 class')
 
         dir_ = os.path.join(config.DATA_DIR, name)
         data_file_path = os.path.join(dir_, 'wallet_data')
@@ -117,24 +117,24 @@ class Wallet:
             d_store = data.DataStore(data_file_path, password)
 
             # only gen addresses once, and not twice for receiving and change
-            addresses = bip32_obj.addresses()
+            addresses = hd_wallet_obj.addresses()
 
             info = {
-                'MNEMONIC': bip32_obj.mnemonic,
-                'XPRIV': bip32_obj.master_private_key,
-                'XPUB': bip32_obj.master_public_key,
-                'PATH': bip32_obj.path,
-                'GAP_LIMIT': bip32_obj.gap_limit,
-                'SEGWIT': bip32_obj.is_segwit,
+                'MNEMONIC': hd_wallet_obj.mnemonic,
+                'XPRIV': hd_wallet_obj.master_private_key,
+                'XPUB': hd_wallet_obj.master_public_key,
+                'PATH': hd_wallet_obj.path,
+                'GAP_LIMIT': hd_wallet_obj.gap_limit,
+                'SEGWIT': hd_wallet_obj.is_segwit,
                 'ADDRESSES_RECEIVING': addresses[0],
                 'ADDRESSES_CHANGE': addresses[1],
-                'ADDRESS_WIF_KEYS': dict(bip32_obj.address_wifkey_pairs())
+                'ADDRESS_WIF_KEYS': dict(hd_wallet_obj.address_wifkey_pairs())
             }
 
             d_store.write_value(**info)
 
-            bip32_obj.delete_sensitive_data()
-            del bip32_obj
+            hd_wallet_obj.delete_sensitive_data()
+            del hd_wallet_obj
 
             return cls(name, password, offline=offline)
 
@@ -279,7 +279,7 @@ class Wallet:
 
         if self.data_store.validate_password(password):
 
-            _bip32 = bip32.Bip32(key=self.get_xpriv(password), path=self.path,
+            _bip32 = hd.HDWallet(key=self.get_xpriv(password), path=self.path,
                                  segwit=self.is_segwit, gap_limit=self.gap_limit)
 
             return _bip32.address_wifkey_pairs()
@@ -321,7 +321,7 @@ class Wallet:
 
 class WatchOnlyWallet(Wallet):
     @classmethod
-    def new_wallet(cls, name, password, bip32_obj, offline=False):
+    def new_wallet(cls, name, password, hd_wallet_obj, offline=False):
         raise NotImplementedError
 
     def sign_transaction(self, unsigned_txn, password):

@@ -1,15 +1,15 @@
 import pytest
 
-from lib.bip32 import Bip32, PublicBip32Object, InvalidPath
+from lib.hd import HDWallet, PublicHDWalletObject, InvalidPath
 
 
 VALID_MNEMONIC = 'lion harvest elbow beauty butter spirit park jungle dose need flock hobby'
 GAP_LIMIT = 1
 PUBLIC_KEY = 'xpub661MyMwAqRbcFT711SemYJjjp83d3XnzDWeemB2wH1wSW7vjkxUaan6yDkDCam4HDEr8dDtG2b2XjkHKceEx52hfCmBG64cBk88ATr72oWa'
 
-bip32_ = Bip32.from_mnemonic(VALID_MNEMONIC, '0', gap_limit=GAP_LIMIT, segwit=False)
-segwit_bip32_ = Bip32.from_mnemonic(VALID_MNEMONIC, "49'/0'/0'", gap_limit=GAP_LIMIT, segwit=True)
-public_bip32_ = Bip32(PUBLIC_KEY, '0', gap_limit=GAP_LIMIT, segwit=False)
+bip32_ = HDWallet.from_mnemonic(VALID_MNEMONIC, '0', gap_limit=GAP_LIMIT, segwit=False)
+segwit_bip32_ = HDWallet.from_mnemonic(VALID_MNEMONIC, "49'/0'/0'", gap_limit=GAP_LIMIT, segwit=True)
+public_bip32_ = HDWallet(PUBLIC_KEY, '0', gap_limit=GAP_LIMIT, segwit=False)
 
 normal_addresses = bip32_.addresses()
 segwit_addresses = segwit_bip32_.addresses()
@@ -24,7 +24,7 @@ def test_public():
     assert not public_bip32_.is_private
     assert public_bip32_.addresses()[0] == normal_addresses[0]
 
-    with pytest.raises(PublicBip32Object):
+    with pytest.raises(PublicHDWalletObject):
         _ = public_bip32_.wif_keys()
 
 def test_is_private():
@@ -33,25 +33,25 @@ def test_is_private():
 
 def test_constructor():
     with pytest.raises(InvalidPath):
-        _ = Bip32.from_mnemonic(VALID_MNEMONIC, path='222d')
+        _ = HDWallet.from_mnemonic(VALID_MNEMONIC, path='222d')
 
     with pytest.raises(ValueError):
-        _ = Bip32.from_mnemonic(VALID_MNEMONIC, '0', gap_limit=-1)
+        _ = HDWallet.from_mnemonic(VALID_MNEMONIC, '0', gap_limit=-1)
 
 def test_mnemonic_gen():
-    assert Bip32.check_mnemonic(Bip32.gen_mnemonic())
+    assert HDWallet.check_mnemonic(HDWallet.gen_mnemonic())
 
 def test_check_mnemonic():
-    assert not Bip32.check_mnemonic('NOT A MNEMONIC')
-    assert Bip32.check_mnemonic(VALID_MNEMONIC)
+    assert not HDWallet.check_mnemonic('NOT A MNEMONIC')
+    assert HDWallet.check_mnemonic(VALID_MNEMONIC)
 
 def test_check_path():
-    assert Bip32.check_path("0'")
-    assert Bip32.check_path("49'/0'/0'")
-    assert not Bip32.check_path('/')
-    assert not Bip32.check_path("O/0")
-    assert not Bip32.check_path("49''/0'/3")
-    assert not Bip32.check_path('')
+    assert HDWallet.check_path("0'")
+    assert HDWallet.check_path("49'/0'/0'")
+    assert not HDWallet.check_path('/')
+    assert not HDWallet.check_path("O/0")
+    assert not HDWallet.check_path("49''/0'/3")
+    assert not HDWallet.check_path('')
 
 def test_xkey_gen():
     assert bip32_.master_private_key == 'xprv9s21ZrQH143K2y2XuR7mBAo1G6D8e558rHj3xndKigQTdKbbDRAL2ynVNUwPLwHAk8wqH8peAMT5ujVTwzU9XdBsRyK8kshnUBAJTWCNqub'
