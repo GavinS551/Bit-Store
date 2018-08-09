@@ -104,7 +104,7 @@ class _UTXOChooser:
 
         while output_amount > 0 and self._utxos:
 
-            if self._use_full_address_utxos:
+            if self._use_full_address_utxos is True:
                 closest = self._find_closest_value_address_utxos(output_amount)
 
                 # closest is a list of utxos in this case
@@ -124,7 +124,8 @@ class _UTXOChooser:
 
         else:
             if output_amount > 0:
-                raise InsufficientFundsError('Not enough UTXO value to match output amount')
+                raise InsufficientFundsError(f'Not enough UTXO value to match output amount. '
+                                             f'{output_amount} satoshis more needed')
 
             else:
                 # change amount is the "overflow" satoshis after choosing utxos
@@ -145,7 +146,9 @@ class _UTXOChooser:
 class Transaction:
 
     def __init__(self, utxo_data, outputs_amounts, change_address,
-                 fee, is_segwit, locktime=0):
+                 fee, is_segwit, locktime=0,
+                 use_unconfirmed_utxos=config.SPEND_UNCONFIRMED_UTXOS,
+                 use_full_address_utxos=not config.SPEND_UTXOS_INDIVIDUALLY):
         """
         :param utxo_data: list of unspent outs in standard format. which ones to be spend will be chosen in class
         :param outputs_amounts: dict of output addresses and amounts
@@ -153,12 +156,19 @@ class Transaction:
         :param fee: txn fee
         :param is_segwit: bool
         :param locktime: locktime of btc txn
+        :param use_unconfirmed_utxos: should unconfirmed UTXO's be chosen
+        :param use_full_address_utxos: should all of an addresses UTXOs be chosen, and not cherry-picked
         """
 
         self._outputs_amounts = outputs_amounts
         self._change_address = change_address
         self._locktime = locktime
         self._utxo_data = utxo_data
+
+        assert self._change_address not in outputs_amounts
+
+        self._use_unconfirmed_utxos = use_unconfirmed_utxos
+        self._use_full_address_utxos = use_full_address_utxos
 
         self.fee = fee
         self.is_segwit = is_segwit
@@ -191,8 +201,8 @@ class Transaction:
 
         chooser = _UTXOChooser(utxos=self._utxo_data,
                                output_amount=output_amount,
-                               use_unconfirmed=config.SPEND_UNCONFIRMED_UTXOS,
-                               use_full_address_utxos=not config.SPEND_UTXOS_INDIVIDUALLY)
+                               use_unconfirmed=self._use_unconfirmed_utxos,
+                               use_full_address_utxos=self._use_full_address_utxos)
 
         self._change_amount = chooser.change_amount
         self.input_addresses = chooser.chosen_addresses
@@ -202,12 +212,17 @@ class Transaction:
 
         TX_VERSION = 1
 
+        # outputs_amounts is copied so any instance can be modified with change_fee,
+        # and will still function correctly, i.e the change address won't already
+        # be in the self._outputs_amounts dict
+        outputs_amounts = self._outputs_amounts.copy()
+
         # adding change address to outputs, if there is leftover balance
         if self._change_amount > 0:
-            self._outputs_amounts[self._change_address] = self._change_amount
+            outputs_amounts[self._change_address] = self._change_amount
 
         outputs = []
-        for i, (addr, amount) in enumerate(self._outputs_amounts.items()):
+        for i, (addr, amount) in enumerate(outputs_amounts.items()):
 
             # normal, P2PKH btc addresses begin with '1'
             if addr[0] == '1':
@@ -321,3 +336,5 @@ class Transaction:
         # re-run all logic that will be effected by fee change, i.e there might
         # need to be more chosen inputs to make up for the increased fee
         self._choose_utxos()
+        self.txn = self._get_unsigned_txn()
+        self.is_signed = False
