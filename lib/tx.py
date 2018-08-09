@@ -318,9 +318,3 @@ class Transaction:
         # re-run all logic that will be effected by fee change, i.e there might
         # need to be more chosen inputs to make up for the increased fee
         self._choose_utxos()
-
-    def validate_transaction(self, tx):
-        """ accepts a btcpy txn to compare to class attributes such as the
-        outputs, and makes sure they match
-        """
-        pass
