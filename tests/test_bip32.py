@@ -1,6 +1,6 @@
 import pytest
 
-from lib.bip32 import *
+from lib.bip32 import Bip32, WatchOnlyWallet, InvalidPath
 
 
 VALID_MNEMONIC = 'lion harvest elbow beauty butter spirit park jungle dose need flock hobby'
