@@ -134,7 +134,14 @@ class _UTXOChooser:
 
                 standard_format_utxos = [u.standard_format() for u in chosen_utxos]
                 self.chosen_utxos = standard_format_utxos
-                self.chosen_addresses = [u.address for u in chosen_utxos]
+
+                addresses = []
+                for u in chosen_utxos:
+                    # makes sure addresses aren't repeated
+                    if u.address not in addresses:
+                        addresses.append(u.address)
+
+                self.chosen_addresses = addresses
 
 
 class Transaction:
