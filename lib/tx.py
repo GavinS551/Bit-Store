@@ -1,7 +1,7 @@
 import base58
 
 from btcpy.structs.transaction import MutableTransaction, MutableSegWitTransaction, TxIn, TxOut, Locktime, Sequence, Witness
-from btcpy.structs.script import P2pkhScript, P2shScript, Script, P2wpkhV0Script, ScriptSig
+from btcpy.structs.script import P2pkhScript, P2shScript, Script, P2wpkhV0Script, ScriptSig, StackData
 from btcpy.structs.sig import P2pkhSolver, P2shSolver, P2wpkhV0Solver
 from btcpy.structs.crypto import PrivateKey
 
@@ -37,9 +37,7 @@ class _UTXOChooser:
         self._choose_utxos()
 
     def _remove_unconfirmed(self):
-        for u in self._utxos:
-            if not u.is_confirmed():
-                self._utxos.remove(u)
+        self._utxos = [u for u in self._utxos if u.is_confirmed()]
 
     @property
     def _addresses(self):
@@ -175,6 +173,7 @@ class Transaction:
 
         self._unsigned_txn = self._get_unsigned_txn()
 
+        # can be used to determine correct fees for transaction
         self.size = self._unsigned_txn.size
         self.weight = self._unsigned_txn.weight
 
@@ -238,8 +237,7 @@ class Transaction:
                 TxIn(txid=t[0],
                      txout=t[1],
                      script_sig=ScriptSig.empty(),
-                     sequence=Sequence.max(),
-                     witness='' if self.is_segwit else None)  # if witness is None in SegwitTransaction, then it cannot be converted to hex
+                     sequence=Sequence.max())
             )
 
         if self.is_segwit:
