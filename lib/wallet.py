@@ -185,7 +185,8 @@ class Wallet:
 
     def set_used_addresses(self):
         """ sets all addresses with txns associated with them as used"""
-        u_addrs = [a for a in self.non_used_addresses if a in self.transactions]
+        non_used_addresses = self.receiving_addresses + self.change_addresses
+        u_addrs = [a for a in non_used_addresses if a in self.transactions]
         self._set_addresses_used(u_addrs)
 
     # fee will be modified later using transactions change_fee method, as the
@@ -209,13 +210,6 @@ class Wallet:
         wif_keys = self.get_wif_keys(password, input_addresses)
 
         unsigned_txn.sign(wif_keys)
-
-    def change_gap_limit(self, password):
-        if self.data_store.validate_password(password):
-            pass
-
-        else:
-            raise data.IncorrectPasswordError
 
     @property
     def xpub(self):
@@ -242,12 +236,8 @@ class Wallet:
         return self.data_store.get_value('ADDRESSES_USED')
 
     @property
-    def non_used_addresses(self):
-        return self.receiving_addresses + self.change_addresses
-
-    @property
     def all_addresses(self):
-        return self.non_used_addresses + self.used_addresses
+        return self.receiving_addresses + self.change_addresses + self.used_addresses
 
     @property
     def is_segwit(self):
@@ -268,10 +258,6 @@ class Wallet:
     @property
     def wallet_balance(self):
         return self.data_store.get_value('WALLET_BAL')
-
-    @property
-    def wallet_fiat_balance(self):
-        return (self.wallet_balance * 1e-8) * self.price
 
     @property
     def unspent_outputs(self):
@@ -342,5 +328,3 @@ class WatchOnlyWallet(Wallet):
 
     def get_wif_keys(self, password, addresses):
         raise NotImplementedError
-
-
