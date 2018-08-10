@@ -95,6 +95,15 @@ SENSITIVE_DATA = [
 ]
 
 
+# amounts satoshis have to be multiplied by to get other units
+UNIT_FACTORS = {
+    'BTC': 1e8,
+    'mBTC': 1e5,
+    'bits': 100,
+    'satoshis': 1
+}
+
+
 # CONFIG VARIABLES FROM FILE
 
 BIP32_PATHS = _CONFIG_VARS['BIP32_PATHS']
