@@ -189,7 +189,7 @@ class BlockchainInfo(_BlockchainInterface):
             transaction['outputs'] = outs
 
             # finding the wallet_amount, + or -, for the txn (wallet being all addresses passed into class)
-            # i.e the overall change in wallet funds after the txn. any input
+            # i.e the overall change in wallet funds after the txn. 
             amount = 0
             for i in ins:
                 if i['address'] in self.addresses:
