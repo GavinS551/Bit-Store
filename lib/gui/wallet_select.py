@@ -3,7 +3,7 @@ from tkinter import ttk, messagebox
 
 import os
 
-from lib.core import config
+from ..core import config
 
 from ..exceptions.data_exceptions import IncorrectPasswordError
 from ..exceptions.gui_exceptions import *

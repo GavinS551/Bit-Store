@@ -5,7 +5,7 @@ import os
 import traceback
 
 from . import ttk_simpledialog as simpledialog
-from lib.core import config, wallet
+from ..core import config, wallet
 
 from .wallet_select import WalletSelect
 from .wallet_creation import (WalletCreation, WalletCreationLoading,

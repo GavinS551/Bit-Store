@@ -5,7 +5,8 @@ import threading
 from dataclasses import dataclass
 from typing import Any
 
-from lib.core import config, wallet, hd
+from ..core import config, wallet, hd
+
 
 MAX_NAME_LENGTH = 25
 
