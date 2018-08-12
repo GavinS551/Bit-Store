@@ -46,6 +46,13 @@ class DataStore(Crypto):
                 with open(self.file_path, 'w') as dw:
                     dw.write(self.encrypt(self.json_blank_template))
 
+            # check to see if file is valid json if not blank
+            else:
+                try:
+                    json.loads(d.read())
+                except json.decoder.JSONDecodeError:
+                    raise InvalidFileFormat(f'Invalid JSON: {d.read()}')
+
         if not self._check_password():
             raise IncorrectPasswordError('Entered password is incorrect')
 
