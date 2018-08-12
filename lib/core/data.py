@@ -6,7 +6,7 @@ import json
 import cryptography.fernet as fernet
 
 from . import config
-from .exceptions.data_exceptions import *
+from ..exceptions.data_exceptions import *
 
 
 class Crypto:

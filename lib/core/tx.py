@@ -1,13 +1,13 @@
 import base58
 
-from btcpy.structs.transaction import MutableTransaction, MutableSegWitTransaction, TxIn, TxOut, Locktime, Sequence, Witness
-from btcpy.structs.script import P2pkhScript, P2shScript, Script, P2wpkhV0Script, ScriptSig, StackData
+from btcpy.structs.transaction import MutableTransaction, MutableSegWitTransaction, TxIn, TxOut, Locktime, Sequence
+from btcpy.structs.script import P2pkhScript, P2shScript, Script, P2wpkhV0Script, ScriptSig
 from btcpy.structs.sig import P2pkhSolver, P2shSolver, P2wpkhV0Solver
 from btcpy.structs.crypto import PrivateKey
 
 from .structs import UTXOData
 
-from .exceptions.tx_exceptions import *
+from ..exceptions.tx_exceptions import *
 
 
 class _UTXOChooser:

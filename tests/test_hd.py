@@ -1,6 +1,6 @@
 import pytest
 
-from lib.hd import HDWallet, PublicHDWalletObject, InvalidPath
+from lib.core.hd import HDWallet, PublicHDWalletObject, InvalidPath
 
 
 VALID_MNEMONIC = 'lion harvest elbow beauty butter spirit park jungle dose need flock hobby'

@@ -5,8 +5,7 @@ import threading
 from dataclasses import dataclass
 from typing import Any
 
-from .. import hd, config, wallet
-
+from lib.core import config, wallet, hd
 
 MAX_NAME_LENGTH = 25
 
@@ -176,13 +175,13 @@ class WalletCreation(ttk.Frame):
     def _build_wallet_instance_thread(self, wallet_data):
         if wallet_data.xkey is None:
             hd_ = hd.HDWallet.from_mnemonic(wallet_data.mnemonic,
-                                               wallet_data.path,
-                                               wallet_data.passphrase,
-                                               wallet_data.is_segwit)
+                                            wallet_data.path,
+                                            wallet_data.passphrase,
+                                            wallet_data.is_segwit)
         else:
             hd_ = hd.HDWallet(wallet_data.xkey,
-                                 wallet_data.path,
-                                 wallet_data.is_segwit)
+                              wallet_data.path,
+                              wallet_data.is_segwit)
 
         w = wallet.Wallet.new_wallet(wallet_data.name, wallet_data.password, hd_)
         self.root.btc_wallet = w

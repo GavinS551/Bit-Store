@@ -24,7 +24,7 @@ class _TransactionDisplay(ttk.Frame):
         ttk.Frame.__init__(self, parent)
 
         self.tree_view = ttk.Treeview(self, columns=('Date', 'Amount', 'Balance'))
-        self.tree_view.heading('#0', text='IN/OUT')
+        self.tree_view.heading('#0', text='Confirmations')
         self.tree_view.heading('#1', text='Date')
         self.tree_view.heading('#2', text='Amount')
         self.tree_view.heading('#3', text='Balance')

@@ -1,6 +1,6 @@
 import pytest
 
-from lib.tx import Transaction, _UTXOChooser, InsufficientFundsError
+from lib.core.tx import Transaction, _UTXOChooser, InsufficientFundsError
 
 
 TEST_UTXO_CHOOSER_UTXOS = [

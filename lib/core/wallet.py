@@ -4,8 +4,8 @@ import shutil
 
 import requests.exceptions
 
-from . import data, hd, config, blockchain, price, tx
-from .exceptions.wallet_exceptions import *
+from . import blockchain, config, data, tx, price, hd
+from ..exceptions.wallet_exceptions import *
 
 
 API_REFRESH_RATE = 5

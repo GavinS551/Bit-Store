@@ -9,7 +9,7 @@ from operator import itemgetter
 import bitstring
 from .bip32utils_updated.BIP32Key import BIP32Key, BIP32_HARDEN
 
-from .exceptions.hd_exceptions import *
+from ..exceptions.hd_exceptions import *
 
 
 WORDLIST = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'wordlist.txt')
