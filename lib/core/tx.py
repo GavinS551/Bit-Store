@@ -72,11 +72,9 @@ class _UTXOChooser:
 
     def _find_closest_value_address_utxos(self, value):
         """ finds what utxos, grouped by address, has closest total value to passed value"""
-        address_balances = {}
 
-        # filling dict with all addresses
-        for a in self._addresses:
-            address_balances[a] = 0
+        # initialising dict
+        address_balances = dict.fromkeys(self._addresses, 0)
 
         # adding up all address balances
         for u in self._utxos:
