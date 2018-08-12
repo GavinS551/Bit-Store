@@ -28,7 +28,7 @@ def blockchain_api(addresses, refresh_rate, source):
     return source_cls(addresses, refresh_rate, source_url)
 
 
-class _BlockchainInterface:
+class _BlockchainBaseClass:
     """ subclasses need to overwrite transactions property and make
      sure it returns transactions in data format seen in doc-string of the property"""
 
@@ -108,7 +108,7 @@ class _BlockchainInterface:
         return sum([b[1] for b in self.address_balances.items()])
 
 
-class BlockchainInfo(_BlockchainInterface):
+class BlockchainInfo(_BlockchainBaseClass):
 
     @property
     def _blockchain_data(self):
@@ -189,7 +189,7 @@ class BlockchainInfo(_BlockchainInterface):
             transaction['outputs'] = outs
 
             # finding the wallet_amount, + or -, for the txn (wallet being all addresses passed into class)
-            # i.e the overall change in wallet funds after the txn. 
+            # i.e the overall change in wallet funds after the txn.
             amount = 0
             for i in ins:
                 if i['address'] in self.addresses:
