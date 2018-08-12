@@ -49,9 +49,10 @@ class DataStore(Crypto):
             # check to see if file is valid json if not blank
             else:
                 try:
-                    json.loads(d.read())
+                    d.seek(0)  # d.read() was already called in above if statement
+                    json.loads(self.decrypt(d.read()))
                 except json.decoder.JSONDecodeError:
-                    raise InvalidFileFormat(f'Invalid JSON: {d.read()}')
+                    raise InvalidFileFormat(f'Invalid JSON: {self.decrypt(d.read())}')
 
         if not self._check_password():
             raise IncorrectPasswordError('Entered password is incorrect')
