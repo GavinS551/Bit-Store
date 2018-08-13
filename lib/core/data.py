@@ -40,8 +40,9 @@ class DataStore(Crypto):
         if not os.path.exists(self.file_path):
             raise ValueError(f'{self.file_path} does not exist!')
 
-        # new file handling
+        # input checking
         with open(self.file_path, 'r') as d:
+            # new file handling
             if d.read() == '':
                 with open(self.file_path, 'w') as dw:
                     dw.write(self.encrypt(self.json_blank_template))
@@ -49,13 +50,13 @@ class DataStore(Crypto):
             # check to see if file is valid json if not blank
             else:
                 try:
+                    if not self._check_password():
+                        raise IncorrectPasswordError('Entered password is incorrect')
+
                     d.seek(0)  # d.read() was already called in above if statement
                     json.loads(self.decrypt(d.read()))
                 except json.decoder.JSONDecodeError:
                     raise InvalidFileFormat(f'Invalid JSON: {self.decrypt(d.read())}')
-
-        if not self._check_password():
-            raise IncorrectPasswordError('Entered password is incorrect')
 
         # Storing password hash for password validation independent of
         # this class i.e Wallet class for sensitive information
