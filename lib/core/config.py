@@ -104,6 +104,10 @@ UNIT_FACTORS = {
 }
 
 
+# standard format for datetime stings
+DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S (%Z)'
+
+
 # CONFIG VARIABLES FROM FILE
 
 BIP32_PATHS = _CONFIG_VARS['BIP32_PATHS']

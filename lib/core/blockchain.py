@@ -3,7 +3,7 @@ import datetime
 
 import requests
 
-from . import btc_verify
+from . import btc_verify, config
 
 
 def blockchain_api(addresses, refresh_rate, source):
@@ -147,7 +147,7 @@ class BlockchainInfo(_BlockchainBaseClass):
             # getting date as local time from unix timestamp
             utc_time = datetime.datetime.utcfromtimestamp(tx['time'])
             local_time = utc_time.astimezone()
-            transaction['date'] = local_time.strftime('%Y-%m-%d %H:%M:%S (%Z)')
+            transaction['date'] = local_time.strftime(config.DATETIME_FORMAT)
 
             transaction['block_height'] = tx['block_height']
 
