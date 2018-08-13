@@ -30,7 +30,7 @@ class IterableQueue:
 
 
 class HDWallet:
-    """ implementation of the hierarchical deterministic wallet, using BIP39 mnemonic standard, and BIP32 standard """
+    """ implementation of the hierarchical deterministic wallet, implementing the BIP39 standard """
 
     @classmethod
     def from_mnemonic(cls, mnemonic, path, passphrase='',
