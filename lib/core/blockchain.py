@@ -52,8 +52,8 @@ class _BlockchainBaseClass:
             'confirmations': int,
             'fee': int,
             'size': int,
-            'inputs': [{'value': int, 'address': str, 'n': int}, ...]
-            'outputs': [{'value': int, 'address': str, 'n': int, 'spent': bool}, ...]
+            'inputs': [{'value': int, 'address': str, 'n': int}, ...],
+            'outputs': [{'value': int, 'address': str, 'n': int, 'spent': bool}, ...],
             'wallet_amount': int
 
         }, ...]

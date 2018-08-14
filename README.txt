@@ -7,8 +7,8 @@ LIMITATIONS:
 This shouldn't be an issue as you can send to multiple different addresses per transaction
 
 > only a maximum of 100 transactions can be shown due to limits with the blockchain.info api. Therefore only balances
-associated with those 100 transactions can be shown. This is to avoid confusion, e.g. you have 120 transactions,
-but your wallet balance is showing you have 2 BTC. You may not be able to spend those 2 BTC as the unspent outputs
+associated with those 100 transactions can be shown. This is to avoid confusion, e.g. if wallet balance was shown independent of transactions,
+and you have 120 transactions, but your wallet balance is showing you have 2 BTC. You may not be able to spend those 2 BTC as the unspent outputs
 that add up to that 2 BTC balance may be at the 105th transaction
 
 
@@ -25,8 +25,8 @@ Transactions:  {
             'confirmations': int,
             'fee': int,
             'size': int,
-            'inputs': [{'value': int, 'address': str, 'n': int}, ...]
-            'outputs': [{'value': int, 'address': str, 'n': int, 'spent': bool}, ...]
+            'inputs': [{'value': int, 'address': str, 'n': int}, ...],
+            'outputs': [{'value': int, 'address': str, 'n': int, 'spent': bool}, ...],
             'wallet_amount': int
 
         }
