@@ -253,7 +253,8 @@ class Wallet:
 
     @property
     def price(self):
-        return self.data_store.get_value('PRICE')
+        # price class should return int by default
+        return int(self.data_store.get_value('PRICE'))
 
     @property
     def wallet_balance(self):
@@ -262,6 +263,16 @@ class Wallet:
     @property
     def unconfirmed_wallet_balance(self):
         return self.data_store.get_value('WALLET_BAL')[1]
+
+    @property
+    def fiat_wallet_balance(self):
+        # wallet balance is in satoshis while price is per BTC (1e8 satoshis)
+        return (self.wallet_balance / config.UNIT_FACTORS['BTC']) * self.price
+
+    @property
+    def unconfirmed_fiat_wallet_balance(self):
+        # wallet balance is in satoshis while price is per BTC (1e8 satoshis)
+        return (self.unconfirmed_wallet_balance / config.UNIT_FACTORS['BTC']) * self.price
 
     @property
     def unspent_outputs(self):
