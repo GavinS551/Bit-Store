@@ -100,7 +100,7 @@ UNIT_FACTORS = {
     'BTC': 1e8,
     'mBTC': 1e5,
     'bits': 100,
-    'satoshis': 1
+    'sat': 1
 }
 
 
