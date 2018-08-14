@@ -266,13 +266,15 @@ class Wallet:
 
     @property
     def fiat_wallet_balance(self):
+        """ returns fiat balance rounded to 2 decimal places """
         # wallet balance is in satoshis while price is per BTC (1e8 satoshis)
-        return (self.wallet_balance / config.UNIT_FACTORS['BTC']) * self.price
+        return round(((self.wallet_balance / config.UNIT_FACTORS['BTC']) * self.price), 2)
 
     @property
     def unconfirmed_fiat_wallet_balance(self):
+        """ returns fiat balance rounded to 2 decimal places """
         # wallet balance is in satoshis while price is per BTC (1e8 satoshis)
-        return (self.unconfirmed_wallet_balance / config.UNIT_FACTORS['BTC']) * self.price
+        return round(((self.unconfirmed_wallet_balance / config.UNIT_FACTORS['BTC']) * self.price), 2)
 
     @property
     def unspent_outputs(self):
