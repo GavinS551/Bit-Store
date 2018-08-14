@@ -128,7 +128,7 @@ class _UTXOChooser:
                 # change amount is the "overflow" satoshis after choosing utxos
                 self.change_amount = abs(output_amount)
 
-                standard_format_utxos = [u.standard_format() for u in chosen_utxos]
+                standard_format_utxos = [u.standard_format for u in chosen_utxos]
                 self.chosen_utxos = standard_format_utxos
 
                 addresses = []
