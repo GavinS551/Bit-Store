@@ -11,16 +11,6 @@ from ..core import config, wallet, hd
 MAX_NAME_LENGTH = 25
 
 
-def threaded(func):
-    """ wrapper that returns a thread object with its target set to wrapped function """
-    def wrapper(*args, **kwargs):
-        t = threading.Thread(target=func, args=args, kwargs=kwargs)
-        t.start()
-        return t
-
-    return wrapper
-
-
 class WalletCreation(ttk.Frame):
 
     def __init__(self, root):
@@ -161,7 +151,10 @@ class WalletCreation(ttk.Frame):
             wd = WalletCreationData(name, password, passphrase,
                                     is_segwit, path, mnemonic, xkey)
 
-            self._build_wallet_instance_thread(wd)
+            build_wallet_instance_thread = threading.Thread(target=self._build_wallet_instance,
+                                                            args=(wd,),
+                                                            name='GUI_WALLET_INSTANCE_BUILDER_THREAD')
+            build_wallet_instance_thread.start()
 
         except ValueError as ex:
             messagebox.showerror('Error', f'{ex.__str__()}')
@@ -172,8 +165,7 @@ class WalletCreation(ttk.Frame):
             # TODO make this work with exceptions in thread
             self.root.show_frame('WalletCreation')
 
-    @threaded
-    def _build_wallet_instance_thread(self, wallet_data):
+    def _build_wallet_instance(self, wallet_data):
         if wallet_data.xkey is None:
             hd_ = hd.HDWallet.from_mnemonic(wallet_data.mnemonic,
                                             wallet_data.path,
