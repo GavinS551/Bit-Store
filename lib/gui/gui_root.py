@@ -67,6 +67,7 @@ class RootApplication(tk.Tk):
         self.show_frame('WalletSelect')
 
         # init will be done in other frames, this is a placeholder
+        # will be a lib.core.wallet Wallet instance acting as the main interface for the gui
         self.btc_wallet = None
 
     def report_callback_exception(self, exc_type, exc_value, exc_traceback):
