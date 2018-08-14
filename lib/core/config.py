@@ -79,7 +79,7 @@ STANDARD_DATA_FORMAT = {
     'ADDRESS_BALS': {},
     'TXNS': [],
     'PRICE': 0.0,
-    'WALLET_BAL': 0,
+    'WALLET_BAL': [],
     'UNSPENT_OUTS': [],
     'PASSWORD_HASH': '',
     'ADDRESS_WIF_KEYS': {}

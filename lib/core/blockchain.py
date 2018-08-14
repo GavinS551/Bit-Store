@@ -85,27 +85,37 @@ class _BlockchainBaseClass:
 
     @property
     def address_balances(self):
-        """ returns a dicts of addresses/balances(in satoshis) using UTXO data """
+        """ returns a dict of addresses/(balances, unconfirmed balances) using UTXO data """
 
         balances = []
         unspent_outs = self.unspent_outputs
 
         for address in self.addresses:
             value = 0
+            unconfirmed_value = 0
 
             for utxo in unspent_outs:
                 if utxo[2] == address:
+                    # if the utxo has 0 confirmations
+                    if utxo[5] == 0:
+                        unconfirmed_value += utxo[4]
+                        unspent_outs.remove(utxo)
+                        continue
+
                     value += utxo[4]
                     unspent_outs.remove(utxo)
 
-            balances.append((address, value))
+            balances.append((address, (value, unconfirmed_value)))
 
         return dict(balances)
 
     @property
     def wallet_balance(self):
-        """ Combined balance of all addresses (in satoshis)"""
-        return sum([b[1] for b in self.address_balances.items()])
+        """ Combined (balance/unconfirmed balance) of all addresses """
+        balance =  sum([b[1][0] for b in self.address_balances.items()])
+        unconfirmed_balance = sum([b[1][1] for b in self.address_balances.items()])
+
+        return [balance, unconfirmed_balance]
 
 
 class BlockchainInfo(_BlockchainBaseClass):

@@ -257,7 +257,11 @@ class Wallet:
 
     @property
     def wallet_balance(self):
-        return self.data_store.get_value('WALLET_BAL')
+        return self.data_store.get_value('WALLET_BAL')[0]
+
+    @property
+    def unconfirmed_wallet_balance(self):
+        return self.data_store.get_value('WALLET_BAL')[1]
 
     @property
     def unspent_outputs(self):
