@@ -1,9 +1,14 @@
 import os
 import pathlib
+import platform
 import json
 
 
-DATA_DIR = os.path.join(pathlib.Path.home(), '.Bit-Store')
+if platform.system() == 'Windows':
+    DATA_DIR = os.path.join(os.environ['APPDATA'], 'Bit-Store')
+else:
+    DATA_DIR = os.path.join(pathlib.Path.home(), '.Bit-Store')
+
 CONFIG_FILE = os.path.join(DATA_DIR, 'config.json')
 
 
