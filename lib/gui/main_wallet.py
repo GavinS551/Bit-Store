@@ -197,14 +197,14 @@ class _SendDisplay(ttk.Frame):
         self.amount_btc_label.grid(row=1, column=0, pady=10, padx=10, sticky='e')
 
         self.amount_btc_entry = ttk.Entry(self, validate='key', validatecommand=validate)
-        self.amount_btc_entry.bind('<Key>', self._amount_btc_entry_to_fiat)
+        self.amount_btc_entry.bind('<KeyRelease>', self._amount_btc_entry_to_fiat)
         self.amount_btc_entry.grid(row=1, column=1, pady=10, padx=20, sticky='w')
 
         self.amount_fiat_label = ttk.Label(self, text=f'Amount ({config.FIAT}):',
                                       font=self.main_wallet.root.small_font)
         self.amount_fiat_label.grid(row=1, column=2, pady=10, padx=10, sticky='w')
 
-        self.amount_fiat_var = tk.StringVar()
+        self.amount_fiat_var = tk.IntVar()
         self.amount_fiat = ttk.Label(self, textvariable=self.amount_fiat_var)
         self.amount_fiat.grid(row=1, column=3, pady=10, padx=10, sticky='w')
 
@@ -253,7 +253,13 @@ class _SendDisplay(ttk.Frame):
             return False
 
     def _amount_btc_entry_to_fiat(self, event):
-        value = event.widget.get()
+
+        # empty string resets fiat amount
+        if not event.widget.get():
+            self.amount_fiat_var.set(0)
+            return 
+
+        value = float(event.widget.get())
 
         # convert different units into btc, as price is in terms of btc
         def to_btc(units, amount):
@@ -263,6 +269,6 @@ class _SendDisplay(ttk.Frame):
                 btc = (amount * config.UNIT_FACTORS[units]) / config.UNIT_FACTORS['BTC']
                 return btc
 
-        fiat_amount = self.main_wallet.root.btc_wallet.price * to_btc(self.main_wallet.display_units, value)
+        fiat_amount = round(self.main_wallet.price.get() * to_btc(self.main_wallet.display_units, value), 2)
 
         self.amount_fiat_var.set(fiat_amount)
