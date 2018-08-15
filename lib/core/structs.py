@@ -1,3 +1,5 @@
+""" data structures that make handling wallet data simpler (should be treated like they are immutable)"""
+
 from dataclasses import dataclass
 from datetime import datetime
 import functools
@@ -5,7 +7,7 @@ import functools
 from . import config
 
 
-@dataclass
+@dataclass(frozen=True)
 class UTXOData:
     """ dataclass that makes handling utxo data in standard format easier """
     txid: str
@@ -30,7 +32,7 @@ class UTXOData:
         return hash((self.txid, self.output_num))
 
 
-@dataclass
+@dataclass(frozen=True)
 class TransactionData:
     """ dataclass for handling transactions in standard format """
 
@@ -74,14 +76,12 @@ class Transactions:
         return cls(transactions=[TransactionData(**t) for t in txn_list])
 
     def __init__(self, transactions):
-
         # list of TransactionData dataclasses
         self._transactions = transactions
 
     @functools.lru_cache(maxsize=None)
     def date_sorted_transactions(self, ascending=True):
         """ returns self.transactions sorted by date, ascending """
-
         def _date_sort_key(txn):
             return datetime.strptime(txn.date, config.DATETIME_FORMAT)
 
@@ -95,7 +95,6 @@ class Transactions:
     @functools.lru_cache(maxsize=None)
     def balances(self):
         """ dict of txns and the balance of the wallet at that particular txn """
-
         balances_dict = dict.fromkeys([txn for txn in self._transactions], 0)
 
         running_total = 0
