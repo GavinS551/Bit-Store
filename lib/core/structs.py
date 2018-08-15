@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+import functools
 
 from . import config
 
@@ -67,31 +68,40 @@ class TransactionData:
 
 class Transactions:
 
+    @classmethod
+    def from_list(cls, txn_list):
+        """ returns a Transactions class from a list of txns in standard format """
+        return cls(transactions=[TransactionData(**t) for t in txn_list])
+
     def __init__(self, transactions):
 
         # list of TransactionData dataclasses
-        self.transactions = transactions
+        self._transactions = transactions
 
-    @property
-    def date_sorted_transactions(self):
-        """ returns self.transactions sorted by date """
+    @functools.lru_cache(maxsize=None)
+    def date_sorted_transactions(self, ascending=True):
+        """ returns self.transactions sorted by date, ascending """
 
         def _date_sort_key(txn):
             return datetime.strptime(txn.date, config.DATETIME_FORMAT)
 
         # sorting transactions by ascending txn date
-        sorted_transactions = sorted(self.transactions, key=_date_sort_key)
+        sorted_transactions = sorted(self._transactions, key=_date_sort_key,
+                                     reverse=ascending)
 
         return sorted_transactions
 
     @property
+    @functools.lru_cache(maxsize=None)
     def balances(self):
         """ dict of txns and the balance of the wallet at that particular txn """
 
-        balances_dict = dict.fromkeys([txn for txn in self.transactions], 0)
+        balances_dict = dict.fromkeys([txn for txn in self._transactions], 0)
 
         running_total = 0
-        for txn in self.date_sorted_transactions:
+        # using date sorted transactions as the oldest chronological txn
+        # will be the first change (+) in the wallet balance
+        for txn in self.date_sorted_transactions(ascending=False):
             running_total += txn.wallet_amount
             balances_dict[txn] = running_total
 

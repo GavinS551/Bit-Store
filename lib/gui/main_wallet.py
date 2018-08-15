@@ -155,17 +155,18 @@ class _TransactionDisplay(ttk.Frame):
 
     def _refresh_transactions(self):
         while True:
-            # list of TransactionData dataclasses made from standard format transactions
-            transactions = structs.Transactions([structs.TransactionData(**txn)
-                                                 for txn in self.main_wallet.root.btc_wallet.transactions])
+            # Transactions class will allow the sorting of txns by date,
+            # and txns are stored as structs.TransactionData instances
+            transactions = structs.Transactions.from_list(self.main_wallet.root.btc_wallet.transactions)
+            sorted_txns = transactions.date_sorted_transactions()
+
 
             # satoshis will be divided by this number to get amount in terms of self.main_wallet.display_units
             f = self.main_wallet.unit_factor
 
-            # list reversed so the newest txn will be inserted first in tree_view
             display_data = [[t.confirmations, t.date,
                             f'{t.wallet_amount / f:+}', f'{transactions.balances[t] / f}']
-                            for t in transactions.balances]
+                            for t in sorted_txns]
 
             # only refresh tree_view if data has changed
             if not self._cached_display_data == display_data:
