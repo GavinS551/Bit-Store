@@ -40,57 +40,51 @@ class DataStore(Crypto):
         if not os.path.exists(self.file_path):
             raise ValueError(f'{self.file_path} does not exist!')
 
-        # input checking
+        # new file handling
         with open(self.file_path, 'r') as d:
-            # new file handling
             if d.read() == '':
                 with open(self.file_path, 'w') as dw:
                     dw.write(self.encrypt(self.json_blank_template))
 
-            # check to see if file is valid json if not blank
-            else:
-                try:
-                    if not self._check_password():
-                        raise IncorrectPasswordError('Entered password is incorrect')
+        # input checking
+        with open(self.file_path, 'r') as d:
+            try:
+                if not self._check_password():
+                    raise IncorrectPasswordError('Entered password is incorrect')
 
-                    d.seek(0)  # d.read() was already called in above if statement
-                    json.loads(self.decrypt(d.read()))
-                except json.decoder.JSONDecodeError:
-                    raise InvalidFileFormat(f'Invalid JSON: {self.decrypt(d.read())}')
+                json.loads(self.decrypt(d.read()))
+
+            except json.decoder.JSONDecodeError:
+                raise InvalidFileFormat(f'Invalid JSON: {self.decrypt(d.read())}')
+
+        # data will be stored in memory and accessed from there after first read
+        # but data will constantly be written to file as it updates
+        self._data = self._read_file()
 
         # Storing password hash for password validation independent of
         # this class i.e Wallet class for sensitive information
         if not self.get_value('PASSWORD_HASH'):
             self.write_value(PASSWORD_HASH=hashlib.sha256(password.encode('utf-8')).hexdigest())
 
-        # initialise cached data - cached for threaded compatibility, see _data property
-        self._cached_data = self._data
-
     def _check_password(self):
         try:
             # tries to decrypt data
-            _ = self._data
+            _ = self._read_file()
             return True
 
         except fernet.InvalidToken:
             return False
 
-    @property
-    def _data(self):
+    def _read_file(self):
         with open(self.file_path, 'r') as d:
             data = d.read()
-
-            # for threaded compatibility - if one thread is mid write and the
-            # file is blank, cached value will be returned
-            if data:
-                self._cached_data = data
-                return json.loads(self.decrypt(data))
-            else:
-                return json.loads(self.decrypt(self._cached_data))
+            return json.loads(self.decrypt(data))
 
     def _write_to_file(self, data):
         # if data is invalid for json.dumps it will raise exception here before file is overwritten
         json.dumps(data)
+        # update data in memory
+        self._data = data
 
         tmp_file = self.file_path + '_temp'
         with open(tmp_file, 'w+') as d:
