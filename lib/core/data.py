@@ -86,7 +86,7 @@ class DataStore(Crypto):
         # update data in memory
         self._data = data
 
-        tmp_file = self.file_path + '_temp'
+        tmp_file = self.file_path + '.tmp'
         with open(tmp_file, 'w+') as d:
             d.write(self.encrypt(json.dumps(data)))
             d.flush()
