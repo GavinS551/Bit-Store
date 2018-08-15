@@ -247,7 +247,7 @@ class WalletCreationVerifyMnemonic(ttk.Frame):
                                          font=self.root.small_font, justify=tk.CENTER, wrap=520)
         mnemonic_entry_label.grid(row=1, column=0)
 
-        self.mnemonic_entry = tk.Text(self, width=40, height=5, font=self.root.small_font)
+        self.mnemonic_entry = tk.Text(self, width=40, height=5, font=self.root.small_font, wrap=tk.WORD)
         self.mnemonic_entry.grid(row=2, column=0, pady=20, columnspan=2)
 
         button_frame = ttk.Frame(self)
