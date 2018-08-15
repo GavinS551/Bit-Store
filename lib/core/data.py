@@ -60,7 +60,8 @@ class DataStore(Crypto):
 
         # Storing password hash for password validation independent of
         # this class i.e Wallet class for sensitive information
-        self.write_value(PASSWORD_HASH=hashlib.sha256(password.encode('utf-8')).hexdigest())
+        if not self.get_value('PASSWORD_HASH'):
+            self.write_value(PASSWORD_HASH=hashlib.sha256(password.encode('utf-8')).hexdigest())
 
         # initialise cached data - cached for threaded compatibility, see _data property
         self._cached_data = self._data
@@ -90,8 +91,14 @@ class DataStore(Crypto):
     def _write_to_file(self, data):
         # if data is invalid for json.dumps it will raise exception here before file is overwritten
         json.dumps(data)
-        with open(self.file_path, 'w') as d:
+
+        tmp_file = self.file_path + '_temp'
+        with open(tmp_file, 'w+') as d:
             d.write(self.encrypt(json.dumps(data)))
+            d.flush()
+            os.fsync(d.fileno())
+
+        os.replace(tmp_file, self.file_path)
 
     def write_value(self, allow_new_key=False, **kwargs):
         data = self._data
@@ -118,7 +125,7 @@ class DataStore(Crypto):
                     else:
                         data[k] = v
 
-            self._write_to_file(data)
+        self._write_to_file(data)
 
     def get_value(self, key):
         if key.upper() in config.SENSITIVE_DATA:

@@ -179,6 +179,10 @@ class Wallet:
                     addr_index = c_addrs.index(address)
                     u_addrs.append(c_addrs.pop(addr_index))
 
+        # don't unnecessarily write to file
+        if not addresses:
+            return
+
         self.data_store.write_value(**{'ADDRESSES_RECEIVING': r_addrs,
                                        'ADDRESSES_CHANGE': c_addrs,
                                        'ADDRESSES_USED': u_addrs})
@@ -187,7 +191,9 @@ class Wallet:
         """ sets all addresses with txns associated with them as used"""
         non_used_addresses = self.receiving_addresses + self.change_addresses
         u_addrs = [a for a in non_used_addresses if a in self.transactions]
-        self._set_addresses_used(u_addrs)
+
+        if u_addrs:
+            self._set_addresses_used(u_addrs)
 
     # fee will be modified later using transactions change_fee method, as the
     # size of the transaction is currently unknown
