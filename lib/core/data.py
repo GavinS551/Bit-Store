@@ -77,15 +77,15 @@ class DataStore(Crypto):
     @property
     def _data(self):
         with open(self.file_path, 'r') as d:
-            data = self.decrypt(d.read())
+            data = d.read()
 
             # for threaded compatibility - if one thread is mid write and the
             # file is blank, cached value will be returned
             if data:
                 self._cached_data = data
-                return json.loads(data)
+                return json.loads(self.decrypt(data))
             else:
-                return self._cached_data
+                return json.loads(self.decrypt(self._cached_data))
 
     def _write_to_file(self, data):
         # if data is invalid for json.dumps it will raise exception here before file is overwritten
