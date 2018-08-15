@@ -40,14 +40,15 @@ class DataStore(Crypto):
         if not os.path.exists(self.file_path):
             raise ValueError(f'{self.file_path} does not exist!')
 
-        # new file handling
+
         with open(self.file_path, 'r') as d:
+            # new file handling
             if d.read() == '':
                 with open(self.file_path, 'w') as dw:
                     dw.write(self.encrypt(self.json_blank_template))
+            d.seek(0)
 
-        # input checking
-        with open(self.file_path, 'r') as d:
+            # input checking
             try:
                 if not self._check_password():
                     raise IncorrectPasswordError('Entered password is incorrect')
@@ -55,6 +56,7 @@ class DataStore(Crypto):
                 json.loads(self.decrypt(d.read()))
 
             except json.decoder.JSONDecodeError:
+                d.seek(0)
                 raise InvalidFileFormat(f'Invalid JSON: {self.decrypt(d.read())}')
 
         # data will be stored in memory and accessed from there after first read
@@ -87,7 +89,7 @@ class DataStore(Crypto):
         self._data = data
 
         tmp_file = self.file_path + '.tmp'
-        with open(tmp_file, 'w+') as d:
+        with open(tmp_file, 'w') as d:
             d.write(self.encrypt(json.dumps(data)))
             d.flush()
             os.fsync(d.fileno())

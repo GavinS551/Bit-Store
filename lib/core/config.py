@@ -19,7 +19,7 @@ def init():
 
     # and likewise for the config file itself
     if not os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, 'w+') as cf:
+        with open(CONFIG_FILE, 'w') as cf:
             json.dump(DEFAULT_CONFIG, cf, indent=4, sort_keys=False)
 
 
@@ -32,7 +32,7 @@ def reset_config_file():
     with open(CONFIG_FILE, 'w') as cf:
         json.dump(DEFAULT_CONFIG, cf, indent=4, sort_keys=False)
 
-
+# TODO atomically write to file
 def write_value(key, value):
     if key not in DEFAULT_CONFIG:
         raise ValueError(f'{key} is an invalid key')
