@@ -3,6 +3,8 @@ import pathlib
 import platform
 import json
 
+from . import utils
+
 
 if platform.system() == 'Windows':
     DATA_DIR = os.path.join(os.environ['APPDATA'], 'Bit-Store')
@@ -32,7 +34,7 @@ def reset_config_file():
     with open(CONFIG_FILE, 'w') as cf:
         json.dump(DEFAULT_CONFIG, cf, indent=4, sort_keys=False)
 
-# TODO atomically write to file
+
 def write_value(key, value):
     if key not in DEFAULT_CONFIG:
         raise ValueError(f'{key} is an invalid key')
@@ -40,8 +42,8 @@ def write_value(key, value):
     config = read_file()
     config[key] = value
 
-    with open(CONFIG_FILE, 'w') as cf:
-        json.dump(config, cf, indent=4, sort_keys=False)
+    data = json.dumps(config, indent=4, sort_keys=True)
+    utils.atomic_file_write(data, CONFIG_FILE)
 
 
 init()
