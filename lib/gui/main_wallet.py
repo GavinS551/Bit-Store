@@ -1,11 +1,10 @@
 import tkinter as tk
 from tkinter import ttk
 
-import threading
 import time
 import string
 
-from ..core import structs, config
+from ..core import structs, config, utils, tx
 
 
 class MainWallet(ttk.Frame):
@@ -14,11 +13,11 @@ class MainWallet(ttk.Frame):
         self.root = root
         ttk.Frame.__init__(self, self.root.master_frame)
 
-        self.refresh_data_rate = 3
+        self.refresh_data_rate = 3000  # milliseconds
 
         self.display_units = config.UNITS
         self.unit_factor = config.UNIT_FACTORS[self.display_units]
-
+        self.max_decimal_places = config.UNITS_MAX_DECIMAL_PLACES[self.display_units]
 
         # attributes below will be updated in _refresh_data method
         self.wallet_balance = tk.IntVar()
@@ -36,20 +35,17 @@ class MainWallet(ttk.Frame):
         notebook = ttk.Notebook(self)
 
         tx_display = _TransactionDisplay(notebook, self)
-        tx_display.grid()
+        tx_display.grid(sticky='nsew')
         notebook.add(tx_display, text='Transactions')
 
         send_display = _SendDisplay(notebook, self)
-        send_display.grid()
+        send_display.grid(sticky='nsew')
         notebook.add(send_display, text='Send')
 
         notebook.grid(row=1, column=0, pady=10)
 
         self._draw_bottom_info_bar()
-        refresh_thread = threading.Thread(target=self._refresh_data,
-                                          name='GUI_MAIN_WALLET_REFRESH_THREAD',
-                                          daemon=True)
-        refresh_thread.start()
+        self._refresh_data()
 
     def _draw_bottom_info_bar(self):
         bottom_info_frame = ttk.Frame(self)
@@ -103,14 +99,14 @@ class MainWallet(ttk.Frame):
         bottom_info_frame.grid()
 
     def _refresh_data(self):
-        while True:
-            self.wallet_balance.set(self.root.btc_wallet.wallet_balance / self.unit_factor)
-            self.unconfirmed_wallet_balance.set(self.root.btc_wallet.unconfirmed_wallet_balance / self.unit_factor)
-            self.price.set(self.root.btc_wallet.price)
-            self.fiat_wallet_balance.set(self.root.btc_wallet.fiat_wallet_balance)
-            self.unconfirmed_fiat_wallet_balance.set(self.root.btc_wallet.unconfirmed_fiat_wallet_balance)
 
-            time.sleep(self.refresh_data_rate)
+        self.wallet_balance.set(self.root.btc_wallet.wallet_balance / self.unit_factor)
+        self.unconfirmed_wallet_balance.set(self.root.btc_wallet.unconfirmed_wallet_balance / self.unit_factor)
+        self.price.set(self.root.btc_wallet.price)
+        self.fiat_wallet_balance.set(self.root.btc_wallet.fiat_wallet_balance)
+        self.unconfirmed_fiat_wallet_balance.set(self.root.btc_wallet.unconfirmed_fiat_wallet_balance)
+
+        self.root.after(self.refresh_data_rate, self._refresh_data)
 
 
 class _TransactionDisplay(ttk.Frame):
@@ -137,11 +133,7 @@ class _TransactionDisplay(ttk.Frame):
         self.scrollbar.grid(row=0, column=1, sticky='ns')
 
         self._cached_display_data = None
-
-        self.refresh_thread = threading.Thread(target=self._refresh_transactions,
-                                               name='GUI_TRANSACTION_DISPLAY_UPDATER',
-                                               daemon=True)
-        self.refresh_thread.start()
+        self._refresh_transactions()
 
     def _insert_row(self, *args):
         self.tree_view.insert('', tk.END, text=args[0], values=(args[1], args[2], args[3]))
@@ -154,27 +146,27 @@ class _TransactionDisplay(ttk.Frame):
             self._insert_row(*arg)
 
     def _refresh_transactions(self):
-        while True:
-            # Transactions class will allow the sorting of txns by date,
-            # and txns are stored as structs.TransactionData instances
-            transactions = structs.Transactions.from_list(self.main_wallet.root.btc_wallet.transactions)
-            sorted_txns = transactions.date_sorted_transactions()
+
+        # Transactions class will allow the sorting of txns by date,
+        # and txns are stored as structs.TransactionData instances
+        transactions = structs.Transactions.from_list(self.main_wallet.root.btc_wallet.transactions)
+        sorted_txns = transactions.date_sorted_transactions()
 
 
-            # satoshis will be divided by this number to get amount in terms of self.main_wallet.display_units
-            f = self.main_wallet.unit_factor
+        # satoshis will be divided by this number to get amount in terms of self.main_wallet.display_units
+        f = self.main_wallet.unit_factor
 
-            display_data = [[t.confirmations, t.date,
-                            f'{t.wallet_amount / f:+}', f'{transactions.balances[t] / f}']
-                            for t in sorted_txns]
+        display_data = [[t.confirmations, t.date,
+                        f'{t.wallet_amount / f:+}', f'{transactions.balances[t] / f}']
+                        for t in sorted_txns]
 
-            # only refresh tree_view if data has changed
-            if not self._cached_display_data == display_data:
-                self._populate_tree(*display_data)
+        # only refresh tree_view if data has changed
+        if not self._cached_display_data == display_data:
+            self._populate_tree(*display_data)
 
-            self._cached_display_data = display_data
+        self._cached_display_data = display_data
 
-            time.sleep(self.main_wallet.refresh_data_rate)
+        self.main_wallet.root.after(self.main_wallet.refresh_data_rate, self._refresh_transactions)
 
 
 class _SendDisplay(ttk.Frame):
@@ -183,64 +175,145 @@ class _SendDisplay(ttk.Frame):
         ttk.Frame.__init__(self, master)
         self.main_wallet = main_wallet
 
-        # used for validation in amount entry widgets
-        validate = (self.main_wallet.root.register(self._entry_int_validate), '%S', '%P', '%s')
+        self.btc_wallet = self.main_wallet.root.btc_wallet
+        self.transaction = None  # initial transaction will be created with 0 fee
 
-        self.address_label = ttk.Label(self, text='Pay To:',
-                                       font=self.main_wallet.root.small_font,)
-        self.address_label.grid(row=0, column=0, pady=10, padx=10, sticky='e')
+        self._make_transaction_thread = None
+        # used to prevent 2 _make_transaction threads from running at same time
+        self._thread_started = False
 
-        self.address_entry = ttk.Entry(self, width=70)
-        self.address_entry.grid(row=0, column=1, pady=10, padx=20, columnspan=3)
+        # used for input validation in entry widgets
+        address_validate = (self.main_wallet.root.register(self._address_entry_validate), '%P')
+        amount_validate = (self.main_wallet.root.register(self._entry_btc_amount_validate), '%S', '%P', '%s')
+        fee_validate = (self.main_wallet.root.register(self._entry_btc_amount_validate), '%S', '%P', '%s', True)
 
-        self.amount_btc_label = ttk.Label(self, text=f'Amount ({self.main_wallet.display_units}):',
+        address_label = ttk.Label(self, text='Pay To:',
+                                  font=self.main_wallet.root.small_font)
+        address_label.grid(row=0, column=0, pady=5, padx=10, sticky='e')
+
+        self.address_entry = ttk.Entry(self, width=70, validate='key', validatecommand=address_validate)
+        self.address_entry.grid(row=0, column=1, pady=5, padx=20, columnspan=3)
+
+        amount_btc_label = ttk.Label(self, text=f'Amount ({self.main_wallet.display_units}):',
+                                     font=self.main_wallet.root.small_font)
+        amount_btc_label.grid(row=1, column=0, pady=5, padx=10, sticky='e')
+
+        amount_frame = ttk.Frame(self)
+
+        self.amount_btc_entry = ttk.Entry(amount_frame, validate='key', validatecommand=amount_validate)
+        self.amount_btc_entry.bind('<KeyRelease>', self.on_btc_amount_key_press)
+        self.amount_btc_entry['state'] = tk.DISABLED  # enabled after address entry
+        self.amount_btc_entry.grid(row=0, column=0, pady=5)
+
+        amount_fiat_label = ttk.Label(amount_frame, text=f'Amount ({config.FIAT}):',
                                       font=self.main_wallet.root.small_font)
-        self.amount_btc_label.grid(row=1, column=0, pady=10, padx=10, sticky='e')
-
-        self.amount_btc_entry = ttk.Entry(self, validate='key', validatecommand=validate)
-        self.amount_btc_entry.bind('<KeyRelease>', self._amount_btc_entry_to_fiat)
-        self.amount_btc_entry.grid(row=1, column=1, pady=10, padx=20, sticky='w')
-
-        self.amount_fiat_label = ttk.Label(self, text=f'Amount ({config.FIAT}):',
-                                      font=self.main_wallet.root.small_font)
-        self.amount_fiat_label.grid(row=1, column=2, pady=10, padx=10, sticky='w')
+        amount_fiat_label.grid(row=0, column=1, pady=5, padx=20, sticky='w')
 
         self.amount_fiat_var = tk.IntVar()
-        self.amount_fiat = ttk.Label(self, textvariable=self.amount_fiat_var)
-        self.amount_fiat.grid(row=1, column=3, pady=10, padx=10, sticky='w')
+        self.amount_fiat = ttk.Label(amount_frame, textvariable=self.amount_fiat_var,
+                                     font=self.main_wallet.root.small_font)
+        self.amount_fiat.grid(row=0, column=2, pady=5, sticky='w')
 
-        self.fee_label = ttk.Label(self, text='Fee (sat/byte):',
-                                   font=self.main_wallet.root.small_font)
-        self.fee_label.grid(row=2, column=0, pady=10, padx=10, sticky='e')
+        amount_frame.grid(row=1, column=1, pady=5, padx=20, sticky='w')
 
-        self.fee_entry = ttk.Entry(self)
-        self.fee_entry.grid(row=2, column=1, pady=10, padx=20, sticky='w')
+        fee_label = ttk.Label(self, text='Fee (sat/byte):',
+                              font=self.main_wallet.root.small_font)
+        fee_label.grid(row=2, column=0, pady=5, padx=10, sticky='e')
 
-        self.total_cost_label = ttk.Label(self, text='Total Cost:',
+        fee_frame = ttk.Frame(self)
+
+        self.fee_entry = ttk.Entry(fee_frame, validate='key', validatecommand=fee_validate)
+        self.fee_entry.bind('<KeyRelease>', lambda _: self.on_fee_key_press())  # event arg is ignored for now
+        self.fee_entry['state'] = tk.DISABLED # enabled after address entry
+        self.fee_entry.grid(row=0, column=0, pady=5, padx=20, sticky='w')
+
+        self.size_label_var = tk.IntVar(value=0)
+        ttk.Label(fee_frame, text='x',
+                  font=self.main_wallet.root.small_font).grid(row=0, column=1)
+        ttk.Label(fee_frame, textvariable=self.size_label_var,
+                  font=self.main_wallet.root.small_font).grid(row=0, column=2)
+        ttk.Label(fee_frame, text='bytes = ',
+                  font=self.main_wallet.root.small_font).grid(row=0, column=3)
+
+        # total fee in main_wallet.display_units (sat per bytes * txn size)
+        self.total_fee_var = tk.IntVar(value=0)
+        ttk.Label(fee_frame, textvariable=self.total_fee_var,
+                  font=self.main_wallet.root.small_font).grid(row=0, column=4)
+
+        fee_frame.grid(row=2, column=1, sticky='w')
+
+        total_cost_label = ttk.Label(self, text=f'Total ({self.main_wallet.display_units}):',
+                                     font=self.main_wallet.root.small_font)
+        total_cost_label.grid(row=3, column=0, pady=5, padx=10, sticky='e')
+
+        total_cost_frame = ttk.Frame(self)
+
+        self.total_cost_var = tk.StringVar(value='0')
+        self.total_cost = ttk.Label(total_cost_frame, textvariable=self.total_cost_var,
+                                    font=self.main_wallet.root.small_font,
+                                    width=20)
+        self.total_cost.grid(row=0, column=0, pady=5, padx=19, sticky='w')
+
+        total_fiat_cost_label = ttk.Label(total_cost_frame, text=f'Total ({config.FIAT}):',
                                           font=self.main_wallet.root.small_font)
-        self.total_cost_label.grid(row=3, column=0, pady=10, padx=10, sticky='e')
+        total_fiat_cost_label.grid(row=0, column=2, sticky='w')
 
-        self.submit_button = ttk.Button(self, text='Submit')
-        self.submit_button.grid(row=4, column=0)
+        total_fiat_cost_var = tk.StringVar(value='0')
+        total_fiat_cost = ttk.Label(total_cost_frame, textvariable=total_fiat_cost_var,
+                                    font=self.main_wallet.root.small_font)
+        total_fiat_cost.grid(row=0, column=3, sticky='w')
 
-    def _entry_int_validate(self, char, entry, before_change):
+        total_cost_frame.grid(row=3, column=1, pady=5, sticky='w')
+
+        send_button = ttk.Button(self, text='Send', command=self.on_send)
+        send_button.grid(row=4, column=0, pady=20, padx=10, sticky='e')
+
+        clear_button = ttk.Button(self, text='Clear')
+        clear_button.grid(row=4, column=1, pady=20, padx=10, sticky='w')
+
+    def on_send(self):
+        password = self.main_wallet.root.password_prompt()
+
+    def to_satoshis(self, amount):
+        """ converts amount (in terms of self.main_wallet.display_units) into satoshis"""
+        return int(round(amount * self.main_wallet.unit_factor))
+
+    def _address_entry_validate(self, entry):
+        if utils.check_bc(entry):
+            self.address_entry['state'] = tk.DISABLED
+
+            if not self._thread_started:
+                self._make_transaction_thread = self._make_transaction()
+                self._thread_started = True
+
+            self.fee_entry['state'] = tk.NORMAL
+            self.amount_btc_entry['state'] = tk.NORMAL
+        else:
+            self.fee_entry.delete(0, tk.END)
+            self.amount_btc_entry.delete(0, tk.END)
+            self.amount_fiat_var.set(0)
+            self.total_cost_var.set(0)
+
+            self.fee_entry['state'] = tk.DISABLED
+            self.amount_btc_entry['state'] = tk.DISABLED
+        return True
+
+    def _entry_btc_amount_validate(self, char, entry, before_change, force_satoshis=False):
         """ validates that anything entered in amount entries are valid numbers """
-        units_max_decimal_places = {
-            'BTC': 8,
-            'mBTC': 5,
-            'bits': 2,
-            'sat': 0
-        }
+
+        units = self.main_wallet.display_units if not force_satoshis else 'sat'
+        max_decimal = self.main_wallet.max_decimal_places if not force_satoshis else 0
 
         if char in string.digits + '.' and not entry.count('.') > 1 and not entry == '.':
-            if entry.count('.') == 1 and self.main_wallet.display_units != 'sat':
-                if len(entry.split('.')[1]) <= units_max_decimal_places[self.main_wallet.display_units]:
+
+            if entry.count('.') == 1 and units != 'sat':
+                if len(entry.split('.')[1]) <= max_decimal:
                     return True
                 else:
                     return False
 
             # satoshi units are not divisible
-            elif entry.count('.') == 1 and self.main_wallet.display_units == 'sat':
+            elif entry.count('.') == 1 and units == 'sat':
                 return False
 
             else:
@@ -267,9 +340,86 @@ class _SendDisplay(ttk.Frame):
             if units == 'BTC':
                 return amount
             else:
-                btc = (amount * config.UNIT_FACTORS[units]) / config.UNIT_FACTORS['BTC']
+                btc = self.to_satoshis(amount) / config.UNIT_FACTORS['BTC']
                 return btc
 
         fiat_amount = round(self.main_wallet.price.get() * to_btc(self.main_wallet.display_units, value), 2)
 
         self.amount_fiat_var.set(fiat_amount)
+
+    def _total_cost_set(self):
+        amount, fee = 0, 0
+
+        if self.amount_btc_entry.get():
+            amount = float(self.amount_btc_entry.get())
+
+        if self.fee_entry.get():
+            sat_byte = int(self.fee_entry.get())
+
+            # fee is in satoshis so needs to be divided by unit factor
+            fee = (sat_byte * self.transaction.size) / self.main_wallet.unit_factor
+
+        self.total_cost_var.set(f'{round(amount + fee, self.main_wallet.max_decimal_places)}')
+
+    @utils.threaded(daemon=True)
+    def _make_transaction(self):
+        """ this method should be started before first key press on amount entries,
+        so a size will be calculated already for fee
+        """
+
+        # to ensure only one thread is run at the same time
+        if self._thread_started:
+            return
+
+        # key = tuple of amounts  value = transaction
+        cached_txns = {}
+
+        def update_labels():
+            self.size_label_var.set(self.transaction.size)
+            self.total_fee_var.set(fee / self.main_wallet.unit_factor)
+
+        while True:
+            time.sleep(0.1)
+
+            address = self.address_entry.get()
+
+            if self.amount_btc_entry.get():
+                amount = self.to_satoshis(float(self.amount_btc_entry.get()))
+            else:
+                amount = 0
+
+            if self.fee_entry.get():
+                fee = int(self.fee_entry.get()) * self.transaction.size
+            else:
+                fee = 0
+
+            # only recreate transaction if values are different
+            if (amount, fee) in cached_txns:
+                # only assign to transaction if cached tx is different from current
+                if self.transaction == cached_txns[(amount, fee)]:
+                    continue
+
+                self.transaction = cached_txns[(amount, fee)]
+                update_labels()
+
+            else:
+
+                try:
+                    transaction = self.btc_wallet.make_unsigned_transaction(
+                        outs_amounts={address: amount},
+                        fee=fee
+                    )
+
+                    cached_txns[(amount, fee)] = transaction
+                    self.transaction = transaction
+                    update_labels()
+
+                except tx.InsufficientFundsError:
+                    self.total_cost.config(foreground='red')
+
+    def on_btc_amount_key_press(self, event):
+        self._amount_btc_entry_to_fiat(event)
+        self._total_cost_set()
+
+    def on_fee_key_press(self):
+        self._total_cost_set()
