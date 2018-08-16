@@ -19,15 +19,19 @@ def atomic_file_write(data: str, file_path: str):
     os.replace(tmp_file, file_path)
 
 
-def threaded(func):
+def threaded(daemon=False):
     """ wrapper that returns a thread handle with its target set to wrapped function """
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        t = Thread(target=func, args=args, kwargs=kwargs)
-        t.start()
-        return t
+    def outer(func):
 
-    return wrapper
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            t = Thread(target=func, args=args, kwargs=kwargs, daemon=daemon)
+            t.start()
+            return t
+
+        return wrapper
+
+    return outer
 
 
 def decode_base58(bc, length):
