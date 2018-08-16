@@ -1,23 +1,31 @@
-""" ADAPTED FROM: https://rosettacode.org/wiki/Bitcoin/address_validation#Python """
-
+import os
 from hashlib import sha256
 
 
-digits58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+DIGITS58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+
+
+def atomic_file_write(data: str, file_path: str):
+
+    tmp_file = file_path + '.tmp'
+    with open(tmp_file, 'w') as f:
+        f.write(data)
+        f.flush()
+        os.fsync(f.fileno())
+
+    os.replace(tmp_file, file_path)
 
 
 def decode_base58(bc, length):
     n = 0
     for char in bc:
-        n = n * 58 + digits58.index(char)
+        n = n * 58 + DIGITS58.index(char)
     return n.to_bytes(length, 'big')
 
 
 def check_bc(bc):
     if isinstance(bc, list):
         valid_list = []
-        if not bc:
-            raise Exception('Empty List')
 
         for a in bc:
             bcbytes = decode_base58(a, 25)

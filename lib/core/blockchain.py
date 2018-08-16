@@ -3,7 +3,7 @@ import datetime
 
 import requests
 
-from . import btc_verify, config
+from . import utils, config
 
 
 def blockchain_api(addresses, refresh_rate, source):
@@ -12,7 +12,7 @@ def blockchain_api(addresses, refresh_rate, source):
     if not isinstance(addresses, list):
         raise ValueError('Address(es) must be in a list!')
 
-    if not btc_verify.check_bc(addresses):
+    if not utils.check_bc(addresses):
         raise ValueError('Invalid Address entered')
 
     sources = {

@@ -5,7 +5,7 @@ import json
 
 import cryptography.fernet as fernet
 
-from . import config
+from . import config, utils
 from ..exceptions.data_exceptions import *
 
 
@@ -88,13 +88,8 @@ class DataStore(Crypto):
         # update data in memory
         self._data = data
 
-        tmp_file = self.file_path + '.tmp'
-        with open(tmp_file, 'w') as d:
-            d.write(self.encrypt(json.dumps(data)))
-            d.flush()
-            os.fsync(d.fileno())
-
-        os.replace(tmp_file, self.file_path)
+        utils.atomic_file_write(data=self.encrypt(json.dumps(data)),
+                                file_path=self.file_path)
 
     def write_value(self, allow_new_key=False, **kwargs):
         data = self._data
