@@ -1,11 +1,10 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-import threading
 from dataclasses import dataclass
 from typing import Any
 
-from ..core import config, wallet, hd
+from ..core import config, wallet, hd, utils
 
 
 MAX_NAME_LENGTH = 25
@@ -151,10 +150,8 @@ class WalletCreation(ttk.Frame):
             wd = WalletCreationData(name, password, passphrase,
                                     is_segwit, path, mnemonic, xkey)
 
-            build_wallet_instance_thread = threading.Thread(target=self._build_wallet_instance,
-                                                            args=(wd,),
-                                                            name='GUI_WALLET_INSTANCE_BUILDER_THREAD')
-            build_wallet_instance_thread.start()
+            # thread is already started, see utils.threaded decorator
+            self._build_wallet_instance(wd)
 
         except ValueError as ex:
             messagebox.showerror('Error', f'{ex.__str__()}')
@@ -165,6 +162,7 @@ class WalletCreation(ttk.Frame):
             # TODO make this work with exceptions in thread
             self.root.show_frame('WalletCreation')
 
+    @utils.threaded
     def _build_wallet_instance(self, wallet_data):
         if wallet_data.xkey is None:
             hd_ = hd.HDWallet.from_mnemonic(wallet_data.mnemonic,
