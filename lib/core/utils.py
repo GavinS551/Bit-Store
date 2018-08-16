@@ -1,11 +1,14 @@
 import os
 from hashlib import sha256
+from functools import wraps
+from threading import Thread
 
 
 DIGITS58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 
 
 def atomic_file_write(data: str, file_path: str):
+    """ atomically write data (string) to a file """
 
     tmp_file = file_path + '.tmp'
     with open(tmp_file, 'w') as f:
@@ -16,6 +19,17 @@ def atomic_file_write(data: str, file_path: str):
     os.replace(tmp_file, file_path)
 
 
+def threaded(func):
+    """ wrapper that returns a thread handle with its target set to wrapped function """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        t = Thread(target=func, args=args, kwargs=kwargs)
+        t.start()
+        return t
+
+    return wrapper
+
+
 def decode_base58(bc, length):
     n = 0
     for char in bc:
@@ -24,6 +38,7 @@ def decode_base58(bc, length):
 
 
 def check_bc(bc):
+    """ function that validates a btc address """
     try:
         if isinstance(bc, list):
             valid_list = []
