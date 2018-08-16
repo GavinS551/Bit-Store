@@ -111,6 +111,14 @@ UNIT_FACTORS = {
 }
 
 
+UNITS_MAX_DECIMAL_PLACES = {
+    'BTC': 8,
+    'mBTC': 5,
+    'bits': 2,
+    'sat': 0
+}
+
+
 # standard format for datetime stings
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S (%Z)'
 
