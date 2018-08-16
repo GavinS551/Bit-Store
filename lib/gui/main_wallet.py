@@ -232,7 +232,7 @@ class _SendDisplay(ttk.Frame):
             'sat': 0
         }
 
-        if char in string.digits + '.' and not entry.count('.') > 1:
+        if char in string.digits + '.' and not entry.count('.') > 1 and not entry == '.':
             if entry.count('.') == 1 and self.main_wallet.display_units != 'sat':
                 if len(entry.split('.')[1]) <= units_max_decimal_places[self.main_wallet.display_units]:
                     return True
