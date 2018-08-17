@@ -162,7 +162,7 @@ class WalletCreation(ttk.Frame):
             # TODO make this work with exceptions in thread
             self.root.show_frame('WalletCreation')
 
-    @utils.threaded
+    @utils.threaded(daemon=False)
     def _build_wallet_instance(self, wallet_data):
         if wallet_data.xkey is None:
             hd_ = hd.HDWallet.from_mnemonic(wallet_data.mnemonic,
