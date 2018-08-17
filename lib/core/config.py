@@ -14,6 +14,29 @@ else:
 CONFIG_FILE = os.path.join(DATA_DIR, 'config.json')
 
 
+DEFAULT_CONFIG = {
+
+    'BIP32_PATHS': {
+        'bip49path': "49'/0'/0'",
+        'bip44path': "44'/0'/0'"
+    },
+
+    'PRICE_API_SOURCE': 'coinmarketcap',
+
+    'BLOCKCHAIN_API_SOURCE': 'blockchain.info',
+
+    'FIAT': 'USD',
+
+    'UNITS': 'BTC',
+
+    'FONT': 'verdana',
+
+    'SPEND_UNCONFIRMED_UTXOS': False,
+
+    'SPEND_UTXOS_INDIVIDUALLY': False
+}
+
+
 def init():
     # creates program data dir if it doesn't exist
     if not os.path.isdir(DATA_DIR):
@@ -48,29 +71,6 @@ def write_value(key, value):
 
 init()
 _CONFIG_VARS = read_file()
-
-
-DEFAULT_CONFIG = {
-
-    'BIP32_PATHS': {
-        'bip49path': "49'/0'/0'",
-        'bip44path': "44'/0'/0'"
-    },
-
-    'PRICE_API_SOURCE': 'coinmarketcap',
-
-    'BLOCKCHAIN_API_SOURCE': 'blockchain.info',
-
-    'FIAT': 'USD',
-
-    'UNITS': 'BTC',
-
-    'FONT': 'verdana',
-
-    'SPEND_UNCONFIRMED_UTXOS': False,
-
-    'SPEND_UTXOS_INDIVIDUALLY': False
-}
 
 
 STANDARD_DATA_FORMAT = {
