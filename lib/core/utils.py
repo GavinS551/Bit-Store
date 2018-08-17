@@ -1,4 +1,5 @@
 import os
+import decimal
 from hashlib import sha256
 from functools import wraps
 from threading import Thread
@@ -62,3 +63,10 @@ def check_bc(bc):
             return bcbytes[-4:] == sha256(sha256(bcbytes[:-4]).digest()).digest()[:4]
     except Exception:
         return False
+
+
+def float_to_str(float_):
+    """ Convert the given float to a string, without scientific notation """
+    with decimal.localcontext() as ctx:
+        d1 = ctx.create_decimal(repr(float_))
+        return format(d1, 'f')
