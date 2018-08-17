@@ -120,7 +120,7 @@ UNITS_MAX_DECIMAL_PLACES = {
 
 
 # standard format for datetime stings
-DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S (%Z)'
+DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 
 # CONFIG VARIABLES FROM FILE
