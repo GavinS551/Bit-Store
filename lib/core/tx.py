@@ -181,7 +181,7 @@ class Transaction:
         self._unsigned_txn = self._get_unsigned_txn()
 
         # can be used to determine correct fees for transaction
-        self.size = self._unsigned_txn.size
+        self.size = self._unsigned_txn.vsize
         self.weight = self._unsigned_txn.weight
 
         self.txn = self._unsigned_txn
