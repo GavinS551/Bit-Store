@@ -159,7 +159,10 @@ class BlockchainInfo(_BlockchainBaseClass):
             local_time = utc_time.astimezone()
             transaction['date'] = local_time.strftime(config.DATETIME_FORMAT)
 
-            transaction['block_height'] = tx['block_height']
+            try:
+                transaction['block_height'] = tx['block_height']
+            except KeyError:
+                transaction['block_height'] = None
 
             blockchain_height = self._blockchain_data['info']['latest_block']['height']
 
