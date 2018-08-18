@@ -173,7 +173,7 @@ class BlockchainInfo(_BlockchainBaseClass):
                 transaction['confirmations'] = 0
 
             transaction['fee'] = tx['fee']
-            transaction['size'] = tx['size']
+            transaction['vsize'] = round(tx['weight'] / 4)
 
             ins = []
             for input_ in tx['inputs']:

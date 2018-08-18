@@ -41,7 +41,7 @@ class TransactionData:
     block_height: int
     confirmations: int
     fee: int
-    size: int
+    vsize: int
     inputs: list
     outputs: list
     wallet_amount: int
@@ -55,7 +55,7 @@ class TransactionData:
             'block_height': self.block_height,
             'confirmations': self.confirmations,
             'fee': self.fee,
-            'size': self.size,
+            'vsize': self.vsize,
             'inputs': self.inputs,
             'outputs': self.outputs,
             'wallet_amount': self.wallet_amount
