@@ -10,6 +10,10 @@ from .structs import UTXOData
 from ..exceptions.tx_exceptions import *
 
 
+TX_VERSION = 1
+DUST_THRESHOLD = 546  # satoshis
+
+
 class _UTXOChooser:
     """ chooses what utxos to use, to spend {output_amount} """
 
@@ -162,6 +166,12 @@ class Transaction:
         self._locktime = locktime
         self._utxo_data = utxo_data
 
+        self.output_contains_dust = False
+
+        for k, v in self._outputs_amounts.items():
+            if v <= DUST_THRESHOLD:
+                self.output_contains_dust = True
+
         assert self._change_address not in outputs_amounts
 
         self._use_unconfirmed_utxos = use_unconfirmed_utxos
@@ -178,13 +188,11 @@ class Transaction:
 
         self._choose_utxos()
 
-        self._unsigned_txn = self._get_unsigned_txn()
+        self.txn = self._get_unsigned_txn()
 
         # can be used to determine correct fees for transaction
-        self.size = self._unsigned_txn.vsize
-        self.weight = self._unsigned_txn.weight
-
-        self.txn = self._unsigned_txn
+        self.size = self.txn.vsize
+        self.weight = self.txn.weight
 
     @staticmethod
     def get_hash160(address):
@@ -207,15 +215,13 @@ class Transaction:
 
     def _get_unsigned_txn(self):
 
-        TX_VERSION = 1
-
         # outputs_amounts is copied so any instance can be modified with change_fee,
         # and will still function correctly, i.e the change address won't already
         # be in the self._outputs_amounts dict
         outputs_amounts = self._outputs_amounts.copy()
 
-        # adding change address to outputs, if there is leftover balance
-        if self._change_amount > 0:
+        # adding change address to outputs, if there is leftover balance that isn't dust
+        if self._change_amount > DUST_THRESHOLD:
             outputs_amounts[self._change_address] = self._change_amount
 
         outputs = []
@@ -278,7 +284,7 @@ class Transaction:
         """
         unordered_solvers = []
         unordered_tx_outs = []
-        unsigned = self._unsigned_txn
+        unsigned = self._get_unsigned_txn()
 
         for key in wif_keys:
             # create btcpy PrivateKeys from input WIF format keys
@@ -324,8 +330,13 @@ class Transaction:
 
         return signed
 
+    def _recalculate_size(self):
+        self.size = self.txn.vsize
+        self.weight = self.txn.weight
+
     def sign(self, wif_keys):
         self.txn = self._get_signed_txn(wif_keys)
+        self._recalculate_size()
         self.is_signed = True
 
     def change_fee(self, fee):
@@ -334,4 +345,16 @@ class Transaction:
         # need to be more chosen inputs to make up for the increased fee
         self._choose_utxos()
         self.txn = self._get_unsigned_txn()
+        self._recalculate_size()
         self.is_signed = False
+
+    def estimated_size(self):
+        """ estimated tx size after factoring in signatures
+        (self.size only considers unsigned, signature-less size if
+        transaction is unsigned)
+        """
+        # calculations -> https://goo.gl/HrquvH
+        if self.is_segwit:
+            return round(self.size + (len(self.txn.ins) * (23 + 1 + ((1 + 1 + 72 + 1 + 33) / 4)) + 0.5))
+        else:
+            return self.size + (len(self.txn.ins) * (1 + 72 + 33))
