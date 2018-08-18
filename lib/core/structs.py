@@ -25,12 +25,6 @@ class UTXOData:
         """ returns data in standard format """
         return [self.txid, self.output_num, self.address, self.script, self.value, self.confirmations]
 
-    def __eq__(self, other):
-        return self.txid == other.txid and self.output_num == other.output_num
-
-    def __hash__(self):
-        return hash((self.txid, self.output_num))
-
 
 @dataclass(frozen=True)
 class TransactionData:
@@ -65,6 +59,9 @@ class TransactionData:
         return self.txid == other.txid
 
     def __hash__(self):
+        """ dataclass's default hash has to be overridden as inputs and
+         outputs lists are un-hashable
+         """
         return hash(self.txid)
 
 
