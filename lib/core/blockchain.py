@@ -6,6 +6,7 @@ import requests
 from . import utils, config
 
 
+# TODO: ADD MORE API SOURCES
 def broadcast_transaction(hex_transaction):
     url = 'https://chain.so/api/v2/send_tx/BTC'
 
