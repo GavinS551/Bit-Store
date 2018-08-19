@@ -6,6 +6,14 @@ import requests
 from . import utils, config
 
 
+def broadcast_transaction(hex_transaction):
+    url = 'https://chain.so/api/v2/send_tx/BTC'
+
+    request = requests.post(url=url, data={'tx_hex': hex_transaction})
+
+    return request.json() if request.ok else request.raise_for_status()
+
+
 def blockchain_api(addresses, refresh_rate, source):
 
     # input validation
