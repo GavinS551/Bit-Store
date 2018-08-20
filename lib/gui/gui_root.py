@@ -16,6 +16,16 @@ from .main_wallet import MainWallet
 ICON = os.path.join(os.path.dirname(__file__), 'assets', 'bc_logo.ico')
 
 
+def main():
+    app = RootApplication()
+    app.mainloop()
+
+    # setting event in api_data_updater thread of Wallet instance after
+    # tkinter mainloop closes
+    if app.btc_wallet is not None:
+        app.btc_wallet.updater_thread.event.set()
+
+
 class TTKSimpleDialog(simpledialog._QueryString):
     """ sub-classed _QueryString that sets the project icon """
 
@@ -118,13 +128,3 @@ class _Settings(tk.Toplevel):
 
         self.frame = ttk.Frame(self)
         self.frame.pack(expand=True)
-
-
-def main():
-    app = RootApplication()
-    app.mainloop()
-
-    # setting event in api_data_updater thread of Wallet instance after
-    # tkinter mainloop closes
-    if app.btc_wallet is not None:
-        app.btc_wallet.updater_thread.event.set()
