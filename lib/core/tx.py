@@ -54,7 +54,7 @@ class _UTXOChooser:
         return addresses
 
     @staticmethod
-    def _closest_int(int_list, n):
+    def closest_int(int_list, n):
         """ finds what non-zero int in int_list is closest to n """
         non_zero_list = [i for i in int_list if i > 0]
         m = min(non_zero_list, key=lambda x: abs(x - n))
@@ -63,7 +63,7 @@ class _UTXOChooser:
     def _find_closest_value_utxo(self, value):
         """ finds what utxo has a value closest to passed value"""
         utxo_values = [u.value for u in self._utxos]
-        closest_value = self._closest_int(utxo_values, value)
+        closest_value = self.closest_int(utxo_values, value)
 
         for u in self._utxos:
             if u.value == closest_value:
@@ -90,7 +90,7 @@ class _UTXOChooser:
         # list of the values to be passed into closest_int method
         address_values = [v for _, v in address_balances_list]
 
-        closest_value = self._closest_int(address_values, value)
+        closest_value = self.closest_int(address_values, value)
 
         # if there is more than 1 address returned by the list comprehension,
         # just take the first element as the value is the only important thing
