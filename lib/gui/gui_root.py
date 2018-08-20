@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk
 
 import os
 import traceback
@@ -71,11 +71,18 @@ class RootApplication(tk.Tk):
         self.btc_wallet = None
 
     def report_callback_exception(self, exc_type, exc_value, exc_traceback):
-        """ this will show an error window in the gui displaying any unhandled exception """
+        """ this will show an error window in the gui displaying any unhandled exception
+         (overridden Tk method)
+        """
         message = ''.join(traceback.format_exception(exc_type,
                                                      exc_value,
                                                      exc_traceback))
-        messagebox.showerror('Error', message)
+
+        error_window = tk.Toplevel(self)
+        error_window.wm_iconbitmap(ICON)
+        error = tk.Text(error_window, font=self.tiny_font, wrap=tk.WORD)
+        error.insert(tk.END, message)
+        error.pack(expand=True)
 
     # kwargs is used to pass data into frame objects
     def show_frame(self, frame, **kwargs):
