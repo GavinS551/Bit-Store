@@ -1,8 +1,9 @@
 import os
 import decimal
-from hashlib import sha256
 from functools import wraps
 from threading import Thread
+
+import base58
 
 
 def atomic_file_write(data: str, file_path: str):
@@ -35,32 +36,18 @@ def threaded(func=None, daemon=False):
     return decorator
 
 
-def decode_base58(bc, length):
-    digits58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
-    n = 0
-    for char in bc:
-        n = n * 58 + digits58.index(char)
-    return n.to_bytes(length, 'big')
-
-
-def check_bc(bc):
+def validate_address(address):
     """ function that validates a btc address """
     try:
-        if isinstance(bc, list):
-            valid_list = []
-
-            for a in bc:
-                bcbytes = decode_base58(a, 25)
-                valid_list.append(bcbytes[-4:] == sha256(sha256(bcbytes[:-4]).digest()).digest()[:4])
-
-            return all(valid_list)
-
-
-        else:
-            bcbytes = decode_base58(bc, 25)
-            return bcbytes[-4:] == sha256(sha256(bcbytes[:-4]).digest()).digest()[:4]
-    except Exception:
+        base58.b58decode_check(address)
+        return True
+    except ValueError:
         return False
+
+
+def validate_addresses(addresses):
+    """ function that validates a list of btc addresses"""
+    return all(validate_address(a) for a in addresses)
 
 
 def float_to_str(float_):

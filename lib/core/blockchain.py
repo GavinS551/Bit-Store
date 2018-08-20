@@ -21,7 +21,7 @@ def blockchain_api(addresses, refresh_rate, source):
     if not isinstance(addresses, list):
         raise ValueError('Address(es) must be in a list!')
 
-    if not utils.check_bc(addresses):
+    if not utils.validate_addresses(addresses):
         raise ValueError('Invalid Address entered')
 
     sources = {

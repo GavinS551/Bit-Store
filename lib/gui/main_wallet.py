@@ -339,11 +339,11 @@ class _SendDisplay(ttk.Frame):
         if self.amount_over_balance:
             raise tx.InsufficientFundsError('You do not have enough funds')
 
-        if not utils.check_bc(self.address_entry.get()):
+        if not utils.validate_address(self.address_entry.get()):
             raise ValueError('Invalid address entered')
 
     def _address_entry_validate(self, entry):
-        if utils.check_bc(entry):
+        if utils.validate_address(entry):
             self.address_entry['state'] = tk.DISABLED
 
             if not self._thread_running:
