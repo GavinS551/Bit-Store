@@ -5,9 +5,6 @@ from functools import wraps
 from threading import Thread
 
 
-DIGITS58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
-
-
 def atomic_file_write(data: str, file_path: str):
     """ atomically write data (string) to a file """
 
@@ -39,9 +36,10 @@ def threaded(func=None, daemon=False):
 
 
 def decode_base58(bc, length):
+    digits58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
     n = 0
     for char in bc:
-        n = n * 58 + DIGITS58.index(char)
+        n = n * 58 + digits58.index(char)
     return n.to_bytes(length, 'big')
 
 
