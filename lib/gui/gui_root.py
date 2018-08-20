@@ -126,5 +126,30 @@ class _Settings(tk.Toplevel):
         self.wm_title('Settings')
         self.wm_iconbitmap(ICON)
 
-        self.frame = ttk.Frame(self)
-        self.frame.pack(expand=True)
+        self.notebook = ttk.Notebook(self)
+
+        self.transaction_settings = ttk.Frame(self.notebook)
+        self.draw_transaction_settings()
+        self.transaction_settings.grid(sticky='nsew')
+        self.notebook.add(self.transaction_settings, text='Transactions')
+
+        self.api_settings = ttk.Frame(self.notebook)
+        self.draw_api_settings()
+        self.api_settings.grid(sticky='nsew')
+        self.notebook.add(self.api_settings, text='API')
+
+        self.gui_settings = ttk.Frame(self.notebook)
+        self.draw_gui_settings()
+        self.gui_settings.grid(sticky='nsew')
+        self.notebook.add(self.gui_settings, text='GUI')
+
+        self.notebook.grid(padx=20, pady=20)
+
+    def draw_transaction_settings(self):
+        pass
+
+    def draw_api_settings(self):
+        pass
+
+    def draw_gui_settings(self):
+        pass
