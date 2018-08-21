@@ -12,7 +12,7 @@ def broadcast_transaction(hex_transaction):
 
     request = requests.post(url=url, data={'tx_hex': hex_transaction})
 
-    return request.json() if request.ok else request.raise_for_status()
+    return request.json() if request.ok else False
 
 
 def blockchain_api(addresses, refresh_rate, source):
