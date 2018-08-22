@@ -111,9 +111,10 @@ class RootApplication(tk.Tk):
     def wallet_init(self, name, password):
         self.btc_wallet = wallet.Wallet(name=name, password=password)
 
-    def password_prompt(self):
+    @staticmethod
+    def password_prompt(parent):
         return TTKSimpleDialog.askstring('Password Entry', 'Enter Password:',
-                                         show='*', parent=self.master_frame)
+                                         show='*', parent=parent)
 
     def settings_prompt(self):
         _Settings(self)

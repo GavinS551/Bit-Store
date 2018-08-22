@@ -89,7 +89,7 @@ class WalletSelect(ttk.Frame):
             else:
                 raise NoWalletSelectedError
 
-            password = self.root.password_prompt()
+            password = self.root.password_prompt(self.root)
 
             # if the password prompt window is exited without submitting,
             # password will be None and will raise an Exception
