@@ -13,9 +13,6 @@ from .wallet_creation import (WalletCreation, WalletCreationLoading,
 from .main_wallet import MainWallet
 
 
-ICON = os.path.join(os.path.dirname(__file__), 'assets', 'bc_logo.ico')
-
-
 def main():
     app = RootApplication()
     app.mainloop()
@@ -31,7 +28,7 @@ class TTKSimpleDialog(simpledialog._QueryString):
 
     def body(self, master):
         super().body(master)
-        self.iconbitmap(ICON)
+        self.iconbitmap(RootApplication.ICON)
         self.geometry('250x90')
         self.resizable(False, False)
 
@@ -43,6 +40,8 @@ class TTKSimpleDialog(simpledialog._QueryString):
 
 class RootApplication(tk.Tk):
 
+    ICON = os.path.join(os.path.dirname(__file__), 'assets', 'bc_logo.ico')
+
     bold_title_font = (config.FONT, 14, 'bold')
     title_font = (config.FONT, 14)
     small_font = (config.FONT, 10)
@@ -52,7 +51,7 @@ class RootApplication(tk.Tk):
         tk.Tk.__init__(self, *args, **kwargs)
 
         self.wm_title('Bit-Store')
-        self.iconbitmap(ICON)
+        self.iconbitmap(self.ICON)
         self.style = ttk.Style()
         self.set_style()
 
@@ -90,7 +89,7 @@ class RootApplication(tk.Tk):
 
         error_window = tk.Toplevel(self)
         error_window.bell()
-        error_window.wm_iconbitmap(ICON)
+        error_window.wm_iconbitmap(self.ICON)
         error = tk.Text(error_window, font=self.tiny_font, wrap=tk.WORD)
         error.insert(tk.END, message)
         error.pack(expand=True)
@@ -125,7 +124,7 @@ class _Settings(tk.Toplevel):
     def __init__(self, root):
         tk.Toplevel.__init__(self, root.master_frame)
         self.wm_title('Settings')
-        self.wm_iconbitmap(ICON)
+        self.wm_iconbitmap(RootApplication.ICON)
 
         self.notebook = ttk.Notebook(self)
 
