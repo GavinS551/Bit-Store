@@ -89,6 +89,7 @@ class RootApplication(tk.Tk):
                                                      exc_traceback))
 
         error_window = tk.Toplevel(self)
+        error_window.bell()
         error_window.wm_iconbitmap(ICON)
         error = tk.Text(error_window, font=self.tiny_font, wrap=tk.WORD)
         error.insert(tk.END, message)
