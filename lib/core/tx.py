@@ -161,18 +161,19 @@ class Transaction:
         :param use_full_address_utxos: should all of an addresses UTXOs be chosen, and not cherry-picked
         """
 
-        self._outputs_amounts = outputs_amounts
-        self._change_address = change_address
+        self.outputs_amounts = outputs_amounts
+        self.change_address = change_address
+
         self._locktime = locktime
         self._utxo_data = utxo_data
 
         self.output_contains_dust = False
 
-        for k, v in self._outputs_amounts.items():
+        for k, v in self.outputs_amounts.items():
             if v <= DUST_THRESHOLD:
                 self.output_contains_dust = True
 
-        assert self._change_address not in outputs_amounts
+        assert self.change_address not in outputs_amounts
 
         self._use_unconfirmed_utxos = use_unconfirmed_utxos
         self._use_full_address_utxos = use_full_address_utxos
@@ -202,7 +203,7 @@ class Transaction:
         return base58.b58decode_check(address)[1:]
 
     def _choose_utxos(self):
-        output_amount = sum([v for v in self._outputs_amounts.values()]) + self.fee
+        output_amount = sum([v for v in self.outputs_amounts.values()]) + self.fee
 
         chooser = _UTXOChooser(utxos=self._utxo_data,
                                output_amount=output_amount,
@@ -218,11 +219,11 @@ class Transaction:
         # outputs_amounts is copied so any instance can be modified with change_fee,
         # and will still function correctly, i.e the change address won't already
         # be in the self._outputs_amounts dict
-        outputs_amounts = self._outputs_amounts.copy()
+        outputs_amounts = self.outputs_amounts.copy()
 
         # adding change address to outputs, if there is leftover balance that isn't dust
         if self._change_amount > DUST_THRESHOLD:
-            outputs_amounts[self._change_address] = self._change_amount
+            outputs_amounts[self.change_address] = self._change_amount
 
         outputs = []
         for i, (addr, amount) in enumerate(outputs_amounts.items()):
