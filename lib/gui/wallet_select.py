@@ -100,9 +100,8 @@ class WalletSelect(ttk.Frame):
 
             self.root.show_frame('MainWallet')
 
-        except (NoWalletSelectedError, IncorrectPasswordError) as ex:
-            if isinstance(ex, NoWalletSelectedError):
-                messagebox.showerror('Error', 'No wallet selected')
+        except NoWalletSelectedError:
+            messagebox.showerror('Error', 'No wallet selected')
 
-            if isinstance(ex, IncorrectPasswordError):
-                messagebox.showerror('Error', 'Incorrect Password')
+        except IncorrectPasswordError:
+            messagebox.showerror('Error', 'Incorrect Password')
