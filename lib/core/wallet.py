@@ -62,9 +62,7 @@ class _ApiDataUpdaterThread(threading.Thread):
                 }
                 self.connection_error = False
 
-            except (requests.exceptions.ConnectionError,
-                    requests.exceptions.Timeout,
-                    requests.exceptions.HTTPError) as ex:
+            except requests.RequestException as ex:
 
                 self.connection_error = ex
 
