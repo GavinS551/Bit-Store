@@ -10,9 +10,13 @@ from . import utils, config
 def broadcast_transaction(hex_transaction):
     url = 'https://chain.so/api/v2/send_tx/BTC'
 
-    request = requests.post(url=url, data={'tx_hex': hex_transaction})
+    try:
+        request = requests.post(url=url, data={'tx_hex': hex_transaction}, timeout=10)
+        request.raise_for_status()
+    except requests.RequestException:
+        return False
 
-    return request.json()['txid'] if request.ok else False
+    return request.ok
 
 
 def blockchain_api(addresses, refresh_rate, source):
