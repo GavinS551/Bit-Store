@@ -1,11 +1,15 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 
 import time
 import string
 from threading import Event
 
-from ..core import structs, config, utils, tx
+import qrcode
+from PIL import ImageTk, Image
+
+from ..core import structs, config, utils, blockchain
+from ..exceptions.tx_exceptions import InsufficientFundsError
 
 
 class MainWallet(ttk.Frame):
@@ -14,7 +18,7 @@ class MainWallet(ttk.Frame):
         self.root = root
         ttk.Frame.__init__(self, self.root.master_frame)
 
-        self.refresh_data_rate = 3000  # milliseconds
+        self.refresh_data_rate = 1000  # milliseconds
 
         self.display_units = config.UNITS
         self.unit_factor = config.UNIT_FACTORS[self.display_units]
@@ -26,6 +30,8 @@ class MainWallet(ttk.Frame):
         self.price = tk.IntVar()
         self.fiat_wallet_balance = tk.IntVar()
         self.unconfirmed_fiat_wallet_balance = tk.IntVar()
+
+        self.next_receiving_address = tk.StringVar()
 
     def gui_draw(self):
 
@@ -42,6 +48,10 @@ class MainWallet(ttk.Frame):
         send_display = _SendDisplay(notebook, self)
         send_display.grid(sticky='nsew')
         notebook.add(send_display, text='Send')
+
+        receive_display = _ReceiveDisplay(notebook, self)
+        receive_display.grid(sticky='nsew')
+        notebook.add(receive_display, text='Receive')
 
         notebook.grid(row=1, column=0, pady=10)
 
@@ -106,6 +116,8 @@ class MainWallet(ttk.Frame):
         self.price.set(self.root.btc_wallet.price)
         self.fiat_wallet_balance.set(self.root.btc_wallet.fiat_wallet_balance)
         self.unconfirmed_fiat_wallet_balance.set(self.root.btc_wallet.unconfirmed_fiat_wallet_balance)
+
+        self.next_receiving_address.set(self.root.btc_wallet.receiving_addresses[0])
 
         self.root.after(self.refresh_data_rate, self._refresh_data)
 
@@ -177,7 +189,7 @@ class _SendDisplay(ttk.Frame):
         self.main_wallet = main_wallet
 
         self.btc_wallet = self.main_wallet.root.btc_wallet
-        self.transaction = None  # initial transaction will be created with 0 fee
+        self.transaction = self.btc_wallet.make_unsigned_transaction({})
         self.amount_over_balance = False
 
         self._make_transaction_thread_event = Event()
@@ -211,7 +223,7 @@ class _SendDisplay(ttk.Frame):
                                       font=self.main_wallet.root.small_font)
         amount_fiat_label.grid(row=0, column=1, pady=5, padx=20, sticky='w')
 
-        self.amount_fiat_var = tk.StringVar(value='0')
+        self.amount_fiat_var = tk.StringVar(value='0.0')
         self.amount_fiat = ttk.Label(amount_frame, textvariable=self.amount_fiat_var,
                                      font=self.main_wallet.root.small_font, width=15)
         self.amount_fiat.grid(row=0, column=2, pady=5, sticky='w')
@@ -259,7 +271,7 @@ class _SendDisplay(ttk.Frame):
 
         total_cost_frame = ttk.Frame(self)
 
-        self.total_cost_var = tk.StringVar(value='0')
+        self.total_cost_var = tk.StringVar(value='0.0')
         self.total_cost = ttk.Label(total_cost_frame, textvariable=self.total_cost_var,
                                     font=self.main_wallet.root.small_font, width=15)
         self.total_cost.grid(row=0, column=0, pady=5, padx=21, sticky='w')
@@ -268,7 +280,7 @@ class _SendDisplay(ttk.Frame):
                                           font=self.main_wallet.root.small_font)
         total_fiat_cost_label.grid(row=0, column=2, sticky='w')
 
-        self.total_fiat_cost_var = tk.StringVar(value='0')
+        self.total_fiat_cost_var = tk.StringVar(value='0.0')
         self.total_fiat_cost = ttk.Label(total_cost_frame, textvariable=self.total_fiat_cost_var,
                                     font=self.main_wallet.root.small_font, width=15)
         self.total_fiat_cost.grid(row=0, column=3, padx=36, sticky='w')
@@ -281,11 +293,20 @@ class _SendDisplay(ttk.Frame):
         clear_button = ttk.Button(self, text='Clear', command=self.on_clear)
         clear_button.grid(row=4, column=1, pady=20, padx=10, sticky='w')
 
-    def sign_transaction_window(self):
-        pass
-
     def on_send(self):
-        password = self.main_wallet.root.password_prompt()
+        if not all((self.amount_btc_entry.get(), self.fee_entry.get(), self.address_entry.get())):
+            tk.messagebox.showerror('Invalid Entries', 'Please fill out all entries before sending')
+
+        elif self.amount_over_balance:
+            tk.messagebox.showerror('Insufficient Funds', 'Amount to send exceeds wallet balance')
+
+        elif float(self.amount_btc_entry.get()) <= 0 or \
+                float(self.amount_btc_entry.get()) <= 0 or \
+                int(self.fee_entry.get()) <= 0:
+            tk.messagebox.showerror('Invalid Amount(s)', 'Amount(s) must be positive, non-zero, numbers')
+
+        else:
+            self.sign_transaction_window()
 
     def on_clear(self):
         self._make_transaction_thread_event.set()
@@ -298,6 +319,8 @@ class _SendDisplay(ttk.Frame):
 
         self.address_entry['state'] = tk.NORMAL
         self.address_entry.delete(0, tk.END)
+
+        self.total_fiat_cost_var.set('0.0')
 
         self.hide_fee_labels()
 
@@ -315,7 +338,7 @@ class _SendDisplay(ttk.Frame):
 
     def to_fiat(self, amount):
         """ converts amount (display units) into fiat value """
-        fiat_amount = round(self.main_wallet.price.get() * self.to_btc(amount), 2)
+        fiat_amount = round(float(self.main_wallet.price.get()) * self.to_btc(amount), 2)
         return fiat_amount
 
     def hide_fee_labels(self):
@@ -334,14 +357,6 @@ class _SendDisplay(ttk.Frame):
 
         self.fee_labels_hidden = False
 
-    def _validate_entries(self):
-
-        if self.amount_over_balance:
-            raise tx.InsufficientFundsError('You do not have enough funds')
-
-        if not utils.validate_address(self.address_entry.get()):
-            raise ValueError('Invalid address entered')
-
     def _address_entry_validate(self, entry):
         if utils.validate_address(entry):
             self.address_entry['state'] = tk.DISABLED
@@ -356,11 +371,12 @@ class _SendDisplay(ttk.Frame):
         else:
             self.fee_entry.delete(0, tk.END)
             self.amount_btc_entry.delete(0, tk.END)
-            self.amount_fiat_var.set('0')
-            self.total_cost_var.set('0')
+            self.amount_fiat_var.set('0.0')
+            self.total_cost_var.set('0.0')
 
             self.fee_entry['state'] = tk.DISABLED
             self.amount_btc_entry['state'] = tk.DISABLED
+
         return True
 
     def _entry_btc_amount_validate(self, char, entry, before_change, force_satoshis=False):
@@ -395,7 +411,7 @@ class _SendDisplay(ttk.Frame):
 
         # empty string resets fiat amount
         if not event.widget.get():
-            self.amount_fiat_var.set('0')
+            self.amount_fiat_var.set('0.0')
             return 
 
         value = float(event.widget.get())
@@ -404,7 +420,7 @@ class _SendDisplay(ttk.Frame):
         self.amount_fiat_var.set(utils.float_to_str(fiat_amount))
 
     def _totals_set(self):
-        amount, fee = 0, 0
+        amount, fee = 0.0, 0
 
         if self.amount_btc_entry.get():
             amount = float(self.amount_btc_entry.get())
@@ -415,16 +431,21 @@ class _SendDisplay(ttk.Frame):
             # fee is in satoshis so needs to be divided by unit factor
             fee = (sat_byte * self.transaction.estimated_size()) / self.main_wallet.unit_factor
 
-        if self.to_satoshis(amount) < 1:
+        if self.to_satoshis(amount) < 1 or self.amount_over_balance:
             self.hide_fee_labels()
-        else:
-            if self.fee_labels_hidden:
-                self.show_fee_labels()
 
-        self.size_label_var.set(self.transaction.estimated_size())
-        self.total_fee_var.set(
-            utils.float_to_str(round(fee, self.main_wallet.max_decimal_places)))
-        self.total_cost_var.set(utils.float_to_str(round(amount + fee, self.main_wallet.max_decimal_places)))
+        elif self.fee_labels_hidden:
+            self.show_fee_labels()
+
+        size = self.transaction.estimated_size()
+        total_fee =  utils.float_to_str(round(fee, self.main_wallet.max_decimal_places))
+        total_cost = utils.float_to_str(round(amount + fee, self.main_wallet.max_decimal_places))
+        total_fiat_cost = utils.float_to_str(self.to_fiat(float(total_cost)))
+
+        self.size_label_var.set(size)
+        self.total_fee_var.set(total_fee)
+        self.total_cost_var.set(total_cost)
+        self.total_fiat_cost_var.set(total_fiat_cost)
 
     @utils.threaded(daemon=True)
     def _make_transaction(self):
@@ -442,25 +463,30 @@ class _SendDisplay(ttk.Frame):
         def set_amounts_colour(colour):
             self.total_cost.config(foreground=colour)
             self.amount_fiat.config(foreground=colour)
+            self.total_fiat_cost.config(foreground=colour)
+
+            # changing colours when they are hidden will cause them to re-appear
+            if not self.fee_labels_hidden:
+                self.total_fee.config(foreground=colour)
 
         while not self._make_transaction_thread_event.is_set():
-            time.sleep(0.1)
+            time.sleep(0.05)
+
+            amount, fee = 0, 0
 
             address = self.address_entry.get()
 
             if self.amount_btc_entry.get():
                 amount = self.to_satoshis(float(self.amount_btc_entry.get()))
-            else:
-                amount = 0
 
             if self.fee_entry.get():
                 fee = int(self.fee_entry.get()) * self.transaction.estimated_size()
-            else:
-                fee = 0
 
             # only recreate transaction if values are different
             if (amount, fee) in cached_txns:
                 set_amounts_colour('black')
+                # txns that are cached are not spending above wallet balance,
+                # they are only cached after a successful init
                 self.amount_over_balance = False
 
                 self.transaction = cached_txns[(amount, fee)]
@@ -478,9 +504,11 @@ class _SendDisplay(ttk.Frame):
                     set_amounts_colour('black')
                     self.amount_over_balance = False
 
-                except tx.InsufficientFundsError:
+                except InsufficientFundsError:
                     set_amounts_colour('red')
                     self.amount_over_balance = True
+        else:
+            set_amounts_colour('black')
 
     def on_btc_amount_key_press(self, event):
         self._amount_btc_entry_to_fiat(event)
@@ -488,3 +516,181 @@ class _SendDisplay(ttk.Frame):
 
     def on_fee_key_press(self):
         self._totals_set()
+
+    def sign_transaction_window(self):
+
+        window = tk.Toplevel(self)
+        window.iconbitmap(self.main_wallet.root.ICON)
+
+        bold_title = self.main_wallet.root.bold_title_font
+        bold_small = self.main_wallet.root.small_font + ('bold',)
+        small = self.main_wallet.root.small_font
+
+        # block interaction with root window
+        window.grab_set()
+
+        @utils.threaded
+        def sign_and_broadcast(load_window, password):
+
+            def on_copy_txid():
+                self.main_wallet.root.clipboard_clear()
+                self.main_wallet.root.clipboard_append(self.transaction.txn.txid)
+
+            self.btc_wallet.sign_transaction(self.transaction, password)
+            response_status = blockchain.broadcast_transaction(self.transaction.txn.hexlify())
+
+            # stop txn making thread and clear inputs, after transaction has
+            # been broadcast and is final
+            self.on_clear()
+
+            # if the broadcast failed
+            if not response_status:
+                load_window.destroy()
+                tk.messagebox.showerror('Broadcast Error', 'Unable to broadcast transaction! '
+                                                           '(Please check your internet connection)')
+                return
+
+            load_window.destroy()
+            sent_window = tk.Toplevel(self)
+            sent_window.iconbitmap(self.main_wallet.root.ICON)
+            title_ = ttk.Label(sent_window, text='Transaction Sent!', font=bold_title)
+            title_.grid(padx=20, pady=20)
+
+            txid = ttk.Label(sent_window, text=f'TXID: {self.transaction.txn.txid}',
+                             font=bold_small)
+            txid.grid(padx=20, pady=20)
+
+            button_frame_ = ttk.Frame(sent_window)
+
+            ok_button = ttk.Button(button_frame_, text='OK', command=lambda: sent_window.destroy())
+            ok_button.grid(row=0, column=0, padx=10, pady=10)
+
+            copy_button = ttk.Button(button_frame_, text='Copy TXID', command=on_copy_txid)
+            copy_button.grid(row=0, column=1, padx=10, pady=10)
+
+            button_frame_.grid()
+
+        def on_send():
+            password = self.main_wallet.root.password_prompt(window)
+
+            window.destroy()
+            info = tk.Toplevel(self)
+            info.iconbitmap(self.main_wallet.root.ICON)
+
+            title_ = ttk.Label(info, text='Signing & Broadcasting transaction, please wait...',
+                               font=bold_title)
+            title_.grid(pady=20, padx=20)
+
+            load_bar = ttk.Progressbar(info, mode='indeterminate')
+            load_bar.grid(pady=20, padx=20)
+            load_bar.start()
+
+            sign_and_broadcast(info, password)
+
+        def on_cancel():
+            window.destroy()
+
+        title = ttk.Label(window, text='TRANSACTION CONFIRMATION',
+                          font=self.main_wallet.root.bold_title_font)
+        title.grid(row=0, column=0, pady=20, sticky='n')
+
+        info_frame = ttk.Frame(window)
+
+        address_receiving_label = ttk.Label(info_frame, text='RECEIVING ADDRESS:',
+                                            font=bold_small)
+        address_receiving_label.grid(row=0, column=0, padx=20, sticky='w')
+
+        address = ttk.Label(info_frame, text=list(self.transaction.outputs_amounts.keys())[0],
+                            font=small)
+        address.grid(row=0, column=1, padx=20)
+
+        amount_label = ttk.Label(info_frame, text='AMOUNT TO SEND:',
+                                 font=bold_small)
+        amount_label.grid(row=1, column=0, padx=20, pady=5, sticky='w')
+
+        amount = ttk.Label(info_frame, text=f'{self.amount_btc_entry.get()} '
+                                            f'{self.main_wallet.display_units}',
+                           font=small)
+        amount.grid(row=1, column=1, padx=20)
+
+        fee_label = ttk.Label(info_frame, text='FEE:', font=bold_small)
+        fee_label.grid(row=2, column=0, padx=20, pady=5, sticky='w')
+
+        fee = ttk.Label(info_frame, text=f'{self.fee_entry.get()} sat/byte '
+                                         f'(total: {self.total_fee_var.get()} '
+                                         f'{self.main_wallet.display_units})',
+                        font=small)
+        fee.grid(row=2, column=1, padx=20)
+
+        total_cost_label = ttk.Label(info_frame, text='TOTAL COST:', font=bold_small)
+        total_cost_label.grid(row=3, column=0, padx=20, pady=5, sticky='w')
+
+        total_cost = ttk.Label(info_frame, text=f'{self.total_cost_var.get()} '
+                                                f'{self.main_wallet.display_units}',
+                               font=small)
+        total_cost.grid(row=3, column=1, padx=20)
+
+        info_frame.grid(row=1)
+
+        button_frame = ttk.Frame(window)
+
+        send_button = ttk.Button(button_frame, text='Send', command=on_send)
+        send_button.grid(row=0, column=0, padx=10, pady=10)
+
+        cancel_button = ttk.Button(button_frame, text='Cancel', command=on_cancel)
+        cancel_button.grid(row=0, column=1, padx=10, pady=10)
+
+        button_frame.grid(row=2, column=0, padx=10, pady=10)
+
+
+class _ReceiveDisplay(ttk.Frame):
+
+    def __init__(self, master, main_wallet):
+        ttk.Frame.__init__(self, master, padding=5)
+        self.main_wallet = main_wallet
+
+        self.address_label = ttk.Label(self, text='Receiving Address:',
+                                       font=self.main_wallet.root.bold_title_font)
+        self.address_label.grid(row=0, column=0, sticky='n')
+
+        self.address = tk.Text(self, height=1, width=65)
+        self.address['state'] = tk.DISABLED
+        self.address.configure(inactiveselectbackground=self.address.cget("selectbackground"))
+        self.address.grid(row=1, column=0, padx=20)
+
+        self.qr = None
+        self.qr_label = None
+        self.draw_qr_code()
+
+        self._update_address()
+
+    def _update_address(self):
+        """ a text widget is used for address display as it is copyable, however
+         it doesn't have a textvariable param so the address is updated here
+        """
+        # if the address has changed, then update text
+        if self.address.get(1.0, 'end-1c') != self.main_wallet.next_receiving_address.get():
+            self.address['state'] = tk.NORMAL
+
+            self.address.delete(1.0, tk.END)
+            self.address.insert(tk.END, self.main_wallet.next_receiving_address.get())
+
+            self.address['state'] = tk.DISABLED
+
+            # update qr code with new address
+            self.draw_qr_code()
+
+        self.main_wallet.root.after(self.main_wallet.refresh_data_rate, self._update_address)
+
+    def _make_qr_code(self):
+        qr = qrcode.QRCode(box_size=5)
+        qr.add_data(self.main_wallet.next_receiving_address.get())
+
+        tk_image = ImageTk.PhotoImage(qr.make_image(back_color='#F0F0F0'))
+        return tk_image
+
+    def draw_qr_code(self):
+        # keep reference to image or it will be garbage collected
+        self.qr = self._make_qr_code()
+        self.qr_label = ttk.Label(self, image=self.qr)
+        self.qr_label.grid(row=1, column=1)
