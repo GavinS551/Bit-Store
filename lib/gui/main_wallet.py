@@ -6,7 +6,7 @@ import string
 from threading import Event
 
 import qrcode
-from PIL import ImageTk, Image
+from PIL import ImageTk
 
 from ..core import structs, config, utils, blockchain
 from ..exceptions.tx_exceptions import InsufficientFundsError
