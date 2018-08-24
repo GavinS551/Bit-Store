@@ -4,7 +4,7 @@ import shutil
 
 import requests.exceptions
 
-from . import blockchain, config, data, tx, price, hd
+from . import blockchain, config, data, tx, price, hd, structs
 from ..exceptions.wallet_exceptions import *
 
 
@@ -188,7 +188,11 @@ class Wallet:
     def set_used_addresses(self):
         """ sets all addresses with txns associated with them as used"""
         non_used_addresses = self.receiving_addresses + self.change_addresses
-        u_addrs = [a for a in non_used_addresses if a in self.transactions]
+
+        txns = structs.Transactions.from_list(self.transactions)
+        tx_addresses = txns.find_address_txns(non_used_addresses)
+
+        u_addrs = [a for a in non_used_addresses if a in tx_addresses]
 
         if u_addrs:
             self._set_addresses_used(u_addrs)
