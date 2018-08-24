@@ -102,3 +102,21 @@ class Transactions:
             balances_dict[txn] = running_total
 
         return balances_dict
+
+    def find_address_txns(self, address_list):
+        """ returns addresses from address_list arg in that are associated
+         with at least one transaction in self._transactions
+        """
+        # addresses shouldn't be repeated if they are associated with more than
+        # one transaction
+        addresses = set()
+
+        for t in self._transactions:
+            for i, o in zip(t.inputs, t.outputs):
+
+                if i['address'] in address_list:
+                    addresses.add(i['address'])
+                if o['address'] in address_list:
+                    addresses.add(o['address'])
+
+        return addresses
