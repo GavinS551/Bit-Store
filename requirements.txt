@@ -5,3 +5,4 @@ cryptography
 requests
 pytest
 qrcode
+pillow
