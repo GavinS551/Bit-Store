@@ -53,7 +53,7 @@ class MainWallet(ttk.Frame):
         receive_display.grid(sticky='nsew')
         notebook.add(receive_display, text='Receive')
 
-        notebook.grid(row=1, column=0, pady=10)
+        notebook.grid(row=1, column=0)
 
         self._draw_bottom_info_bar()
         self._refresh_data()
@@ -185,7 +185,7 @@ class _TransactionDisplay(ttk.Frame):
 class _SendDisplay(ttk.Frame):
 
     def __init__(self, master, main_wallet):
-        ttk.Frame.__init__(self, master, padding=5)
+        ttk.Frame.__init__(self, master, padding=10)
         self.main_wallet = main_wallet
 
         self.btc_wallet = self.main_wallet.root.btc_wallet
@@ -646,17 +646,19 @@ class _SendDisplay(ttk.Frame):
 class _ReceiveDisplay(ttk.Frame):
 
     def __init__(self, master, main_wallet):
-        ttk.Frame.__init__(self, master, padding=5)
+        ttk.Frame.__init__(self, master, padding=10)
         self.main_wallet = main_wallet
 
-        self.address_label = ttk.Label(self, text='Receiving Address:',
-                                       font=self.main_wallet.root.bold_title_font)
-        self.address_label.grid(row=0, column=0, sticky='n')
+        self.grid_rowconfigure(0, {'minsize': 10})
 
-        self.address = tk.Text(self, height=1, width=65)
+        self.address_label = ttk.Label(self, text='Receiving Address:',
+                                       font=self.main_wallet.root.small_font + ('bold',))
+        self.address_label.grid(row=1, column=0, sticky='w')
+
+        self.address = tk.Text(self, height=1, width=40)
         self.address['state'] = tk.DISABLED
         self.address.configure(inactiveselectbackground=self.address.cget("selectbackground"))
-        self.address.grid(row=1, column=0, padx=20)
+        self.address.grid(row=1, column=1, padx=20)
 
         self.qr = None
         self.qr_label = None
@@ -693,4 +695,9 @@ class _ReceiveDisplay(ttk.Frame):
         # keep reference to image or it will be garbage collected
         self.qr = self._make_qr_code()
         self.qr_label = ttk.Label(self, image=self.qr)
-        self.qr_label.grid(row=1, column=1)
+        self.qr_label.grid(row=1, column=2)
+
+
+class _OptionsDisplay(ttk.Frame):
+
+    pass
