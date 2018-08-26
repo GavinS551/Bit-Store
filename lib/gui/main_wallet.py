@@ -16,7 +16,7 @@ class MainWallet(ttk.Frame):
 
     def __init__(self, root):
         self.root = root
-        ttk.Frame.__init__(self, self.root.master_frame)
+        ttk.Frame.__init__(self, self.root.master_frame, padding=10)
 
         self.refresh_data_rate = 1000  # milliseconds
 
@@ -53,7 +53,7 @@ class MainWallet(ttk.Frame):
         receive_display.grid(sticky='nsew')
         notebook.add(receive_display, text='Receive')
 
-        notebook.grid(row=1, column=0)
+        notebook.grid(row=1, column=0, pady=(0, 10))
 
         self._draw_bottom_info_bar()
         self._refresh_data()
@@ -134,12 +134,18 @@ class _TransactionDisplay(ttk.Frame):
         self.tree_view.heading('#2', text=f'Amount ({self.main_wallet.display_units})')
         self.tree_view.heading('#3', text=f'Balance ({self.main_wallet.display_units})')
 
-        self.tree_view.column('#0', stretch=False, minwidth=100, width=100)
-        self.tree_view.column('#1', stretch=False, minwidth=400, width=400)
-        self.tree_view.column('#2', stretch=False, minwidth=120, width=120)
-        self.tree_view.column('#3', stretch=False, minwidth=120, width=120)
+        self.tree_view.column('#0', minwidth=100, width=100)
+        self.tree_view.column('#1', minwidth=400, width=400)
+        self.tree_view.column('#2', minwidth=120, width=120)
+        self.tree_view.column('#3', minwidth=120, width=120)
 
-        self.tree_view.grid(row=0, column=0)
+        self.tree_view.grid(row=0, column=0, sticky='ns')
+
+        # will prevent columns in the tree_view from bring re-sized
+        def handle_click(event):
+            if self.tree_view.identify_region(event.x, event.y) == "separator":
+                return "break"
+        self.tree_view.bind('<Button-1>', handle_click)
 
         self.scrollbar = ttk.Scrollbar(self, command=self.tree_view.yview)
         self.tree_view.configure(yscrollcommand=self.scrollbar.set)
@@ -185,7 +191,7 @@ class _TransactionDisplay(ttk.Frame):
 class _SendDisplay(ttk.Frame):
 
     def __init__(self, master, main_wallet):
-        ttk.Frame.__init__(self, master, padding=10)
+        ttk.Frame.__init__(self, master, padding=5)
         self.main_wallet = main_wallet
 
         self.btc_wallet = self.main_wallet.root.btc_wallet
@@ -646,14 +652,14 @@ class _SendDisplay(ttk.Frame):
 class _ReceiveDisplay(ttk.Frame):
 
     def __init__(self, master, main_wallet):
-        ttk.Frame.__init__(self, master, padding=10)
+        ttk.Frame.__init__(self, master, padding=5)
         self.main_wallet = main_wallet
 
         self.grid_rowconfigure(0, {'minsize': 10})
 
         self.address_label = ttk.Label(self, text='Receiving Address:',
                                        font=self.main_wallet.root.small_font + ('bold',))
-        self.address_label.grid(row=1, column=0, sticky='w')
+        self.address_label.grid(row=1, column=0, sticky='w', padx=10)
 
         self.address = tk.Text(self, height=1, width=40)
         self.address['state'] = tk.DISABLED
@@ -699,5 +705,4 @@ class _ReceiveDisplay(ttk.Frame):
 
 
 class _OptionsDisplay(ttk.Frame):
-
     pass
