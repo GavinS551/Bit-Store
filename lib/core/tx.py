@@ -187,6 +187,8 @@ class Transaction:
         self.input_addresses = None
         self._specific_utxo_data = None
 
+        self.dust_change_amount = None
+
         self._choose_utxos()
 
         self.txn = self._get_unsigned_txn()
@@ -223,7 +225,15 @@ class Transaction:
 
         # adding change address to outputs, if there is leftover balance that isn't dust
         if self._change_amount > DUST_THRESHOLD:
+            self.dust_change_amount = None
             outputs_amounts[self.change_address] = self._change_amount
+
+        # if there is no change leftover, it will not be considered a dust amount
+        elif self._change_amount == 0:
+            self.dust_change_amount = None
+
+        else:
+            self.dust_change_amount = self._change_amount
 
         outputs = []
         for i, (addr, amount) in enumerate(outputs_amounts.items()):
