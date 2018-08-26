@@ -18,13 +18,13 @@ def atomic_file_write(data: str, file_path: str):
     os.replace(tmp_file, file_path)
 
 
-def threaded(func=None, daemon=False):
+def threaded(func=None, daemon=False, name=None):
     """ wrapper that returns a thread handle with its target set to wrapped function """
     def decorator(func_):
 
         @wraps(func_)
         def wrapped(*args, **kwargs):
-            t = Thread(target=func_, args=args, kwargs=kwargs, daemon=daemon)
+            t = Thread(target=func_, args=args, kwargs=kwargs, daemon=daemon, name=name)
             t.start()
             return t
 
