@@ -164,6 +164,8 @@ class Transaction:
         self.outputs_amounts = outputs_amounts
         self.change_address = change_address
 
+        self._modified_outputs_amounts = self.outputs_amounts.copy()
+
         self._locktime = locktime
         self._utxo_data = utxo_data
 
@@ -187,7 +189,7 @@ class Transaction:
         self.input_addresses = None
         self._specific_utxo_data = None
 
-        self.dust_change_amount = None
+        self.dust_change_amount = 0
 
         self._choose_utxos()
 
@@ -203,6 +205,19 @@ class Transaction:
          address, minus the beginning network byte
          """
         return base58.b58decode_check(address)[1:]
+
+    @staticmethod
+    def get_output_script(address):
+        # normal, P2PKH btc addresses begin with '1'
+        if address[0] == '1':
+            return P2pkhScript
+
+        # and P2SH addresses begin with '3' (applies to non-native segwit addresses as well)
+        elif address[0] == '3':
+            return P2shScript
+
+        else:
+            raise ValueError('Couldn\'t generate a scriptPubKey for entered address')
 
     def _choose_utxos(self):
         output_amount = sum([v for v in self.outputs_amounts.values()]) + self.fee
@@ -221,33 +236,16 @@ class Transaction:
         # outputs_amounts is copied so any instance can be modified with change_fee,
         # and will still function correctly, i.e the change address won't already
         # be in the self._outputs_amounts dict
-        outputs_amounts = self.outputs_amounts.copy()
+        self._modified_outputs_amounts = self.outputs_amounts.copy()
 
         # adding change address to outputs, if there is leftover balance that isn't dust
-        if self._change_amount > DUST_THRESHOLD:
-            self.dust_change_amount = None
-            outputs_amounts[self.change_address] = self._change_amount
-
-        # if there is no change leftover, it will not be considered a dust amount
-        elif self._change_amount == 0:
-            self.dust_change_amount = None
-
-        else:
-            self.dust_change_amount = self._change_amount
+        if self._change_amount > 0:
+            self._modified_outputs_amounts[self.change_address] = self._change_amount
 
         outputs = []
-        for i, (addr, amount) in enumerate(outputs_amounts.items()):
+        for i, (addr, amount) in enumerate(self._modified_outputs_amounts.items()):
 
-            # normal, P2PKH btc addresses begin with '1'
-            if addr[0] == '1':
-                out_script = P2pkhScript
-
-            # and P2SH addresses begin with '3' (applies to non-native segwit addresses as well)
-            elif addr[0] == '3':
-                out_script = P2shScript
-
-            else:
-                raise ValueError('Couldn\'t generate a scriptPubKey for entered address')
+            out_script = self.get_output_script(addr)
 
             outputs.append(TxOut(
                 value=amount,
@@ -369,3 +367,25 @@ class Transaction:
             return round(self.size + (len(self.txn.ins) * (23 + 1 + ((1 + 1 + 72 + 1 + 33) / 4)) + 0.5))
         else:
             return self.size + (len(self.txn.ins) * (1 + 72 + 33))
+
+    def remove_dust_change(self):
+        if self.is_signed:
+            raise Exception('Cannot remove outputs from signed transaction')
+
+        for address, amount in self._modified_outputs_amounts.items():
+            if address == self.change_address and amount <= DUST_THRESHOLD:
+                change_dust_addr = address
+                change_dust_amount = amount
+                break
+        else:
+            return
+
+        script = self.get_output_script(change_dust_addr)
+        script_pubkey = script(bytearray(self.get_hash160(change_dust_addr)))
+
+        for o in self.txn.outs:
+            if o.script_pubkey == script_pubkey:
+                self.txn.outs.remove(o)
+
+        self._recalculate_size()
+        self.dust_change_amount += change_dust_amount
