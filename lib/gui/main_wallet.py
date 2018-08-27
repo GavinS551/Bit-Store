@@ -506,18 +506,7 @@ class _SendDisplay(ttk.Frame):
                         outs_amounts={address: amount}
                     )
 
-                    # the below code prevents an infinite feedback loop that
-                    # happens when the change in fee causes the transaction size
-                    # to change (as dust change amounts may be discarded) which will
-                    # cause the actual fee needed to change (as the sat/byte ratio
-                    # will be changed). DON'T TOUCH THIS
-
-                    b_total_fee = fee_entry * transaction.estimated_size()
-                    transaction.change_fee(b_total_fee)
-                    transaction.remove_dust_change()
-                    a_total_fee = fee_entry * transaction.estimated_size()
-                    transaction.fee -= b_total_fee - a_total_fee
-                    transaction.dust_change_amount += b_total_fee - a_total_fee
+                    transaction.change_fee_sat_byte(fee_entry)
 
                     cached_txns[(amount, fee_entry)] = transaction
                     self.transaction = transaction

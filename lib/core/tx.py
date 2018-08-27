@@ -199,6 +199,8 @@ class Transaction:
         self.size = self.txn.vsize
         self.weight = self.txn.weight
 
+        self.remove_dust_change()
+
     @staticmethod
     def get_hash160(address):
         """ hash160 of a btc address is the b58_check decoded bytes of the
@@ -348,15 +350,6 @@ class Transaction:
         self._recalculate_size()
         self.is_signed = True
 
-    def change_fee(self, fee):
-        self.fee = fee
-        # re-run all logic that will be effected by fee change, i.e there might
-        # need to be more chosen inputs to make up for the increased fee
-        self._choose_utxos()
-        self.txn = self._get_unsigned_txn()
-        self._recalculate_size()
-        self.is_signed = False
-
     def estimated_size(self):
         """ estimated tx size after factoring in signatures
         (self.size only considers unsigned, signature-less size if
@@ -389,3 +382,24 @@ class Transaction:
 
         self._recalculate_size()
         self.dust_change_amount += change_dust_amount
+        
+    def change_fee(self, fee):
+        self.fee = fee
+        # re-run all logic that will be effected by fee change, i.e there might
+        # need to be more chosen inputs to make up for the increased fee
+        self._choose_utxos()
+        self.txn = self._get_unsigned_txn()
+        self.remove_dust_change()  # size is recalculated here
+        self.is_signed = False
+
+    def change_fee_sat_byte(self, sat_byte):
+        # this code prevents an infinite feedback loop that
+        # happens when the change in fee causes the transaction size
+        # to change (as dust change amounts may be discarded) which will
+        # cause the actual fee needed to change (as the sat/byte ratio
+        # will be changed).
+        b_total_fee = sat_byte * self.estimated_size()
+        self.change_fee(b_total_fee)
+        a_total_fee = sat_byte * self.estimated_size()
+        self.fee -= b_total_fee - a_total_fee
+        self.dust_change_amount += b_total_fee - a_total_fee
