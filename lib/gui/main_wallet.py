@@ -195,6 +195,8 @@ class _SendDisplay(ttk.Frame):
         self.main_wallet = main_wallet
 
         self.btc_wallet = self.main_wallet.root.btc_wallet
+        # initialise txn with no outputs to prevent race condition when accessing txn size
+        # (size wont be accurate though, obviously)
         self.transaction = self.btc_wallet.make_unsigned_transaction({})
         self.amount_over_balance = False
 
@@ -478,7 +480,7 @@ class _SendDisplay(ttk.Frame):
         while not self._make_transaction_thread_event.is_set():
             time.sleep(0.05)
 
-            amount, fee = 0, 0
+            amount, fee_entry = 0, 0
 
             address = self.address_entry.get()
 
@@ -486,33 +488,49 @@ class _SendDisplay(ttk.Frame):
                 amount = self.to_satoshis(float(self.amount_btc_entry.get()))
 
             if self.fee_entry.get():
-                fee = int(self.fee_entry.get()) * self.transaction.estimated_size()
+                fee_entry = int(self.fee_entry.get())
 
             # only recreate transaction if values are different
-            if (amount, fee) in cached_txns:
+            if (amount, fee_entry) in cached_txns:
                 set_amounts_colour('black')
                 # txns that are cached are not spending above wallet balance,
                 # they are only cached after a successful init
                 self.amount_over_balance = False
 
-                self.transaction = cached_txns[(amount, fee)]
+                self.transaction = cached_txns[(amount, fee_entry)]
 
             else:
 
                 try:
                     transaction = self.btc_wallet.make_unsigned_transaction(
-                        outs_amounts={address: amount},
-                        fee=fee
+                        outs_amounts={address: amount}
                     )
 
-                    cached_txns[(amount, fee)] = transaction
+                    # the below code prevents an infinite feedback loop that
+                    # happens when the change in fee causes the transaction size
+                    # to change (as dust change amounts may be discarded) which will
+                    # cause the actual fee needed to change (as the sat/byte ratio
+                    # will be changed). DON'T TOUCH THIS
+
+                    b_total_fee = fee_entry * transaction.estimated_size()
+                    transaction.change_fee(b_total_fee)
+                    transaction.remove_dust_change()
+                    a_total_fee = fee_entry * transaction.estimated_size()
+                    transaction.fee -= b_total_fee - a_total_fee
+                    transaction.dust_change_amount += b_total_fee - a_total_fee
+
+                    cached_txns[(amount, fee_entry)] = transaction
                     self.transaction = transaction
+
+                    # update transaction size/total fee if recreating txn changed the size
+                    self._totals_set()
                     set_amounts_colour('black')
                     self.amount_over_balance = False
 
                 except InsufficientFundsError:
                     set_amounts_colour('red')
                     self.amount_over_balance = True
+
         else:
             set_amounts_colour('black')
 
@@ -635,6 +653,17 @@ class _SendDisplay(ttk.Frame):
                                                 f'{self.main_wallet.display_units}',
                                font=small)
         total_cost.grid(row=3, column=1, padx=20)
+
+        # if there will be a dust change amount discarded, show a message
+        if self.transaction.dust_change_amount > 0:
+            dust_notify_label = ttk.Label(info_frame, text='NOTE:', font=bold_small)
+            dust_notify_label.grid(row=4, column=0, padx=20, pady=5, sticky='w')
+
+            dust_msg = ttk.Label(info_frame, text=f'{self.transaction.dust_change_amount * self.main_wallet.unit_factor} '
+                                                  f'{self.main_wallet.display_units} will be discarded as it is considered\n'
+                                                  f'"dust", and would be unspendable if sent to a change address',
+                                 font=small)
+            dust_msg.grid(row=4, column=1, padx=20)
 
         info_frame.grid(row=1)
 
