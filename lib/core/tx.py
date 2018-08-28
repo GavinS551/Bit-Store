@@ -393,6 +393,14 @@ class Transaction:
         self.is_signed = False
 
     def change_fee_sat_byte(self, sat_byte):
+        """ If you want to create a transaction with a fee in terms of signed
+         transaction size, use this method, don't do this:
+         t = Transaction({out: amount})
+         t.change_fee(x * t.estimated_size)
+
+         (see below comment for the reason)
+         """
+
         # this code prevents an infinite feedback loop that
         # happens when the change in fee causes the transaction size
         # to change (as dust change amounts may be discarded) which will
