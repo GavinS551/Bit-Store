@@ -95,9 +95,9 @@ class HDWallet:
         }
 
         # Checking integrity of word list file
-        with open(WORDLIST, 'rb') as w:
-            wl_hash = b'Q\xca"d\xf5\xb3\xadS*Mm\xae\x17^\x17P'
-            if wl_hash != hashlib.md5(w.read()).digest():
+        with open(WORDLIST, 'r') as w:
+            wl_hash = '2a80fc2c95f3a4b0a5769764df251820'
+            if wl_hash != hashlib.md5(''.join(w.read().split()).encode()).hexdigest():
                 raise Exception('ERROR: Wordlist is not BIP39 valid '
                                 '(INVALID MD5 HASH)')
 
