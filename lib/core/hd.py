@@ -3,30 +3,17 @@ import hashlib
 import binascii
 import string
 import multiprocessing
-from queue import Empty
 from operator import itemgetter
 
 import bitstring
 from .bip32utils_updated.BIP32Key import BIP32Key, BIP32_HARDEN
 
+from .utils import IterableQueue
 from ..exceptions.hd_exceptions import *
 
 
 WORDLIST = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'wordlist.txt')
 PBKDF2_HMAC_ITERATIONS = 2048  # used when converting mnemonic to seed
-
-
-class IterableQueue:
-
-    def __init__(self, queue):
-        self.queue = queue
-
-    def __iter__(self):
-        while True:
-            try:
-                yield self.queue.get_nowait()
-            except Empty:
-                break
 
 
 class HDWallet:

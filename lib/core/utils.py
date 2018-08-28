@@ -2,7 +2,7 @@ import os
 import decimal
 from functools import wraps
 from threading import Thread
-
+from queue import Empty
 import base58
 
 
@@ -55,3 +55,16 @@ def float_to_str(float_):
     with decimal.localcontext() as ctx:
         d1 = ctx.create_decimal(repr(float_))
         return format(d1, 'f')
+
+
+class IterableQueue:
+
+    def __init__(self, queue):
+        self.queue = queue
+
+    def __iter__(self):
+        while True:
+            try:
+                yield self.queue.get_nowait()
+            except Empty:
+                break
