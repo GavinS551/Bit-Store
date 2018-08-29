@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 
 import os
 import traceback
@@ -115,6 +115,10 @@ class RootApplication(tk.Tk):
     def password_prompt(parent):
         return TTKSimpleDialog.askstring('Password Entry', 'Enter Password:',
                                          show='*', parent=parent)
+
+    @staticmethod
+    def incorrect_password_prompt():
+        tk.messagebox.showerror('Error', 'Incorrect Password')
 
     def settings_prompt(self):
         _Settings(self)

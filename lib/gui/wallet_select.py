@@ -89,7 +89,7 @@ class WalletSelect(ttk.Frame):
             else:
                 raise NoWalletSelectedError
 
-            password = self.root.password_prompt(self.root)
+            password = self.root.password_prompt(self)
 
             # if the password prompt window is exited without submitting,
             # password will be None and will raise an Exception
@@ -104,4 +104,4 @@ class WalletSelect(ttk.Frame):
             messagebox.showerror('Error', 'No wallet selected')
 
         except IncorrectPasswordError:
-            messagebox.showerror('Error', 'Incorrect Password')
+            self.root.incorrect_password_prompt()
