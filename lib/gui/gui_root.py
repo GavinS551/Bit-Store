@@ -117,8 +117,8 @@ class RootApplication(tk.Tk):
                                          show='*', parent=parent)
 
     @staticmethod
-    def incorrect_password_prompt():
-        tk.messagebox.showerror('Error', 'Incorrect Password')
+    def incorrect_password_prompt(parent):
+        tk.messagebox.showerror('Error', 'Incorrect Password', parent=parent)
 
     def settings_prompt(self):
         _Settings(self)

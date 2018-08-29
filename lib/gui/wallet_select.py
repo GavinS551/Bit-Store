@@ -104,4 +104,4 @@ class WalletSelect(ttk.Frame):
             messagebox.showerror('Error', 'No wallet selected')
 
         except IncorrectPasswordError:
-            self.root.incorrect_password_prompt()
+            self.root.incorrect_password_prompt(self)
