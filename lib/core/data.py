@@ -135,5 +135,8 @@ class DataStore(Crypto):
     # for use outside this class, where the password isn't actually used
     # to decrypt the file, but still needs to be verified for security
     def validate_password(self, password):
-        return hashlib.sha256(password.encode('utf-8')).hexdigest() \
-               == self.get_value(key='PASSWORD_HASH')
+        try:
+            return hashlib.sha256(password.encode('utf-8')).hexdigest() \
+                   == self.get_value(key='PASSWORD_HASH')
+        except AttributeError:
+            return False
