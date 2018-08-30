@@ -34,7 +34,6 @@ class MainWallet(ttk.Frame):
         self.next_receiving_address = tk.StringVar()
 
     def gui_draw(self):
-
         title_label = ttk.Label(self, text=self.root.btc_wallet.name,
                                 font=self.root.bold_title_font)
         title_label.grid(row=0, column=0)
@@ -56,7 +55,26 @@ class MainWallet(ttk.Frame):
         notebook.grid(row=1, column=0, pady=(0, 10))
 
         self._draw_bottom_info_bar()
+        self._draw_menu_bar()
         self._refresh_data()
+
+    def _draw_menu_bar(self):
+        menu_bar = tk.Menu(self.root)
+
+        wallet_menu = tk.Menu(menu_bar, tearoff=0)
+        wallet_menu.add_command(label='Information')
+        wallet_menu.add_separator()
+        wallet_menu.add_command(label='Show Mnemonic')
+        wallet_menu.add_command(label='Change Password')
+
+        options_menu = tk.Menu(menu_bar, tearoff=0)
+        options_menu.add_command(label='Settings', command=self.root.settings_prompt)
+
+
+        menu_bar.add_cascade(label='Wallet', menu=wallet_menu)
+        menu_bar.add_cascade(label='Options', menu=options_menu)
+
+        self.root.config(menu=menu_bar)
 
     def _draw_bottom_info_bar(self):
         bottom_info_frame = ttk.Frame(self)
@@ -110,7 +128,6 @@ class MainWallet(ttk.Frame):
         bottom_info_frame.grid()
 
     def _refresh_data(self):
-
         self.wallet_balance.set(self.root.btc_wallet.wallet_balance / self.unit_factor)
         self.unconfirmed_wallet_balance.set(self.root.btc_wallet.unconfirmed_wallet_balance / self.unit_factor)
         self.price.set(self.root.btc_wallet.price)
@@ -511,8 +528,13 @@ class _SendDisplay(ttk.Frame):
                     cached_txns[(amount, fee_entry)] = transaction
                     self.transaction = transaction
 
-                    # update transaction size/total fee if recreating txn changed the size
+                    # update transaction size/total fee if changing fee changed
+                    # the size. May not be needed if this thread can update
+                    # self.transaction before the bound entry methods can call
+                    # self._totals_set. but that obviously can't be counted on,
+                    # so we call it here as well
                     self._totals_set()
+
                     set_amounts_colour('black')
                     self.amount_over_balance = False
 
@@ -586,6 +608,14 @@ class _SendDisplay(ttk.Frame):
         def on_send():
             password = self.main_wallet.root.password_prompt(window)
 
+            # if cancel was pressed
+            if password is None:
+                return
+
+            if not self.btc_wallet.data_store.validate_password(password):
+                self.main_wallet.root.incorrect_password_prompt(window)
+                return
+
             window.destroy()
             info = tk.Toplevel(self)
             info.iconbitmap(self.main_wallet.root.ICON)
@@ -648,10 +678,10 @@ class _SendDisplay(ttk.Frame):
             dust_notify_label = ttk.Label(info_frame, text='NOTE:', font=bold_small)
             dust_notify_label.grid(row=4, column=0, padx=20, pady=5, sticky='w')
 
-            dust_msg = ttk.Label(info_frame, text=f'{self.transaction.dust_change_amount * self.main_wallet.unit_factor} '
-                                                  f'{self.main_wallet.display_units} will be discarded as it is considered\n'
-                                                  f'"dust", and would be unspendable if sent to a change address',
-                                 font=small)
+            dust_msg = ttk.Label(info_frame, text=f'{utils.float_to_str(self.transaction.dust_change_amount / self.main_wallet.unit_factor)} '
+                                                  f'{self.main_wallet.display_units} will be added to the fee, as it is considered a '
+                                                  f'"dust" amount, and would be un-spendable if sent to a change address',
+                                 font=small, wraplength=400, justify=tk.CENTER)
             dust_msg.grid(row=4, column=1, padx=20)
 
         info_frame.grid(row=1)
@@ -679,7 +709,7 @@ class _ReceiveDisplay(ttk.Frame):
                                        font=self.main_wallet.root.small_font + ('bold',))
         self.address_label.grid(row=1, column=0, sticky='w', padx=10)
 
-        self.address = tk.Text(self, height=1, width=40)
+        self.address = tk.Text(self, height=1, width=40, font=self.main_wallet.root.small_font)
         self.address['state'] = tk.DISABLED
         self.address.configure(inactiveselectbackground=self.address.cget("selectbackground"))
         self.address.grid(row=1, column=1, padx=20)
@@ -720,7 +750,3 @@ class _ReceiveDisplay(ttk.Frame):
         self.qr = self._make_qr_code()
         self.qr_label = ttk.Label(self, image=self.qr)
         self.qr_label.grid(row=1, column=2)
-
-
-class _OptionsDisplay(ttk.Frame):
-    pass
