@@ -81,7 +81,7 @@ class WalletSelect(ttk.Frame):
             if self.wallet_list.curselection():
                 selected_wallet = self.wallet_list.get(tk.ACTIVE)
 
-                # if <CREATE WALLET> is selected, go to wallet creation frame
+                # if <NEW WALLET> is selected, go to wallet creation frame
                 if selected_wallet == '<NEW WALLET>':
                     self.root.show_frame('WalletCreation')
                     return
