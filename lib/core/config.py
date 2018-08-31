@@ -20,17 +20,15 @@ def read_file():
         return json.load(c)
 
 
-def reset_config_file():
-    with open(CONFIG_FILE, 'w') as cf:
-        json.dump(DEFAULT_CONFIG, cf, indent=4, sort_keys=False)
-
-
-def write_value(key, value):
-    if key not in DEFAULT_CONFIG:
-        raise ValueError(f'{key} is an invalid key')
-
+def write_values(**kwargs):
     config = read_file()
-    config[key] = value
+
+    for k, v in kwargs.items():
+
+        if k not in DEFAULT_CONFIG:
+            raise ValueError(f'{k} is an invalid key')
+
+        config[k] = v
 
     data = json.dumps(config, indent=4, sort_keys=True)
     utils.atomic_file_write(data, CONFIG_FILE)
