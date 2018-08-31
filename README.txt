@@ -24,7 +24,7 @@ Transactions:  {
             'block_height': int,
             'confirmations': int,
             'fee': int,
-            'size': int,
+            'vsize': int,
             'inputs': [{'value': int, 'address': str, 'n': int}, ...],
             'outputs': [{'value': int, 'address': str, 'n': int, 'spent': bool}, ...],
             'wallet_amount': int
