@@ -89,7 +89,7 @@ UNITS_MAX_DECIMAL_PLACES = {
 BTC_UNITS = ['BTC', 'mBTC', 'bits', 'sat']
 
 
-FIAT_UNITS = ['USD', 'EUR', 'GBP', 'JYP', 'CAD', 'AUD']
+FIAT_UNITS = ['AUD', 'CAD', 'EUR', 'GBP', 'JYP', 'USD']
 
 
 # standard format for datetime stings
