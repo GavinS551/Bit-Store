@@ -1,3 +1,5 @@
+""" miscellaneous functions and classes used in the program """
+
 import os
 import decimal
 from functools import wraps
@@ -55,6 +57,13 @@ def float_to_str(float_):
     with decimal.localcontext() as ctx:
         d1 = ctx.create_decimal(repr(float_))
         return format(d1, 'f')
+
+
+def find_key_from_value(dict_, value):
+    """ returns the (first) matching key in a dict for a given value """
+    for k, v in dict_.items():
+        if v == value:
+            return k
 
 
 class IterableQueue:
