@@ -20,7 +20,7 @@ class MainWallet(ttk.Frame):
 
         self.refresh_data_rate = 1000  # milliseconds
 
-        self.display_units = config.UNITS
+        self.display_units = config.BTC_UNITS
         self.unit_factor = config.UNIT_FACTORS[self.display_units]
         self.max_decimal_places = config.UNITS_MAX_DECIMAL_PLACES[self.display_units]
 

@@ -30,7 +30,7 @@ DEFAULT_CONFIG = {
 
     'FIAT': 'USD',
 
-    'UNITS': 'BTC',
+    'BTC_UNITS': 'BTC',
 
     'FONT': 'verdana',
 
@@ -86,10 +86,10 @@ UNITS_MAX_DECIMAL_PLACES = {
 }
 
 
-BTC_UNITS = ['BTC', 'mBTC', 'bits', 'sat']
+POSSIBLE_BTC_UNITS = ['BTC', 'mBTC', 'bits', 'sat']
 
 
-FIAT_UNITS = ['AUD', 'CAD', 'EUR', 'GBP', 'JYP', 'USD']
+POSSIBLE_FIAT_UNITS = ['AUD', 'CAD', 'EUR', 'GBP', 'JYP', 'USD']
 
 
 # standard format for datetime stings
