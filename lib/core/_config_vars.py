@@ -95,7 +95,7 @@ POSSIBLE_FIAT_UNITS = ['AUD', 'CAD', 'EUR', 'GBP', 'JYP', 'USD']
 POSSIBLE_BLOCKCHAIN_API_SOURCES = ['blockchain.info']
 
 
-POSSIBLE_PRICE_API_SOURCES = ['coinmarketcap.com']
+POSSIBLE_PRICE_API_SOURCES = ['coinmarketcap']
 
 
 # standard format for datetime stings
