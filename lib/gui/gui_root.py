@@ -5,7 +5,7 @@ import os
 import traceback
 
 from . import ttk_simpledialog as simpledialog
-from ..core import config, wallet
+from ..core import config, wallet, utils
 
 from .wallet_select import WalletSelect
 from .wallet_creation import (WalletCreation, WalletCreationLoading,
@@ -49,6 +49,8 @@ class RootApplication(tk.Tk):
 
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
+
+        self.resizable(False, False)
 
         self.wm_title('Bit-Store')
         self.iconbitmap(self.ICON)
@@ -131,30 +133,130 @@ class _Settings(tk.Toplevel):
         self.wm_title('Settings')
         self.wm_iconbitmap(RootApplication.ICON)
 
+        self.resizable(False, False)
+
+        self.root = root
+
+        # settings variables, set to current values
+        self.spend_unconfirmed_outs = tk.IntVar(value=config.SPEND_UNCONFIRMED_UTXOS)
+        self.spend_utxos_individually = tk.IntVar(value=config.SPEND_UTXOS_INDIVIDUALLY)
+        self.blockchain_api = tk.StringVar(value=config.BLOCKCHAIN_API_SOURCE)
+        self.price_api = tk.StringVar(value=config.PRICE_API_SOURCE)
+        self.fiat_unit = tk.StringVar(value=config.FIAT)
+        self.btc_units = tk.StringVar(value=config.BTC_UNITS)
+
         self.notebook = ttk.Notebook(self)
 
-        self.transaction_settings = ttk.Frame(self.notebook)
+        self.transaction_settings = ttk.Frame(self.notebook, padding=10)
         self.draw_transaction_settings()
         self.transaction_settings.grid(sticky='nsew')
         self.notebook.add(self.transaction_settings, text='Transactions')
 
-        self.api_settings = ttk.Frame(self.notebook)
+        self.api_settings = ttk.Frame(self.notebook, padding=10)
         self.draw_api_settings()
         self.api_settings.grid(sticky='nsew')
         self.notebook.add(self.api_settings, text='API')
 
-        self.gui_settings = ttk.Frame(self.notebook)
+        self.gui_settings = ttk.Frame(self.notebook, padding=10)
         self.draw_gui_settings()
         self.gui_settings.grid(sticky='nsew')
         self.notebook.add(self.gui_settings, text='GUI')
 
-        self.notebook.grid(padx=20, pady=20)
+        self.notebook.grid(row=0, column=0, padx=20, pady=10)
+
+        save_button = ttk.Button(self, text='Save', command=self.on_save)
+        save_button.grid(row=1, column=0, pady=(0, 10), sticky='s')
+
+    def on_save(self):
+        new_settings = self._write_config_values()
+
+        if new_settings:
+            tk.messagebox.showinfo('Settings',
+                                   'Please restart the program for these changes to take effect.')
+
+        self.destroy()
+
+    def _write_config_values(self):
+        """ returns False if no data was written (i.e no settings changed),
+         otherwise True
+        """
+
+        key_var = {
+            'SPEND_UNCONFIRMED_UTXOS': self.spend_unconfirmed_outs,
+            'SPEND_UTXOS_INDIVIDUALLY': self.spend_utxos_individually,
+            'BLOCKCHAIN_API_SOURCE': self.blockchain_api,
+            'PRICE_API_SOURCE': self.price_api,
+            'FIAT': self.fiat_unit,
+            'BTC_UNITS': self.btc_units
+        }
+
+        # if no settings were changed
+        if all([v.get() == getattr(config, k) for k, v in key_var.items()]):
+            return False
+
+        else:
+            data = {}
+            for k, v in key_var.items():
+                data[k] = v.get()
+
+            config.write_values(**data)
+
+            return True
 
     def draw_transaction_settings(self):
-        pass
+        frame = self.transaction_settings
+        padx = (0, 20)
+
+        spend_unconfirmed_outs_label = ttk.Label(frame, text='Spend Unconfirmed Outputs:',
+                                                 font=self.root.tiny_font)
+        spend_unconfirmed_outs_label.grid(row=0, column=0, padx=padx, pady=10, sticky='w')
+
+        spend_unconfirmed_outs_check = ttk.Checkbutton(frame, variable=self.spend_unconfirmed_outs,
+                                                       offvalue=False, onvalue=True)
+        spend_unconfirmed_outs_check.grid(row=0, column=1, sticky='e')
+
+        spend_utxos_individually_label = ttk.Label(frame, text='Spend Outputs Individually:',
+                                                   font=self.root.tiny_font)
+        spend_utxos_individually_label.grid(row=1, column=0, padx=padx, pady=10, sticky='w')
+
+        spend_utxos_individually_check = ttk.Checkbutton(frame, variable=self.spend_utxos_individually,
+                                                         offvalue=False, onvalue=True)
+        spend_utxos_individually_check.grid(row=1, column=1, sticky='e')
 
     def draw_api_settings(self):
-        pass
+        frame = self.api_settings
+        padx = (0, 20)
+
+        blockchain_api_label = ttk.Label(frame, text='Blockchain API:', font=self.root.tiny_font)
+        blockchain_api_label.grid(row=0, column=0, padx=padx, pady=10, sticky='w')
+
+        blockchain_api_options = ttk.Combobox(frame, textvariable=self.blockchain_api,
+                                              state='readonly', value=config.POSSIBLE_BLOCKCHAIN_API_SOURCES,
+                                              width=15)
+        blockchain_api_options.grid(row=0, column=1, sticky='e')
+
+        price_api_label = ttk.Label(frame, text='Price API:', font=self.root.tiny_font)
+        price_api_label.grid(row=1, column=0, padx=padx, pady=10, sticky='w')
+
+        price_api_options = ttk.Combobox(frame, textvariable=self.price_api,
+                                         state='readonly', value=config.POSSIBLE_PRICE_API_SOURCES,
+                                         width=15)
+        price_api_options.grid(row=1, column=1, sticky='e')
 
     def draw_gui_settings(self):
-        pass
+        frame = self.gui_settings
+        padx = (0, 58)
+
+        fiat_label = ttk.Label(frame, text='Fiat Currency:', font=self.root.tiny_font)
+        fiat_label.grid(row=0, column=0, padx=padx, pady=10, sticky='w')
+
+        fiat_options = ttk.Combobox(frame, textvariable=self.fiat_unit,
+                                    state='readonly', value=config.POSSIBLE_FIAT_UNITS, width=10)
+        fiat_options.grid(row=0, column=1, sticky='e')
+
+        btc_units_label = ttk.Label(frame, text='Bitcoin Units:', font=self.root.tiny_font)
+        btc_units_label.grid(row=1, column=0, padx=padx, pady=10, sticky='w')
+
+        btc_units_options = ttk.Combobox(frame, textvariable=self.btc_units,
+                                         state='readonly', value=config.POSSIBLE_BTC_UNITS, width=10)
+        btc_units_options.grid(row=1, column=1, sticky='e')
