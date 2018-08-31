@@ -24,7 +24,7 @@ DEFAULT_CONFIG = {
         'bip44path': "44'/0'/0'"
     },
 
-    'PRICE_API_SOURCE': 'coinmarketcap',
+    'PRICE_API_SOURCE': 'coinmarketcap.com',
 
     'BLOCKCHAIN_API_SOURCE': 'blockchain.info',
 
@@ -90,6 +90,12 @@ POSSIBLE_BTC_UNITS = ['BTC', 'mBTC', 'bits', 'sat']
 
 
 POSSIBLE_FIAT_UNITS = ['AUD', 'CAD', 'EUR', 'GBP', 'JYP', 'USD']
+
+
+POSSIBLE_BLOCKCHAIN_API_SOURCES = ['blockchain.info']
+
+
+POSSIBLE_PRICE_API_SOURCES = ['coinmarketcap.com']
 
 
 # standard format for datetime stings

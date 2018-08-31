@@ -13,10 +13,7 @@ class BitcoinPrice:
     def __init__(self, currency=config.FIAT, source=config.PRICE_API_SOURCE, timeout=10):
 
         self.valid_sources = {
-            'coinmarketcap': self.coinmarketcap,
-            'blockchaininfo': self.blockchaininfo,
-            'gdax': self.gdax,
-            'bitstamp': self.bitstamp,
+            'coinmarketcap.com': self.coinmarketcap,
         }
 
         self.currency = currency
