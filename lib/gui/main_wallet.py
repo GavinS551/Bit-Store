@@ -211,6 +211,10 @@ class _SendDisplay(ttk.Frame):
         ttk.Frame.__init__(self, master, padding=5)
         self.main_wallet = main_wallet
 
+        # NB: Most tk Variables are defined as string vars, so floats can be
+        # represented without scientific notation, using the utils function
+        # "float_to_str"
+
         self.btc_wallet = self.main_wallet.root.btc_wallet
         # initialise txn with no outputs to prevent race condition when accessing txn size
         # (size wont be accurate though, obviously)
@@ -554,6 +558,12 @@ class _SendDisplay(ttk.Frame):
 
     def sign_transaction_window(self):
 
+        # make sure that what the gui is adding up, and what the transaction
+        # instance actually totals to, are equal
+        tx_total = sum(self.transaction.outputs_amounts.values()) + self.transaction.fee
+        assert self.to_satoshis(float(self.total_cost_var.get())) == tx_total
+        assert self.to_satoshis(float(self.total_fee_var.get())) == self.transaction.fee
+
         window = tk.Toplevel(self)
         window.iconbitmap(self.main_wallet.root.ICON)
 
@@ -567,12 +577,10 @@ class _SendDisplay(ttk.Frame):
         @utils.threaded
         def sign_and_broadcast(load_window, password):
 
-            def on_copy_txid():
-                self.main_wallet.root.clipboard_clear()
-                self.main_wallet.root.clipboard_append(self.transaction.txn.txid)
-
             self.btc_wallet.sign_transaction(self.transaction, password)
-            response_status = blockchain.broadcast_transaction(self.transaction.txn.hexlify())
+            response_status = blockchain.broadcast_transaction(self.transaction.hex_txn)
+
+            signed_txid = self.transaction.txid
 
             # stop txn making thread and clear inputs, after transaction has
             # been broadcast and is final
@@ -585,19 +593,24 @@ class _SendDisplay(ttk.Frame):
                                                            '(Please check your internet connection)')
                 return
 
+            def on_copy_txid():
+                self.main_wallet.root.clipboard_clear()
+                self.main_wallet.root.clipboard_append(signed_txid)
+                self.main_wallet.root.update()
+
             load_window.destroy()
             sent_window = tk.Toplevel(self)
             sent_window.iconbitmap(self.main_wallet.root.ICON)
             title_ = ttk.Label(sent_window, text='Transaction Sent!', font=bold_title)
             title_.grid(padx=20, pady=20)
 
-            txid = ttk.Label(sent_window, text=f'TXID: {self.transaction.txn.txid}',
+            txid = ttk.Label(sent_window, text=f'TXID: {signed_txid}',
                              font=bold_small)
             txid.grid(padx=20, pady=20)
 
             button_frame_ = ttk.Frame(sent_window)
 
-            ok_button = ttk.Button(button_frame_, text='OK', command=lambda: sent_window.destroy())
+            ok_button = ttk.Button(button_frame_, text='OK', command=sent_window.destroy)
             ok_button.grid(row=0, column=0, padx=10, pady=10)
 
             copy_button = ttk.Button(button_frame_, text='Copy TXID', command=on_copy_txid)
