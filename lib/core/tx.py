@@ -200,6 +200,10 @@ class Transaction:
         self.weight = self.txn.weight
 
         self.remove_dust_change()
+        
+    @property
+    def txid(self):
+        return self.txn.txid
 
     @staticmethod
     def get_hash160(address):
