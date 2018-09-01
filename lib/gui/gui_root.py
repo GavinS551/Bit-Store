@@ -139,8 +139,8 @@ class _Settings(tk.Toplevel):
         self.root = root
 
         # settings variables, set to current values
-        self.spend_unconfirmed_outs = tk.IntVar(value=config.SPEND_UNCONFIRMED_UTXOS)
-        self.spend_utxos_individually = tk.IntVar(value=config.SPEND_UTXOS_INDIVIDUALLY)
+        self.spend_unconfirmed_outs = tk.BooleanVar(value=config.SPEND_UNCONFIRMED_UTXOS)
+        self.spend_utxos_individually = tk.BooleanVar(value=config.SPEND_UTXOS_INDIVIDUALLY)
         self.blockchain_api = tk.StringVar(value=config.BLOCKCHAIN_API_SOURCE)
         self.price_api = tk.StringVar(value=config.PRICE_API_SOURCE)
         self.fiat_unit = tk.StringVar(value=config.FIAT)
