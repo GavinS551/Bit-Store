@@ -200,10 +200,18 @@ class Transaction:
         self.weight = self.txn.weight
 
         self.remove_dust_change()
-        
+
     @property
     def txid(self):
         return self.txn.txid
+
+    @property
+    def hex_txn(self):
+        """ returns the hex representation of a btc transaction. Segwit txns
+        can only be hex serialised after they are signed, as btcpy represents
+        blank witnesses as un-serialisable None. Unsigned segwit txns return None
+        """
+        return self.txn.hexlify() if self.is_signed or not self.is_segwit else None
 
     @staticmethod
     def get_hash160(address):
