@@ -5,7 +5,7 @@ import os
 import traceback
 
 from . import ttk_simpledialog as simpledialog
-from ..core import config, wallet, utils
+from ..core import config, wallet
 
 from .wallet_select import WalletSelect
 from .wallet_creation import (WalletCreation, WalletCreationLoading,
@@ -146,6 +146,16 @@ class _Settings(tk.Toplevel):
         self.fiat_unit = tk.StringVar(value=config.FIAT)
         self.btc_units = tk.StringVar(value=config.BTC_UNITS)
 
+        # config variable names as keys with their corresponding tk Variables
+        self.config_vars = {
+            'SPEND_UNCONFIRMED_UTXOS': self.spend_unconfirmed_outs,
+            'SPEND_UTXOS_INDIVIDUALLY': self.spend_utxos_individually,
+            'BLOCKCHAIN_API_SOURCE': self.blockchain_api,
+            'PRICE_API_SOURCE': self.price_api,
+            'FIAT': self.fiat_unit,
+            'BTC_UNITS': self.btc_units
+        }
+
         self.notebook = ttk.Notebook(self)
 
         self.transaction_settings = ttk.Frame(self.notebook, padding=10)
@@ -182,22 +192,13 @@ class _Settings(tk.Toplevel):
         otherwise True
         """
 
-        key_var = {
-            'SPEND_UNCONFIRMED_UTXOS': self.spend_unconfirmed_outs,
-            'SPEND_UTXOS_INDIVIDUALLY': self.spend_utxos_individually,
-            'BLOCKCHAIN_API_SOURCE': self.blockchain_api,
-            'PRICE_API_SOURCE': self.price_api,
-            'FIAT': self.fiat_unit,
-            'BTC_UNITS': self.btc_units
-        }
-
         # if no settings were changed
-        if all([v.get() == getattr(config, k) for k, v in key_var.items()]):
+        if all([v.get() == getattr(config, k) for k, v in self.config_vars.items()]):
             return False
 
         else:
             data = {}
-            for k, v in key_var.items():
+            for k, v in self.config_vars.items():
                 data[k] = v.get()
 
             config.write_values(**data)
