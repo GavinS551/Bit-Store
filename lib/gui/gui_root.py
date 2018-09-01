@@ -134,6 +134,7 @@ class _Settings(tk.Toplevel):
         self.wm_iconbitmap(RootApplication.ICON)
 
         self.resizable(False, False)
+        self.grab_set()
 
         self.root = root
 
@@ -170,15 +171,15 @@ class _Settings(tk.Toplevel):
     def on_save(self):
         new_settings = self._write_config_values()
 
+        self.destroy()
+
         if new_settings:
             tk.messagebox.showinfo('Settings',
                                    'Please restart the program for these changes to take effect.')
 
-        self.destroy()
-
     def _write_config_values(self):
         """ returns False if no data was written (i.e no settings changed),
-         otherwise True
+        otherwise True
         """
 
         key_var = {
