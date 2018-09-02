@@ -559,10 +559,18 @@ class _SendDisplay(ttk.Frame):
     def sign_transaction_window(self):
 
         # make sure that what the gui is adding up, and what the transaction
-        # instance actually totals to, are equal
+        # instance actually totals to, are equal.
         tx_total = sum(self.transaction.outputs_amounts.values()) + self.transaction.fee
         assert self.to_satoshis(float(self.total_cost_var.get())) == tx_total
         assert self.to_satoshis(float(self.total_fee_var.get())) == self.transaction.fee
+
+        # warn user about a dust output
+        if self.transaction.output_contains_dust:
+            tk.messagebox.showwarning('Dust Output',
+                                      'Warning: Transaction output contains a dust amount. '
+                                      'This is not recommended as the fee you pay will '
+                                      'cost more than what you are sending, and the transaction '
+                                      'may take longer to confirm.')
 
         window = tk.Toplevel(self)
         window.iconbitmap(self.main_wallet.root.ICON)
@@ -692,8 +700,9 @@ class _SendDisplay(ttk.Frame):
             dust_notify_label.grid(row=4, column=0, padx=20, pady=5, sticky='w')
 
             dust_msg = ttk.Label(info_frame, text=f'{utils.float_to_str(self.transaction.dust_change_amount / self.main_wallet.unit_factor)} '
-                                                  f'{self.main_wallet.display_units} will be added to the fee, as it is considered a '
-                                                  f'"dust" amount, and would be un-spendable if sent to a change address',
+                                                  f'{self.main_wallet.display_units} will be added to the fee, because if it '
+                                                  f'was sent to a change address it would be un-spendable\n'
+                                                  f'(the transaction fee needed to spend it would cost more than what the amount is worth)',
                                  font=small, wraplength=400, justify=tk.CENTER)
             dust_msg.grid(row=4, column=1, padx=20)
 
