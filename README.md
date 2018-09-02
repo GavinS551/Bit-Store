@@ -17,15 +17,15 @@ Python >= 3.7 or is required.
 Use pip to install all dependencies written in requirements.txt, by using the following command in
 the root directory of the program:
 
-'''
+```
 pip install -r requirements.txt
-'''
+```
 
 Then the program can be run by running the main.pyfile  in the root of the directory.
 
-'''
+```
 python main.py
-'''
+```
 
 And a tkinter gui window should be displayed.
 
@@ -33,9 +33,9 @@ And a tkinter gui window should be displayed.
 
 To run all tests defined in tests/, use the following command in the root of the directory:
 
-'''
+```
 python test.py
-'''
+```
 
 This will run all tests that are written in the tests directory.
 
