@@ -8,7 +8,7 @@ from threading import Event
 import qrcode
 from PIL import ImageTk
 
-from ..core import structs, config, utils, blockchain
+from ..core import structs, config, utils
 from ..exceptions.tx_exceptions import InsufficientFundsError
 
 
@@ -586,7 +586,7 @@ class _SendDisplay(ttk.Frame):
         def sign_and_broadcast(load_window, password):
 
             self.btc_wallet.sign_transaction(self.transaction, password)
-            response_status = blockchain.broadcast_transaction(self.transaction.hex_txn)
+            response_status = self.btc_wallet.broadcast_transaction(self.transaction)
 
             signed_txid = self.transaction.txid
 

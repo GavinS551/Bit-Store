@@ -165,7 +165,7 @@ class Wallet:
         for address in addresses:
 
             if address not in r_addrs + c_addrs:
-                raise ValueError('Address not found!)')
+                raise ValueError('Address not found)')
 
             else:
 
@@ -176,10 +176,6 @@ class Wallet:
                 else:
                     addr_index = c_addrs.index(address)
                     u_addrs.append(c_addrs.pop(addr_index))
-
-        # don't unnecessarily write to file
-        if not addresses:
-            return
 
         self.data_store.write_value(**{'ADDRESSES_RECEIVING': r_addrs,
                                        'ADDRESSES_CHANGE': c_addrs,
@@ -218,6 +214,13 @@ class Wallet:
         wif_keys = self.get_wif_keys(password, input_addresses)
 
         unsigned_txn.sign(wif_keys)
+
+    @staticmethod
+    def broadcast_transaction(signed_txn):
+        if not signed_txn.is_signed:
+            raise ValueError('Transaction must be signed')
+
+        return blockchain.broadcast_transaction(signed_txn.hex_txn)
 
     @property
     def xpub(self):
@@ -290,18 +293,6 @@ class Wallet:
 
     # attributes below require a password to return
 
-    def get_address_wifkey_pairs(self, password):
-
-        if self.data_store.validate_password(password):
-
-            _bip32 = hd.HDWallet(key=self.get_xpriv(password), path=self.path,
-                                 segwit=self.is_segwit, gap_limit=self.gap_limit)
-
-            return _bip32.address_wifkey_pairs()
-
-        else:
-            raise data.IncorrectPasswordError
-
     def get_mnemonic(self, password):
 
         if self.data_store.validate_password(password):
@@ -337,6 +328,7 @@ class Wallet:
 class WatchOnlyWallet(Wallet):
     @classmethod
     def new_wallet(cls, name, password, hd_wallet_obj, offline=False):
+        # override
         raise NotImplementedError
 
     def sign_transaction(self, unsigned_txn, password):
