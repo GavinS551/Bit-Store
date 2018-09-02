@@ -9,19 +9,17 @@ Download and extract the zip file containing the program.
 
 ### Prerequisites
 
-The program is only guaranteed to be compatible with Windows. (Tested on Windows 10)
-Python >= 3.7 or is required.
+The program is only guaranteed to be compatible with Windows (Tested on Windows 10). Python >= 3.7 or is required.
 
 ### Installing
 
-Use pip to install all dependencies written in requirements.txt, by using the following command in
-the root directory of the program:
+Use pip to install all dependencies, by using the following command in the root directory of the program:
 
 ```
 pip install -r requirements.txt
 ```
 
-Then the program can be run by running the main.pyfile  in the root of the directory.
+Then the program can be started by running the main.py file in the root of the directory.
 
 ```
 python main.py
@@ -31,13 +29,11 @@ And a tkinter gui window should be displayed.
 
 ## Running Tests
 
-To run all tests defined in tests/, use the following command in the root of the directory:
+To run all tests defined in the tests directory, use the following command in the root of the directory:
 
 ```
 python test.py
 ```
-
-This will run all tests that are written in the tests directory.
 
 ## Built With
 
