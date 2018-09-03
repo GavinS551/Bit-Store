@@ -568,7 +568,7 @@ class _SendDisplay(ttk.Frame):
         if self.transaction.output_contains_dust:
             tk.messagebox.showwarning('Dust Output',
                                       'Warning: Transaction output contains a dust amount. '
-                                      'This is not recommended as the fee you pay will '
+                                      'This is not recommended as the fee you pay may '
                                       'cost more than what you are sending, and the transaction '
                                       'may take longer to confirm.')
 
@@ -590,16 +590,16 @@ class _SendDisplay(ttk.Frame):
 
             signed_txid = self.transaction.txid
 
-            # stop txn making thread and clear inputs, after transaction has
-            # been broadcast and is final
-            self.on_clear()
-
             # if the broadcast failed
             if not response_status:
                 load_window.destroy()
                 tk.messagebox.showerror('Broadcast Error', 'Unable to broadcast transaction! '
                                                            '(Please check your internet connection)')
                 return
+
+            # stop txn making thread and clear inputs, after transaction has
+            # been broadcast and is final
+            self.on_clear()
 
             def on_copy_txid():
                 self.main_wallet.root.clipboard_clear()
