@@ -134,7 +134,7 @@ class MainWallet(ttk.Frame):
     def _draw_api_status(self):
         status_frame = ttk.Frame(self)
 
-        status_label = ttk.Label(status_frame, textvariable=self.api_thread_status)
+        status_label = ttk.Label(status_frame, textvariable=self.api_thread_status, font=self.root.tiny_font)
         status_label.grid(row=0, column=0)
 
         status_frame.grid(pady=(10, 0))
