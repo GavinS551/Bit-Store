@@ -14,6 +14,9 @@ else:
     DATA_DIR = os.path.join(pathlib.Path.home(), '.Bit-Store')
 
 
+WALLET_DATA_DIR = os.path.join(DATA_DIR, 'wallets')
+
+
 CONFIG_FILE = os.path.join(DATA_DIR, 'config.json')
 
 
