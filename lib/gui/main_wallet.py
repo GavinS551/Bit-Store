@@ -476,7 +476,7 @@ class _SendDisplay(ttk.Frame):
         self.total_cost_var.set(total_cost)
         self.total_fiat_cost_var.set(total_fiat_cost)
 
-    @utils.threaded(daemon=True)
+    @utils.threaded(daemon=True, name='GUI_MAKE_TXN_THREAD')
     def _make_transaction(self):
         """ this method should be started before first key press on amount entries,
         so a size will be calculated already for fee
@@ -582,7 +582,7 @@ class _SendDisplay(ttk.Frame):
         # block interaction with root window
         window.grab_set()
 
-        @utils.threaded
+        @utils.threaded(daemon=True, name='GUI_SIGN_AND_BROADCAST_THREAD')
         def sign_and_broadcast(load_window, password):
 
             self.btc_wallet.sign_transaction(self.transaction, password)
