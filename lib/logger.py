@@ -30,7 +30,7 @@ class _FileHandlerManager:
     to return a FileHandler object to be used with logging module
     """
 
-    def __init__(self, log_dir, max_logs=10):
+    def __init__(self, log_dir, max_logs):
         self.log_dir = log_dir
         self.max_logs = max_logs
 
