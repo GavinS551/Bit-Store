@@ -4,6 +4,7 @@ from tkinter import ttk, messagebox
 import time
 import string
 from threading import Event
+import datetime
 
 import qrcode
 from PIL import ImageTk
@@ -16,7 +17,7 @@ class MainWallet(ttk.Frame):
 
     def __init__(self, root):
         self.root = root
-        ttk.Frame.__init__(self, self.root.master_frame, padding=10)
+        ttk.Frame.__init__(self, self.root.master_frame, padding=5)
 
         self.refresh_data_rate = 1000  # milliseconds
 
@@ -32,6 +33,8 @@ class MainWallet(ttk.Frame):
         self.unconfirmed_fiat_wallet_balance = tk.IntVar()
 
         self.next_receiving_address = tk.StringVar()
+
+        self.api_thread_status = tk.StringVar()
 
     def gui_draw(self):
         title_label = ttk.Label(self, text=self.root.btc_wallet.name,
@@ -56,6 +59,7 @@ class MainWallet(ttk.Frame):
 
         self._draw_bottom_info_bar()
         self._draw_menu_bar()
+        self._draw_api_status()
         self._refresh_data()
 
     def _draw_menu_bar(self):
@@ -127,6 +131,14 @@ class MainWallet(ttk.Frame):
 
         bottom_info_frame.grid()
 
+    def _draw_api_status(self):
+        status_frame = ttk.Frame(self)
+
+        status_label = ttk.Label(status_frame, textvariable=self.api_thread_status)
+        status_label.grid(row=0, column=0)
+
+        status_frame.grid(pady=(10, 0))
+
     def _refresh_data(self):
         self.wallet_balance.set(self.root.btc_wallet.wallet_balance / self.unit_factor)
         self.unconfirmed_wallet_balance.set(self.root.btc_wallet.unconfirmed_wallet_balance / self.unit_factor)
@@ -135,6 +147,24 @@ class MainWallet(ttk.Frame):
         self.unconfirmed_fiat_wallet_balance.set(self.root.btc_wallet.unconfirmed_fiat_wallet_balance)
 
         self.next_receiving_address.set(self.root.btc_wallet.receiving_addresses[0])
+
+        updater_thread = self.root.btc_wallet.updater_thread
+        status_enum = updater_thread.ApiConnectionStatus
+        timestamp = updater_thread.connection_timestamp
+
+        if updater_thread.connection_status == status_enum.first_attempt:
+            status = 'API Connection Status: Connecting...'
+
+        elif updater_thread.connection_status == status_enum.error:
+            status = f'API Connection Status: Last API call failed'
+
+        elif updater_thread.connection_status == status_enum.good:
+            status = f'API Connection Status: Updated at {datetime.datetime.fromtimestamp(timestamp).strftime("%H:%M:%S")}'
+
+        else:
+            status = 'Error: Unable to retrieve API status'
+
+        self.api_thread_status.set(status)
 
         self.root.after(self.refresh_data_rate, self._refresh_data)
 
