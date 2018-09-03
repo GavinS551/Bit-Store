@@ -59,7 +59,7 @@ class _FileHandlerManager:
         full_path = self.full_log_path(name)
 
         # remove the oldest log file if there are more than max logs
-        if len(self.logs) > self.max_logs:
+        if len(self.logs) >= self.max_logs:
             os.remove(self.full_log_path(self.time_sorted_logs[0]))
 
         with open(full_path, 'w+'):
