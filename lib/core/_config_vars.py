@@ -17,6 +17,9 @@ else:
 CONFIG_FILE = os.path.join(DATA_DIR, 'config.json')
 
 
+LOGGER_DIR = os.path.join(DATA_DIR, 'logs')
+
+
 DEFAULT_CONFIG = {
 
     'BIP32_PATHS': {
