@@ -91,7 +91,7 @@ class Wallet:
         if not isinstance(hd_wallet_obj, hd.HDWallet):
             raise ValueError('hd_wallet_obj must be an instance of Bip32 class')
 
-        dir_ = os.path.join(config.DATA_DIR, name)
+        dir_ = os.path.join(config.WALLET_DATA_DIR, name)
         data_file_path = os.path.join(dir_, WALLET_DATA_FILE_NAME)
 
         # Everything is in a try/except block so files get cleaned up
@@ -145,7 +145,7 @@ class Wallet:
             raise
 
     def __init__(self, name, password, offline=False):
-        data_file_path = os.path.join(config.DATA_DIR, name, 'wallet_data')
+        data_file_path = os.path.join(config.WALLET_DATA_DIR, name, 'wallet_data')
         self.data_store = data.DataStore(data_file_path, password)
 
         if not offline:

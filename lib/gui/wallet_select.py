@@ -73,8 +73,8 @@ class WalletSelect(ttk.Frame):
     @property
     def wallets(self):
         # list of all directories in program's DATA_DIR (i.e all wallets)
-        return [w for w in os.listdir(config.DATA_DIR)
-                if os.path.isdir(os.path.join(config.DATA_DIR, w))]
+        return [w for w in os.listdir(config.WALLET_DATA_DIR)
+                if os.path.isdir(os.path.join(config.WALLET_DATA_DIR, w))]
 
     def select_wallet(self):
         try:
