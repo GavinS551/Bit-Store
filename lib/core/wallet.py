@@ -2,6 +2,7 @@ import os
 import threading
 import shutil
 import enum
+import time
 
 import requests.exceptions
 
@@ -43,6 +44,8 @@ class _ApiDataUpdaterThread(threading.Thread):
         self.connection_exception = None
         self.connection_status = self.ApiConnectionStatus.first_attempt
 
+        self.connection_timestamp = None
+
     def run(self):
 
         def _update_api_data(data_keys):
@@ -70,6 +73,8 @@ class _ApiDataUpdaterThread(threading.Thread):
                 }
                 self.connection_exception = None
                 self.connection_status = self.ApiConnectionStatus.good
+
+                self.connection_timestamp = time.time()
 
             except requests.RequestException as ex:
 
