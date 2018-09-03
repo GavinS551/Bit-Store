@@ -1,6 +1,7 @@
 import os
 import threading
 import shutil
+import enum
 
 import requests.exceptions
 
@@ -13,6 +14,12 @@ WALLET_DATA_FILE_NAME = 'wallet_data'
 
 
 class _ApiDataUpdaterThread(threading.Thread):
+
+    class ApiConnectionStatus(enum.Enum):
+
+        good = 0
+        first_attempt = 1
+        error = 2
 
     def __init__(self, wallet_instance, refresh_rate):
 
@@ -33,7 +40,8 @@ class _ApiDataUpdaterThread(threading.Thread):
         self.refresh_rate = refresh_rate
         # a requests Exception, stored if the last data request failed
         # if last request was successful, store False
-        self.connection_error = None
+        self.connection_exception = None
+        self.connection_status = self.ApiConnectionStatus.first_attempt
 
     def run(self):
 
@@ -60,11 +68,13 @@ class _ApiDataUpdaterThread(threading.Thread):
                     'PRICE': price_data.price,
                     'UNSPENT_OUTS': bd.unspent_outputs
                 }
-                self.connection_error = False
+                self.connection_exception = None
+                self.connection_status = self.ApiConnectionStatus.good
 
             except requests.RequestException as ex:
 
-                self.connection_error = ex
+                self.connection_exception = ex
+                self.connection_status = self.ApiConnectionStatus.error
 
                 self.event.wait(self.refresh_rate)
 
