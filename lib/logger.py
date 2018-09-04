@@ -60,7 +60,19 @@ class _FileHandlerManager:
 
         # remove the oldest log file if there are more than max logs
         if len(self.logs) >= self.max_logs:
-            os.remove(self.full_log_path(self.time_sorted_logs[0]))
+            i = 0
+
+            # to support multiple instances of the program running
+            # (if one was left open for a while, and others were opened/closed,
+            # the oldest log file may still be open in the python process)
+            while i < len(self.logs):
+
+                try:
+                    os.remove(self.full_log_path(self.time_sorted_logs[i]))
+                except PermissionError:
+                    i += 1
+                else:
+                    break
 
         with open(full_path, 'w+'):
             pass
