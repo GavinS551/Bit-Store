@@ -193,17 +193,17 @@ class Transaction:
 
         self._choose_utxos()
 
-        self.txn = self._get_unsigned_txn()
+        self._txn = self._get_unsigned_txn()
 
         # can be used to determine correct fees for transaction
-        self.size = self.txn.vsize
-        self.weight = self.txn.weight
+        self.size = self._txn.vsize
+        self.weight = self._txn.weight
 
         self._remove_dust_change()
 
     @property
     def txid(self):
-        return self.txn.txid
+        return self._txn.txid
 
     @property
     def hex_txn(self):
@@ -211,7 +211,7 @@ class Transaction:
         can only be hex serialised after they are signed, as btcpy represents
         blank witnesses as un-serialisable None. Unsigned segwit txns return None
         """
-        return self.txn.hexlify() if self.is_signed or not self.is_segwit else None
+        return self._txn.hexlify() if self.is_signed or not self.is_segwit else None
 
     @staticmethod
     def get_hash160(address):
@@ -307,7 +307,10 @@ class Transaction:
         """
         unordered_solvers = []
         unordered_tx_outs = []
-        unsigned = self._get_unsigned_txn()
+        unsigned = self._txn
+
+        if self.is_signed:
+            raise ValueError('cannot sign _txn (already signed)')
 
         for key in wif_keys:
             # create btcpy PrivateKeys from input WIF format keys
@@ -354,11 +357,11 @@ class Transaction:
         return signed
 
     def _recalculate_size(self):
-        self.size = self.txn.vsize
-        self.weight = self.txn.weight
+        self.size = self._txn.vsize
+        self.weight = self._txn.weight
 
     def sign(self, wif_keys):
-        self.txn = self._get_signed_txn(wif_keys)
+        self._txn = self._get_signed_txn(wif_keys)
         self._recalculate_size()
         self.is_signed = True
 
@@ -369,9 +372,9 @@ class Transaction:
         """
         # calculations -> https://goo.gl/HrquvH
         if self.is_segwit:
-            return round(self.size + (len(self.txn.ins) * (23 + 1 + ((1 + 1 + 72 + 1 + 33) / 4)) + 0.5))
+            return round(self.size + (len(self._txn.ins) * (23 + 1 + ((1 + 1 + 72 + 1 + 33) / 4)) + 0.5))
         else:
-            return self.size + (len(self.txn.ins) * (1 + 72 + 33))
+            return self.size + (len(self._txn.ins) * (1 + 72 + 33))
 
     def _remove_dust_change(self):
         if self.is_signed:
@@ -388,9 +391,9 @@ class Transaction:
         script = self.get_output_script(change_dust_addr)
         script_pubkey = script(bytearray(self.get_hash160(change_dust_addr)))
 
-        for o in self.txn.outs:
+        for o in self._txn.outs:
             if o.script_pubkey == script_pubkey:
-                self.txn.outs.remove(o)
+                self._txn.outs.remove(o)
 
         self._recalculate_size()
         self.dust_change_amount += change_dust_amount
@@ -400,7 +403,7 @@ class Transaction:
         # re-run all logic that will be effected by fee change, i.e there might
         # need to be more chosen inputs to make up for the increased fee
         self._choose_utxos()
-        self.txn = self._get_unsigned_txn()
+        self._txn = self._get_unsigned_txn()
         self._remove_dust_change()  # size is recalculated here
         self.is_signed = False
 

@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-import time
 import string
 from threading import Event
 import datetime
@@ -529,7 +528,8 @@ class _SendDisplay(ttk.Frame):
                 self.total_fee.config(foreground=colour)
 
         while not self._make_transaction_thread_event.is_set():
-            time.sleep(0.05)
+            # to prevent the gui window from lagging
+            self._make_transaction_thread_event.wait(0.05)
 
             amount, fee_entry = 0, 0
 
