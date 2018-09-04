@@ -199,7 +199,7 @@ class Transaction:
         self.size = self.txn.vsize
         self.weight = self.txn.weight
 
-        self.remove_dust_change()
+        self._remove_dust_change()
 
     @property
     def txid(self):
@@ -373,7 +373,7 @@ class Transaction:
         else:
             return self.size + (len(self.txn.ins) * (1 + 72 + 33))
 
-    def remove_dust_change(self):
+    def _remove_dust_change(self):
         if self.is_signed:
             raise Exception('Cannot remove outputs from signed transaction')
 
@@ -401,7 +401,7 @@ class Transaction:
         # need to be more chosen inputs to make up for the increased fee
         self._choose_utxos()
         self.txn = self._get_unsigned_txn()
-        self.remove_dust_change()  # size is recalculated here
+        self._remove_dust_change()  # size is recalculated here
         self.is_signed = False
 
     def change_fee_sat_byte(self, sat_byte):
