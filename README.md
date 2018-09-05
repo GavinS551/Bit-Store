@@ -9,7 +9,7 @@ Download and extract the zip file containing the program.
 
 ### Prerequisites
 
-The program is only guaranteed to be compatible with Windows (Tested on Windows 10). Python >= 3.7 or is required.
+The program is only guaranteed to be compatible with Windows (Tested on Windows 10). Python 3.6 is required.
 
 ### Installing
 
@@ -25,7 +25,13 @@ Then the program can be started by running the main.py file in the root of the d
 python main.py
 ```
 
-And a tkinter gui window should be displayed.
+or alternatively, you can build a standalone .exe yourself (windows only) by typing:
+
+```
+python build.py
+```
+
+and the .exe will be in the created "dist" directory, and can be moved elsewhere.
 
 ## Running Tests
 
@@ -45,6 +51,8 @@ python test.py
 * [pytest](https://pypi.org/project/pytest/) - testing suite used
 * [qrcode](https://pypi.org/project/qrcode/) - creating and displaying qrcodes in the gui
 * [requests](https://pypi.org/project/requests/) - for making api calls to various bitcoin apis
+* [bip32utils](https://github.com/prusnak/bip32utils) - implementation of Bip32 key derivation
+* [pyinstaller](https://pypi.org/project/PyInstaller/) - packaging scripts into standalone .exe
 
 ## Acknowledgments
 
