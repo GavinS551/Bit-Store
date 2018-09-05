@@ -1,15 +1,14 @@
-""" data structures that make handling wallet data simpler (should be treated like they are immutable)"""
+""" data structures that make handling wallet data simpler """
 
-from dataclasses import dataclass
+from typing import NamedTuple
 from datetime import datetime
 import functools
 
 from . import config
 
 
-@dataclass(frozen=True)
-class UTXOData:
-    """ dataclass that makes handling utxo data in standard format easier """
+class UTXOData(NamedTuple):
+    """ NamedTuple that makes handling utxo data in standard format easier """
     txid: str
     output_num: int
     address: str
@@ -26,9 +25,8 @@ class UTXOData:
         return [self.txid, self.output_num, self.address, self.script, self.value, self.confirmations]
 
 
-@dataclass(frozen=True)
-class TransactionData:
-    """ dataclass for handling transactions in standard format """
+class TransactionData(NamedTuple):
+    """ NamedTuple for handling transactions in standard format """
 
     txid: str
     date: str
