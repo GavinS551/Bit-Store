@@ -12,10 +12,6 @@ from .utils import IterableQueue
 from ..exceptions.hd_exceptions import *
 
 
-WORDLIST = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'wordlist.txt')
-PBKDF2_HMAC_ITERATIONS = 2048  # used when converting mnemonic to seed
-
-
 class HDWallet:
     """ implementation of the hierarchical deterministic wallet, implementing the BIP39 standard """
 
@@ -24,12 +20,14 @@ class HDWallet:
                       segwit=True, gap_limit=20, testnet=False, multi_processing=True):
         """ Generates a HDWallet class from a mnemonic """
 
+        pbkdf2_hmac_iterations = 2048
+
         if not cls.check_mnemonic(mnemonic):
             raise InvalidMnemonic(f'{mnemonic} is not a valid mnemonic')
 
         seed = hashlib.pbkdf2_hmac('sha512', mnemonic.encode('utf-8'),
                                    ('mnemonic' + passphrase).encode('utf-8'),
-                                   PBKDF2_HMAC_ITERATIONS)
+                                   pbkdf2_hmac_iterations)
 
         return cls(BIP32Key.fromEntropy(seed, testnet=testnet).ExtendedKey(),
                    path, segwit, mnemonic, gap_limit, multi_processing)
@@ -80,8 +78,16 @@ class HDWallet:
         self._wif_key_queue = _manager.Queue()
 
     @staticmethod
-    def gen_mnemonic(length=12):
+    def wordlist():
+        wl = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'wordlist.txt')
+        with open(wl, 'r') as word_file:
+            return word_file.read().split()
+
+    @classmethod
+    def gen_mnemonic(cls, length=12):
         """ Returns a new mnemonic"""
+        wordlist = cls.wordlist()
+
         if length not in [12, 15, 18, 21, 24]:
             raise ValueError('Mnemonic must be either 12, 15, 18, 21 or 24 words long')
 
@@ -95,11 +101,10 @@ class HDWallet:
         }
 
         # Checking integrity of word list file
-        with open(WORDLIST, 'r') as w:
-            wl_hash = '2a80fc2c95f3a4b0a5769764df251820'
-            if wl_hash != hashlib.md5(''.join(w.read().split()).encode()).hexdigest():
-                raise Exception('ERROR: Wordlist is not BIP39 valid '
-                                '(INVALID MD5 HASH)')
+        wl_hash = '2a80fc2c95f3a4b0a5769764df251820'
+        if wl_hash != hashlib.md5(''.join(wordlist).encode()).hexdigest():
+            raise Exception('ERROR: Wordlist is not BIP39 valid '
+                            '(INVALID MD5 HASH)')
 
         # length of initial entropy in bytes
         ent_len = len_v_byte_size[length]
@@ -115,21 +120,18 @@ class HDWallet:
 
         word_indexes = [int(b, 2) for b in split_bits]
 
-        with open(WORDLIST, 'r') as w:
-            word_list = w.read().split()
-            mnemonic = []
-            for i in word_indexes:
-                mnemonic.append(word_list[i])
+        mnemonic = []
+        for i in word_indexes:
+            mnemonic.append(wordlist[i])
 
         # Returns the mnemonic in string format
         return ' '.join(mnemonic)
 
     # Adapted from <https://tinyurl.com/ycxfjmd6>
-    @staticmethod
-    def check_mnemonic(mnemonic):
+    @classmethod
+    def check_mnemonic(cls, mnemonic):
         """ Returns True if mnemonic is valid and vice-versa"""
-        with open(WORDLIST, 'r') as w:
-            wordlist = w.read().split()
+        wordlist = cls.wordlist()
 
         mnemonic = mnemonic.split(' ')
 
