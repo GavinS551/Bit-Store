@@ -1,8 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-from dataclasses import dataclass
-from typing import Any
+from typing import NamedTuple, Any
 
 from ..core import config, wallet, hd, utils
 
@@ -136,8 +135,7 @@ class WalletCreation(ttk.Frame):
             # show loading frame after all error checks are complete
             self.root.show_frame('WalletCreationLoading')
 
-            @dataclass
-            class WalletCreationData:
+            class WalletCreationData(NamedTuple):
 
                 name: str
                 password: str
