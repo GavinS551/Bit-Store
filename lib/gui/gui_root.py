@@ -55,7 +55,10 @@ class RootApplication(tk.Tk):
 
         self.wm_title('Bit-Store')
         self.iconbitmap(self.ICON)
+        
         self.style = ttk.Style()
+        if platform.system() == 'Linux':
+            self.style.theme_use('clam')
         self.set_style()
 
         self.master_frame = ttk.Frame(self, padding=20)
