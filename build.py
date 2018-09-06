@@ -1,5 +1,3 @@
-""" Windows Only """
-
 import os
 
 os.system(r'py -3.6 -m PyInstaller main.py -w -i lib/gui/assets/bc_logo.ico '

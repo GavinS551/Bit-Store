@@ -1,6 +1,6 @@
 # Bit-Store
 
-A simple and lightweight bitcoin wallet, written in python 3.7. The gui is implemented using
+A simple and lightweight bitcoin wallet, written in python 3.6. The gui is implemented using
 python's tkinter library.
 
 ## Getting Started
