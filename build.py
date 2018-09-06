@@ -6,7 +6,7 @@ import sys
 if __name__ == '__main__':
 
     if platform.system() == 'Windows':
-        os.system(f'"{sys.executable}" -m PyInstaller main.py --debug -i lib/gui/assets/bc_logo.ico '
+        os.system(f'"{sys.executable}" -m PyInstaller main.py -w -i lib/gui/assets/bc_logo.ico '
                   '-p lib -F -n Bit-Store.exe --add-data lib/core/wordlist.txt;lib/core '
                   '--add-data lib/gui/assets/bc_logo.ico;lib/gui/assets')
 
