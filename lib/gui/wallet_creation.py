@@ -127,7 +127,7 @@ class WalletCreation(ttk.Frame):
             if not hd.HDWallet.check_path(path):
                 raise ValueError(f'Invalid path entered: ({path})')
 
-            if not None in [mnemonic, xkey]:
+            if None not in [mnemonic, xkey]:
                 raise ValueError('Either "mnemonic" or "xkey" arguments must be None')
             elif all(x is None for x in [mnemonic, xkey]):
                 raise ValueError('Either "mnemonic" or "xkey" arguments must have a value')
@@ -208,9 +208,9 @@ class WalletCreationShowMnemonic(ttk.Frame):
         title_label.grid(row=0, column=0, sticky='n', pady=20)
 
         info_label = ttk.Label(self, text='Please write down the mnemonic seed-phrase below '
-                                     'and keep it in a safe place as it contains all information '
-                                     'needed to spend your Bitcoin. This is how you can recover '
-                                     'your wallet in the future.',
+                                          'and keep it in a safe place as it contains all information '
+                                          'needed to spend your Bitcoin. This is how you can recover '
+                                          'your wallet in the future.',
                                font=self.root.small_font,
                                justify=tk.CENTER, wrap=520)
         info_label.grid(row=1, column=0)
@@ -220,7 +220,8 @@ class WalletCreationShowMnemonic(ttk.Frame):
         mnemonic_label.grid(row=2, column=0, pady=30)
 
         continue_button = ttk.Button(self, text='Continue',
-                                     command=lambda: self.root.show_frame('WalletCreationVerifyMnemonic', mnemonic=self.mnemonic))
+                                     command=lambda: self.root.show_frame('WalletCreationVerifyMnemonic',
+                                                                          mnemonic=self.mnemonic))
         continue_button.grid(row=3, column=0)
 
 
@@ -238,8 +239,8 @@ class WalletCreationVerifyMnemonic(ttk.Frame):
         title_label = ttk.Label(self, text='Mnemonic Verification:', font=self.root.bold_title_font)
         title_label.grid(row=0, column=0, sticky='n', pady=20)
 
-        mnemonic_entry_label = ttk.Label(self, text='Please enter the mnemonic that you wrote down in the previous window, '
-                                                    'to verify that you took it down correctly:',
+        mnemonic_entry_label = ttk.Label(self, text='Please enter the mnemonic that you wrote down in the previous '
+                                                    'window, to verify that you took it down correctly:',
                                          font=self.root.small_font, justify=tk.CENTER, wrap=520)
         mnemonic_entry_label.grid(row=1, column=0)
 
@@ -248,7 +249,8 @@ class WalletCreationVerifyMnemonic(ttk.Frame):
 
         button_frame = ttk.Frame(self)
 
-        back_button = ttk.Button(button_frame, text='Back', command=lambda: self.root.show_frame('WalletCreationShowMnemonic'))
+        back_button = ttk.Button(button_frame, text='Back',
+                                 command=lambda: self.root.show_frame('WalletCreationShowMnemonic'))
         back_button.grid(row=0, column=0, padx=10)
 
         continue_button = ttk.Button(button_frame, text='Continue', command=self._on_continue)
