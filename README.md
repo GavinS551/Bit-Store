@@ -9,7 +9,8 @@ Download and extract the zip file containing the program.
 
 ### Prerequisites
 
-The program is only guaranteed to be compatible with Windows (Tested on Windows 10). Python 3.6 is required.
+The program is only guaranteed to be compatible with Windows (Tested on Windows 10), however it should run fine
+on Linux/MacOS systems (including the use build.py to create a standalone executable). Python 3.6 is required.
 
 ### Installing
 
@@ -25,13 +26,14 @@ Then the program can be started by running the main.py file in the root of the d
 python main.py
 ```
 
-or alternatively, you can build a standalone .exe yourself (windows only) by typing:
+or alternatively, you can build a standalone executable yourself by typing:
 
 ```
 python build.py
 ```
 
-and the .exe will be in the created "dist" directory, and can be moved elsewhere.
+and the packaged executable will be in the created "dist" directory, and can be moved elsewhere. NB: Python 3.6
+is the latest version compatible with PyInstaller, so any python version higher than 3.6 will fail to create a usable executable.
 
 ## Running Tests
 
