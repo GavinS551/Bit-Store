@@ -30,7 +30,7 @@ DEFAULT_CONFIG = {
         'bip44path': "44'/0'/0'"
     },
 
-    'PRICE_API_SOURCE': 'coinmarketcap.com',
+    'PRICE_API_SOURCE': 'coinmarketcap',
 
     'BLOCKCHAIN_API_SOURCE': 'blockchain.info',
 
