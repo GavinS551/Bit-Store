@@ -40,7 +40,6 @@ class DataStore(Crypto):
         if not os.path.exists(self.file_path):
             raise ValueError(f'{self.file_path} does not exist!')
 
-
         with open(self.file_path, 'r') as d:
             # new file handling
             if d.read() == '':
@@ -109,7 +108,7 @@ class DataStore(Crypto):
                     if k in config.SENSITIVE_DATA:
                         # if value is a dict, encrypt all values
                         if isinstance(v, dict):
-                            data[k] = {x:self.encrypt(y) for x, y in v.items()}
+                            data[k] = {x: self.encrypt(y) for x, y in v.items()}
                         else:
                             data[k] = self.encrypt(v)
 

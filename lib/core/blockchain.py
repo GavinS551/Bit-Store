@@ -125,7 +125,7 @@ class _BlockchainBaseClass:
     @property
     def wallet_balance(self):
         """ Combined (balance/unconfirmed balance) of all addresses """
-        balance =  sum([b[1][0] for b in self.address_balances.items()])
+        balance = sum([b[1][0] for b in self.address_balances.items()])
         unconfirmed_balance = sum([b[1][1] for b in self.address_balances.items()])
 
         return [balance, unconfirmed_balance]

@@ -73,7 +73,6 @@ class MainWallet(ttk.Frame):
         options_menu = tk.Menu(menu_bar, tearoff=0)
         options_menu.add_command(label='Settings', command=self.root.settings_prompt)
 
-
         menu_bar.add_cascade(label='Wallet', menu=wallet_menu)
         menu_bar.add_cascade(label='Options', menu=options_menu)
 
@@ -158,7 +157,8 @@ class MainWallet(ttk.Frame):
             status = f'API Connection Status: Last API call failed'
 
         elif updater_thread.connection_status == status_enum.good:
-            status = f'API Connection Status: Updated at {datetime.datetime.fromtimestamp(timestamp).strftime("%H:%M:%S")}'
+            status = (f'API Connection Status: Updated at ' 
+                      f'{datetime.datetime.fromtimestamp(timestamp).strftime("%H:%M:%S")}')
 
         else:
             status = 'Error: Unable to retrieve API status'
@@ -216,7 +216,6 @@ class _TransactionDisplay(ttk.Frame):
         # and txns are stored as structs.TransactionData instances
         transactions = structs.Transactions.from_list(self.main_wallet.root.btc_wallet.transactions)
         sorted_txns = transactions.date_sorted_transactions()
-
 
         # satoshis will be divided by this number to get amount in terms of self.main_wallet.display_units
         f = self.main_wallet.unit_factor
@@ -296,7 +295,7 @@ class _SendDisplay(ttk.Frame):
 
         self.fee_entry = ttk.Entry(fee_frame, validate='key', validatecommand=fee_validate)
         self.fee_entry.bind('<KeyRelease>', lambda _: self.on_fee_key_press())  # event arg is ignored for now
-        self.fee_entry['state'] = tk.DISABLED # enabled after address entry
+        self.fee_entry['state'] = tk.DISABLED  # enabled after address entry
         self.fee_entry.grid(row=0, column=0, pady=5, padx=20, sticky='w')
 
         self.size_label_var = tk.IntVar(value=0)
@@ -340,7 +339,7 @@ class _SendDisplay(ttk.Frame):
 
         self.total_fiat_cost_var = tk.StringVar(value='0.0')
         self.total_fiat_cost = ttk.Label(total_cost_frame, textvariable=self.total_fiat_cost_var,
-                                    font=self.main_wallet.root.small_font, width=15)
+                                         font=self.main_wallet.root.small_font, width=15)
         self.total_fiat_cost.grid(row=0, column=3, padx=36, sticky='w')
 
         total_cost_frame.grid(row=3, column=1, pady=5, sticky='w')
@@ -496,7 +495,7 @@ class _SendDisplay(ttk.Frame):
             self.show_fee_labels()
 
         size = self.transaction.estimated_size()
-        total_fee =  utils.float_to_str(round(fee, self.main_wallet.max_decimal_places))
+        total_fee = utils.float_to_str(round(fee, self.main_wallet.max_decimal_places))
         total_cost = utils.float_to_str(round(amount + fee, self.main_wallet.max_decimal_places))
         total_fiat_cost = utils.float_to_str(self.to_fiat(float(total_cost)))
 
@@ -729,10 +728,12 @@ class _SendDisplay(ttk.Frame):
             dust_notify_label = ttk.Label(info_frame, text='NOTE:', font=bold_small)
             dust_notify_label.grid(row=4, column=0, padx=20, pady=5, sticky='w')
 
-            dust_msg = ttk.Label(info_frame, text=f'{utils.float_to_str(self.transaction.dust_change_amount / self.main_wallet.unit_factor)} '
-                                                  f'{self.main_wallet.display_units} will be added to the fee, because if it '
-                                                  f'was sent to a change address it would be un-spendable\n'
-                                                  f'(the transaction fee needed to spend it would cost more than what the amount is worth)',
+            dust_amt = utils.float_to_str(self.transaction.dust_change_amount / self.main_wallet.unit_factor)
+            dust_msg = ttk.Label(info_frame,
+                                 text=f'{dust_amt} {self.main_wallet.display_units} will be added to the fee, '
+                                      f'because if it was sent to a change address it would be un-spendable\n'
+                                      f'(the transaction fee needed to spend it would cost more than what the amount '
+                                      f'is worth)',
                                  font=small, wraplength=400, justify=tk.CENTER)
             dust_msg.grid(row=4, column=1, padx=20)
 
