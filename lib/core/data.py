@@ -67,6 +67,14 @@ class DataStore(Crypto):
         if not self.get_value('PASSWORD_HASH'):
             self.write_value(PASSWORD_HASH=hashlib.sha256(password.encode('utf-8')).hexdigest())
 
+    def change_password(self, new_password):
+        # make new fernet key from password
+        self._fernet = fernet.Fernet(self.key_from_password(new_password))
+        # store new password hash
+        self._data['PASSWORD_HASH'] = hashlib.sha256(new_password.encode('utf-8')).hexdigest()
+        # write data to file (will encrypt data using new fernet key)
+        self._write_to_file(self._data)
+
     def _check_password(self):
         try:
             # tries to decrypt data
