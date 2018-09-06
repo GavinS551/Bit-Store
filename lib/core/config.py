@@ -5,11 +5,12 @@ from ._config_vars import *
 
 
 def init():
-    # creates program data dir if it doesn't exist
-    if not os.path.isdir(DATA_DIR):
-        os.makedirs(DATA_DIR, exist_ok=True)
+    """ should be first function called in the program """
+    for dir_ in (DATA_DIR, WALLET_DATA_DIR, LOGGER_DIR):
+        if not os.path.isdir(dir_):
+            os.makedirs(dir_, exist_ok=True)
 
-    # and likewise for the config file itself
+    # config file init
     if not os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, 'w') as cf:
             json.dump(DEFAULT_CONFIG, cf, indent=4, sort_keys=False)
@@ -34,7 +35,6 @@ def write_values(**kwargs):
     utils.atomic_file_write(data, CONFIG_FILE)
 
 
-init()
 _CONFIG_VARS = read_file()
 
 
