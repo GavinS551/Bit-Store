@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox
 
 import os
 import traceback
+import platform
 
 from . import ttk_simpledialog as simpledialog
 from ..core import config, wallet
@@ -40,7 +41,7 @@ class TTKSimpleDialog(simpledialog._QueryString):
 
 class RootApplication(tk.Tk):
 
-    ICON = os.path.join(os.path.dirname(__file__), 'assets', 'bc_logo.ico')
+    ICON = os.path.join(os.path.dirname(__file__), 'assets', 'bc_logo.ico') if platform.system() == 'Windows' else None
 
     bold_title_font = (config.FONT, 14, 'bold')
     title_font = (config.FONT, 14)
