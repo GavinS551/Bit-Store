@@ -43,13 +43,13 @@ class RootApplication(tk.Tk):
 
     ICON = os.path.join(os.path.dirname(__file__), 'assets', 'bc_logo.ico') if platform.system() == 'Windows' else None
 
-    bold_title_font = (config.FONT, 14, 'bold')
-    title_font = (config.FONT, 14)
-    small_font = (config.FONT, 10)
-    tiny_font = (config.FONT, 8)
-
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
+
+        self.bold_title_font = (config.FONT, 14, 'bold')
+        self.title_font = (config.FONT, 14)
+        self.small_font = (config.FONT, 10)
+        self.tiny_font = (config.FONT, 8)
 
         self.resizable(False, False)
 

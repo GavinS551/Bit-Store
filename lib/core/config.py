@@ -1,4 +1,5 @@
 import json
+import functools
 
 from . import utils
 from ._config_vars import *
@@ -15,7 +16,14 @@ def init():
         with open(CONFIG_FILE, 'w') as cf:
             json.dump(DEFAULT_CONFIG, cf, indent=4, sort_keys=False)
 
+    # add new config variables into the file
+    missing_vars = set(DEFAULT_CONFIG) - {k for k in read_file() if k in DEFAULT_CONFIG}
+    write_values(**{k: DEFAULT_CONFIG[k] for k in missing_vars})
 
+    set_config_vars()
+
+
+@functools.lru_cache(maxsize=None)
 def read_file():
     with open(CONFIG_FILE, 'r') as c:
         return json.load(c)
@@ -35,27 +43,6 @@ def write_values(**kwargs):
     utils.atomic_file_write(data, CONFIG_FILE)
 
 
-_CONFIG_VARS = read_file()
-
-
-# CONFIG VARIABLES FROM FILE
-
-BIP32_PATHS = _CONFIG_VARS['BIP32_PATHS']
-
-PRICE_API_SOURCE = _CONFIG_VARS['PRICE_API_SOURCE']
-
-BLOCKCHAIN_API_SOURCE = _CONFIG_VARS['BLOCKCHAIN_API_SOURCE']
-
-FIAT = _CONFIG_VARS['FIAT']
-
-BTC_UNITS = _CONFIG_VARS['BTC_UNITS']
-
-FONT = _CONFIG_VARS['FONT']
-
-SPEND_UNCONFIRMED_UTXOS = _CONFIG_VARS['SPEND_UNCONFIRMED_UTXOS']
-
-SPEND_UTXOS_INDIVIDUALLY = _CONFIG_VARS['SPEND_UTXOS_INDIVIDUALLY']
-
-MAX_LOG_FILES_STORED = _CONFIG_VARS['MAX_LOG_FILES_STORED']
-
-GUI_SHOW_FIAT_TX_HISTORY = _CONFIG_VARS['GUI_SHOW_FIAT_TX_HISTORY']
+def set_config_vars():
+    for k, v in read_file().items():
+        globals()[k] = v
