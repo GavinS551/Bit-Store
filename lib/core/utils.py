@@ -52,11 +52,15 @@ def validate_addresses(addresses):
     return all(validate_address(a) for a in addresses)
 
 
-def float_to_str(float_):
+def float_to_str(float_, show_plus_sign=False):
     """ Convert the given float to a string, without scientific notation """
     with decimal.localcontext() as ctx:
         d1 = ctx.create_decimal(repr(float_))
-        return format(d1, 'f')
+        if not show_plus_sign or format(d1, 'f')[0] == '-':
+            return format(d1, 'f')
+
+        else:
+            return '+' + format(d1, 'f')
 
 
 def find_key_from_value(dict_, value):
