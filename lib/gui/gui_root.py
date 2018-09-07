@@ -149,6 +149,7 @@ class _Settings(tk.Toplevel):
         self.price_api = tk.StringVar(value=config.PRICE_API_SOURCE)
         self.fiat_unit = tk.StringVar(value=config.FIAT)
         self.btc_units = tk.StringVar(value=config.BTC_UNITS)
+        self.show_fiat_history = tk.BooleanVar(value=config.GUI_SHOW_FIAT_TX_HISTORY)
 
         # config variable names as keys with their corresponding tk Variables
         self.config_vars = {
@@ -157,7 +158,8 @@ class _Settings(tk.Toplevel):
             'BLOCKCHAIN_API_SOURCE': self.blockchain_api,
             'PRICE_API_SOURCE': self.price_api,
             'FIAT': self.fiat_unit,
-            'BTC_UNITS': self.btc_units
+            'BTC_UNITS': self.btc_units,
+            'GUI_SHOW_FIAT_TX_HISTORY': self.show_fiat_history
         }
 
         self.notebook = ttk.Notebook(self)
@@ -266,3 +268,10 @@ class _Settings(tk.Toplevel):
         btc_units_options = ttk.Combobox(frame, textvariable=self.btc_units,
                                          state='readonly', value=config.POSSIBLE_BTC_UNITS, width=10)
         btc_units_options.grid(row=1, column=1, sticky='e')
+
+        show_fiat_history_label = ttk.Label(frame, text='Show Fiat History:', font=self.root.tiny_font)
+        show_fiat_history_label.grid(row=2, column=0, padx=padx, pady=10, sticky='w')
+
+        show_fiat_history_check = ttk.Checkbutton(frame, variable=self.show_fiat_history,
+                                                  offvalue=False, onvalue=True)
+        show_fiat_history_check.grid(row=2, column=1, sticky='e')
