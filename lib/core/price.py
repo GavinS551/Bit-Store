@@ -10,7 +10,7 @@ class BitcoinPrice:
     # TODO: CLASS NEEDS A REFACTOR
     # TODO: MAKE SURE PRICES ARE ALL FLOATS
 
-    def __init__(self, currency=config.FIAT, source=config.PRICE_API_SOURCE, timeout=10):
+    def __init__(self, currency, source, timeout=10):
 
         self.valid_sources = {
             'coinmarketcap': self.coinmarketcap,

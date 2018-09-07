@@ -61,7 +61,7 @@ class _ApiDataUpdaterThread(threading.Thread):
             addresses = self.wallet_instance.all_addresses
 
             bd = blockchain.blockchain_api(addresses, self.refresh_rate, source=config.BLOCKCHAIN_API_SOURCE)
-            price_data = price.BitcoinPrice()
+            price_data = price.BitcoinPrice(currency=config.FIAT, source=config.PRICE_API_SOURCE)
 
             try:
                 api_data = {
