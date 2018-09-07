@@ -44,7 +44,11 @@ DEFAULT_CONFIG = {
 
     'SPEND_UTXOS_INDIVIDUALLY': False,
 
-    'MAX_LOG_FILES_STORED': 10
+    'MAX_LOG_FILES_STORED': 10,
+
+    'GUI': {
+        'SHOW_FIAT_TX_HISTORY': True
+    }
 
 }
 
