@@ -5,7 +5,7 @@ import json
 
 import cryptography.fernet as fernet
 
-from . import config, utils
+from . import utils
 from ..exceptions.data_exceptions import *
 
 
@@ -32,10 +32,24 @@ class Crypto:
 
 class DataStore(Crypto):
 
-    def __init__(self, file_path, password):
+    def __init__(self, file_path, password, data_format=None, sensitive_keys=None):
+        """
+        :param file_path: path to data file
+        :param password: password to encrypt data with
+        :param data_format: a dictionary of allowed keys and allowed value types
+        :param sensitive_keys: a list of data_format keys that should have their values double encrypted
+        """
         super().__init__(password)
         self.file_path = file_path
-        self.json_blank_template = json.dumps(config.STANDARD_DATA_FORMAT)
+
+        self.data_format = data_format if data_format is not None else {}
+
+        # json serialised data_format to be dumped to new file
+        self.json_blank_template = json.dumps(self.data_format)
+
+        # sensitive keys will have their values encrypted twice, so when the file is read
+        # and stored in memory, their values will still be encrypted
+        self.sensitive_keys = sensitive_keys if sensitive_keys is not None else []
 
         if not os.path.exists(self.file_path):
             raise ValueError(f'{self.file_path} does not exist!')
@@ -98,22 +112,22 @@ class DataStore(Crypto):
         utils.atomic_file_write(data=self.encrypt(json.dumps(data)),
                                 file_path=self.file_path)
 
-    def write_value(self, allow_new_key=False, **kwargs):
+    def write_value(self, **kwargs):
         data = self._data
         for k, v in kwargs.items():
 
-            if k not in config.STANDARD_DATA_FORMAT and allow_new_key is False:
+            if k not in self.data_format:
                 raise ValueError(f'Entered key ({k}) is not valid!')
 
             else:
-                if not isinstance(v, type(config.STANDARD_DATA_FORMAT[k])):
+                if not isinstance(v, type(self.data_format[k])):
                     raise ValueError(f'Value ({v}) is wrong type. It must be a: '
-                                     f'{type(config.STANDARD_DATA_FORMAT[k])}')
+                                     f'{type(self.data_format[k])}')
 
                 else:
                     # if key is in sensitive data list, it will be encrypted twice
                     # to limit its exposure in ram, unencrypted
-                    if k in config.SENSITIVE_DATA:
+                    if k in self.sensitive_keys:
                         # if value is a dict, encrypt all values
                         if isinstance(v, dict):
                             data[k] = {x: self.encrypt(y) for x, y in v.items()}
@@ -126,7 +140,7 @@ class DataStore(Crypto):
         self._write_to_file(data)
 
     def get_value(self, key):
-        if key.upper() in config.SENSITIVE_DATA:
+        if key.upper() in self.sensitive_keys:
             # if value is a dict, values wont be decrypted as that will be
             # done only when needed to sign txns (only key that is currently
             # implemented is a dict stores address/wif keys)

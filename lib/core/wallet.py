@@ -127,7 +127,8 @@ class Wallet:
             with open(data_file_path, 'w+'):
                 pass
 
-            d_store = data.DataStore(data_file_path, password)
+            d_store = data.DataStore(data_file_path, password, data_format=config.STANDARD_DATA_FORMAT,
+                                     sensitive_keys=config.SENSITIVE_DATA)
 
             # only gen addresses once, and not twice for receiving and change
             addresses = hd_wallet_obj.addresses()
@@ -162,7 +163,8 @@ class Wallet:
 
     def __init__(self, name, password, offline=False):
         data_file_path = os.path.join(config.WALLET_DATA_DIR, name, 'wallet_data')
-        self.data_store = data.DataStore(data_file_path, password)
+        self.data_store = data.DataStore(data_file_path, password, data_format=config.STANDARD_DATA_FORMAT,
+                                         sensitive_keys=config.SENSITIVE_DATA)
 
         if not offline:
             self.updater_thread = self._create_api_updater_thread(refresh_rate=API_REFRESH_RATE)
