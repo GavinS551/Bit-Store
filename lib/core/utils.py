@@ -63,13 +63,6 @@ def float_to_str(float_, show_plus_sign=False):
             return '+' + format(d1, 'f')
 
 
-def find_key_from_value(dict_, value):
-    """ returns the (first) matching key in a dict for a given value """
-    for k, v in dict_.items():
-        if v == value:
-            return k
-
-
 class IterableQueue:
 
     def __init__(self, queue):
