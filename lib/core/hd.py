@@ -4,6 +4,7 @@ import binascii
 import string
 import multiprocessing
 from operator import itemgetter
+from functools import lru_cache
 
 import bitstring
 from .bip32utils_updated.BIP32Key import BIP32Key, BIP32_HARDEN
@@ -42,13 +43,17 @@ class HDWallet:
 
         self.is_private = False if key[1:4] == 'pub' else True
 
+        # apostrophes in a path denote a hardened key, which can only be derived from a private key
+        if not self.is_private and "'" in path:
+            raise PublicHDWalletObjectError('Cannot derive a hardened child key from a public key')
+
         self.is_segwit = segwit
         self.bip32 = BIP32Key.fromExtendedKey(key, public=not self.is_private)
         self.path = path
 
         self.master_private_key = self.bip32.ExtendedKey() if self.is_private else None
         self.master_public_key = self.bip32.ExtendedKey(private=False)
-        self.account_public_key = self._get_account_ck().ExtendedKey(private=False)
+        self.account_public_key = self._account_ck.ExtendedKey(private=False)
 
         self.mnemonic = mnemonic
 
@@ -67,8 +72,6 @@ class HDWallet:
         if not self.is_private:
             self.multi_processed = False
 
-        # account child key only needs to be retrieved once
-        self._account_ck = self._get_account_ck()
         self._external_chain_ck = self._account_ck.ChildKey(0)
         self._internal_chain_ck = self._account_ck.ChildKey(1)
 
@@ -178,7 +181,9 @@ class HDWallet:
 
         return True
 
-    def _get_account_ck(self):
+    @property
+    @lru_cache(maxsize=None)
+    def _account_ck(self):
         """returns an 'account' child key. i.e the last derivation of the path"""
         # First get a child key (ck) to derive from further in a loop
         split_path = self.path.split('/')
@@ -199,8 +204,8 @@ class HDWallet:
     def delete_sensitive_data(self):
         self.bip32.SetPublic()
         del self.bip32
-        del self._account_ck
 
+    @lru_cache(maxsize=None)
     def _gen_addresses(self, idx):
         """ used with multiprocessing """
         if self.is_segwit:
@@ -242,6 +247,7 @@ class HDWallet:
 
         return receiving, change
 
+    @lru_cache(maxsize=None)
     def _gen_wif_keys(self, idx):
         """ used with multiprocessing """
         r_keys = self._external_chain_ck.ChildKey(idx).WalletImportFormat()
@@ -252,7 +258,7 @@ class HDWallet:
     def _multi_processed_wif_keys(self):
         """ Returns a tuple of receiving and change WIF keys up to the limit specified """
         if not self.is_private:
-            raise PublicHDWalletObject('Can\'t derive private key from watch-only wallet')
+            raise PublicHDWalletObjectError('Can\'t derive private key from watch-only wallet')
 
         receiving = []
         change = []
@@ -269,7 +275,7 @@ class HDWallet:
 
     def _non_multi_processed_wif_keys(self):
         if not self.is_private:
-            raise PublicHDWalletObject('Can\'t derive private key from watch-only wallet')
+            raise PublicHDWalletObjectError('Can\'t derive private key from watch-only wallet')
 
         receiving = []
         change = []
@@ -295,7 +301,7 @@ class HDWallet:
     def address_wifkey_pairs(self):
         """ Returns a list of tuples with addresses mapped to their WIF keys """
         if not self.is_private:
-            raise PublicHDWalletObject('Can\'t derive private key from watch-only wallet')
+            raise PublicHDWalletObjectError('Can\'t derive private key from watch-only wallet')
 
         addresses = self.addresses()
         wif_keys = self.wif_keys()

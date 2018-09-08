@@ -1,4 +1,4 @@
-class PublicHDWalletObject(Exception):
+class PublicHDWalletObjectError(Exception):
     pass
 
 
