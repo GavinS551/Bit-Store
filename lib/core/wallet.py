@@ -3,6 +3,7 @@ import threading
 import shutil
 import enum
 import time
+import json
 
 import requests.exceptions
 
@@ -76,7 +77,7 @@ class _ApiDataUpdaterThread(threading.Thread):
 
                 self.connection_timestamp = time.time()
 
-            except requests.RequestException as ex:
+            except (requests.RequestException, json.JSONDecodeError) as ex:
 
                 self.connection_exception = ex
                 self.connection_status = self.ApiConnectionStatus.error
