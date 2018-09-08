@@ -144,7 +144,11 @@ class BlockchainInfo(_BlockchainBaseClass):
                 url += f'{address}|'
             url += '&n=100'  # show up to 100 (max) transactions
 
-            data = requests.get(url, timeout=10).json()
+            request = requests.get(url, timeout=10)
+            data = request.json()
+
+            request.raise_for_status()
+
             self.last_request_time = time.time()
             self.last_requested_data = data
 
