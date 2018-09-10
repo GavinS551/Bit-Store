@@ -105,7 +105,7 @@ class _UTXOChooser:
 
         while output_amount > 0 and self._utxos:
 
-            if self._use_full_address_utxos is True:
+            if self._use_full_address_utxos:
                 closest = self._find_closest_value_address_utxos(output_amount)
 
                 # closest is a list of utxos in this case
