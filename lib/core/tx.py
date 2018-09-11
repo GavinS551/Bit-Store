@@ -380,6 +380,8 @@ class Transaction:
         if self.is_signed:
             raise Exception('Cannot remove outputs from signed transaction')
 
+        self.dust_change_amount = 0
+
         for address, amount in self._modified_outputs_amounts.items():
             if address == self.change_address and amount <= DUST_THRESHOLD:
                 change_dust_addr = address
