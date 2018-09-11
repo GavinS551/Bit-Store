@@ -97,6 +97,7 @@ UNITS_MAX_DECIMAL_PLACES = {
 }
 
 
+# lowercase for comparisons
 POSSIBLE_BTC_UNITS = ['BTC', 'mBTC', 'bits', 'sat']
 
 
