@@ -399,6 +399,25 @@ class Transaction:
 
         self._recalculate_size()
         self.dust_change_amount += change_dust_amount
+
+    def _remove_change(self):
+        """ removes change output from txn """
+        if self.is_signed:
+            raise Exception('Cannot remove outputs from signed transaction')
+
+        for address in self._modified_outputs_amounts:
+            if address == self.change_address:
+                script = self.get_output_script(address)
+                script_pubkey = script(bytearray(self.get_hash160(address)))
+
+                for o in self._txn.outs:
+                    if o.script_pubkey == script_pubkey:
+                        self._txn.outs.remove(o)
+                break
+        else:
+            return
+
+        self._recalculate_size()
         
     def change_fee(self, fee):
         self.fee = fee
@@ -423,8 +442,14 @@ class Transaction:
         # to change (as dust change amounts may be discarded) which will
         # cause the actual fee needed to change (as the sat/byte ratio
         # will be changed).
+
+        # remove change output as the new txn with a different fee may not contain
+        # a change output, so the estimated size will be wrong
+        self._remove_change()
+
         b_total_fee = sat_byte * self.estimated_size()
         self.change_fee(b_total_fee)
         a_total_fee = sat_byte * self.estimated_size()
+        
         self.fee -= b_total_fee - a_total_fee
         self.dust_change_amount += b_total_fee - a_total_fee
