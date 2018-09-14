@@ -1,5 +1,6 @@
 import time
 import datetime
+import math
 
 import requests
 
@@ -190,7 +191,7 @@ class BlockchainInfo(_BlockchainBaseClass):
                 transaction['confirmations'] = 0
 
             transaction['fee'] = tx['fee']
-            transaction['vsize'] = round(tx['weight'] / 4)
+            transaction['vsize'] = math.ceil(tx['weight'] / 4)  # bitcoin core recommends rounding up
 
             ins = []
             for input_ in tx['inputs']:
