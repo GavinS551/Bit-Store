@@ -4,6 +4,7 @@ from tkinter import ttk, messagebox
 import string
 from threading import Event
 import datetime
+from types import SimpleNamespace
 
 import qrcode
 from PIL import ImageTk
@@ -25,11 +26,11 @@ class MainWallet(ttk.Frame):
         self.max_decimal_places = config.UNITS_MAX_DECIMAL_PLACES[self.display_units]
 
         # attributes below will be updated in _refresh_data method
-        self.wallet_balance = tk.IntVar()
-        self.unconfirmed_wallet_balance = tk.IntVar()
+        self.wallet_balance = tk.DoubleVar()
+        self.unconfirmed_wallet_balance = tk.DoubleVar()
         self.price = tk.DoubleVar()
-        self.fiat_wallet_balance = tk.IntVar()
-        self.unconfirmed_fiat_wallet_balance = tk.IntVar()
+        self.fiat_wallet_balance = tk.DoubleVar()
+        self.unconfirmed_fiat_wallet_balance = tk.DoubleVar()
 
         self.next_receiving_address = tk.StringVar()
 
@@ -331,6 +332,7 @@ class _TransactionDisplay(ttk.Frame):
 
 
 class _SendDisplay(ttk.Frame):
+    """ beware of spaghetti code """
 
     def __init__(self, master, main_wallet):
         ttk.Frame.__init__(self, master, padding=5)
@@ -441,11 +443,18 @@ class _SendDisplay(ttk.Frame):
 
         total_cost_frame.grid(row=3, column=1, pady=5, sticky='w')
 
-        send_button = ttk.Button(self, text='Send', command=self.on_send)
-        send_button.grid(row=4, column=0, pady=20, padx=10, sticky='e')
+        button_frame = ttk.Frame(self)
 
-        clear_button = ttk.Button(self, text='Clear', command=self.on_clear)
-        clear_button.grid(row=4, column=1, pady=20, padx=10, sticky='w')
+        send_button = ttk.Button(button_frame, text='Send', command=self.on_send)
+        send_button.grid(row=4, column=0, pady=20, padx=10)
+
+        use_balance_button = ttk.Button(button_frame, text='Use Balance', command=self.on_use_balance)
+        use_balance_button.grid(row=4, column=1, pady=20, padx=10)
+
+        clear_button = ttk.Button(button_frame, text='Clear', command=self.on_clear)
+        clear_button.grid(row=4, column=2, pady=20, padx=10)
+
+        button_frame.grid(row=4, column=0, columnspan=3, sticky='w', padx=(20, 0))
 
     def on_send(self):
         if not all((self.amount_btc_entry.get(), self.fee_entry.get(), self.address_entry.get())):
@@ -478,6 +487,47 @@ class _SendDisplay(ttk.Frame):
 
         self.hide_fee_labels()
 
+    def on_use_balance(self):
+
+        if not utils.validate_address(self.address_entry.get()):
+            tk.messagebox.showerror('No Address', 'Please enter an address first')
+
+        elif not self.fee_entry.get():
+            tk.messagebox.showerror('No fee', 'Please enter what fee you want to use')
+
+        else:
+            balance = self.main_wallet.wallet_balance.get() if not config.SPEND_UNCONFIRMED_UTXOS else \
+                      self.main_wallet.wallet_balance.get() + \
+                      self.main_wallet.wallet_balance.unconfirmed_wallet_balance.get()
+            sat_balance = self.to_satoshis(balance)
+
+            fee_entry = int(self.fee_entry.get())  # sat/byte
+
+            # generating txn that spends all btc, and getting size
+            _txn = self.main_wallet.root.btc_wallet.make_unsigned_transaction({self.address_entry.get(): sat_balance})
+
+            max_spend_size = _txn.estimated_size()
+
+            sat_total_fee = fee_entry * max_spend_size
+
+            sat_remaining_balance = sat_balance - sat_total_fee
+
+            wallet_units_remaining_balance = self.to_wallet_units(sat_remaining_balance, 'sat')
+
+            self.amount_btc_entry.delete(0, tk.END)
+
+            # 1 sat/byte is lowest fee that can be used, i.e 1 * max_spend_size
+            if sat_balance <= max_spend_size:
+                wallet_units_remaining_balance = 0
+
+            # entry validation won't accept a full string in entry for
+            # some reason, so it's entered char by char
+            # (will maybe fix at some point)
+            for i, c in enumerate(utils.float_to_str(wallet_units_remaining_balance)):
+                self.amount_btc_entry.insert(i, c)
+                # call the method that is bound to key releases on btc_entry
+                self.on_btc_amount_key_press(event=SimpleNamespace(widget=self.amount_btc_entry))
+
     def to_satoshis(self, amount):
         """ converts amount (in terms of self.main_wallet.display_units) into satoshis"""
         return int(round(amount * self.main_wallet.unit_factor))
@@ -489,6 +539,13 @@ class _SendDisplay(ttk.Frame):
         else:
             btc = self.to_satoshis(amount) / config.UNIT_FACTORS['BTC']
             return btc
+
+    def to_wallet_units(self, amount, units):
+        if units not in config.POSSIBLE_BTC_UNITS:
+            raise ValueError(f'Invalid btc unit: {units}')
+
+        return round((config.UNIT_FACTORS[units] * amount) / self.main_wallet.unit_factor,
+                     self.main_wallet.max_decimal_places)
 
     def to_fiat(self, amount):
         """ converts amount (display units) into fiat value """
@@ -580,10 +637,8 @@ class _SendDisplay(ttk.Frame):
             amount = float(self.amount_btc_entry.get())
 
         if self.fee_entry.get():
-            sat_byte = int(self.fee_entry.get())
-
             # fee is in satoshis so needs to be divided by unit factor
-            fee = (sat_byte * self.transaction.estimated_size()) / self.main_wallet.unit_factor
+            fee = self.transaction.fee / self.main_wallet.unit_factor
 
         if self.to_satoshis(amount) < 1 or self.amount_over_balance:
             self.hide_fee_labels()
@@ -610,6 +665,8 @@ class _SendDisplay(ttk.Frame):
         # to ensure only one thread is run at the same time
         if self._thread_running:
             return
+        else:
+            self._thread_running = True  # if it wasn't already set
 
         # key = tuple of amounts  value = transaction
         cached_txns = {}
@@ -649,12 +706,15 @@ class _SendDisplay(ttk.Frame):
             else:
 
                 try:
+
+                    # change address will be set when fee is changed
+                    # there is a reason for this but I forgot, so don't change it
                     transaction = self.btc_wallet.make_unsigned_transaction(
                         outs_amounts={address: amount}
                     )
 
                     transaction.change_fee_sat_byte(fee_entry)
-
+                    
                     cached_txns[(amount, fee_entry)] = transaction
                     self.transaction = transaction
 
@@ -859,10 +919,10 @@ class _ReceiveDisplay(ttk.Frame):
                                        font=self.main_wallet.root.small_font + ('bold',))
         self.address_label.grid(row=1, column=0, sticky='w', padx=10)
 
-        self.address = tk.Text(self, height=1, width=40, font=self.main_wallet.root.small_font)
-        self.address['state'] = tk.DISABLED
-        self.address.configure(inactiveselectbackground=self.address.cget("selectbackground"))
-        self.address.grid(row=1, column=1, padx=20)
+        self.address_text = tk.Text(self, height=1, width=40, font=self.main_wallet.root.small_font)
+        self.address_text['state'] = tk.DISABLED
+        self.address_text.configure(inactiveselectbackground=self.address_text.cget("selectbackground"))
+        self.address_text.grid(row=1, column=1, padx=20)
 
         self.qr = None
         self.qr_label = None
@@ -875,13 +935,13 @@ class _ReceiveDisplay(ttk.Frame):
          it doesn't have a textvariable param so the address is updated here
         """
         # if the address has changed, then update text
-        if self.address.get(1.0, 'end-1c') != self.main_wallet.next_receiving_address.get():
-            self.address['state'] = tk.NORMAL
+        if self.address_text.get(1.0, 'end-1c') != self.main_wallet.next_receiving_address.get():
+            self.address_text['state'] = tk.NORMAL
 
-            self.address.delete(1.0, tk.END)
-            self.address.insert(tk.END, self.main_wallet.next_receiving_address.get())
+            self.address_text.delete(1.0, tk.END)
+            self.address_text.insert(tk.END, self.main_wallet.next_receiving_address.get())
 
-            self.address['state'] = tk.DISABLED
+            self.address_text['state'] = tk.DISABLED
 
             # update qr code with new address
             self.draw_qr_code()
@@ -900,3 +960,11 @@ class _ReceiveDisplay(ttk.Frame):
         self.qr = self._make_qr_code()
         self.qr_label = ttk.Label(self, image=self.qr)
         self.qr_label.grid(row=1, column=2)
+
+    @property
+    def address(self):
+        return self.address_text.get(1.0, 'end-1c')
+
+    def on_copy(self):
+        self.main_wallet.root.clipboard_clear()
+        self.main_wallet.root.clipboard_append(self.address)
