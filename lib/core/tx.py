@@ -195,10 +195,6 @@ class Transaction:
 
         self._txn = self._get_unsigned_txn()
 
-        # can be used to determine correct fees for transaction
-        self.size = self._txn.vsize
-        self.weight = self._txn.weight
-
         self._remove_dust_change()
 
     @property
@@ -212,6 +208,17 @@ class Transaction:
         blank witnesses as un-serialisable None. Unsigned segwit txns return None
         """
         return self._txn.hexlify() if self.is_signed or not self.is_segwit else None
+
+    # size and weight need to be properties as self._txn will mutate often
+
+    @property
+    def size(self):
+        """ vsize """
+        return self._txn.vsize
+
+    @property
+    def weight(self):
+        return self._txn.weight
 
     @staticmethod
     def get_hash160(address):
@@ -356,13 +363,8 @@ class Transaction:
 
         return signed
 
-    def _recalculate_size(self):
-        self.size = self._txn.vsize
-        self.weight = self._txn.weight
-
     def sign(self, wif_keys):
         self._txn = self._get_signed_txn(wif_keys)
-        self._recalculate_size()
         self.is_signed = True
 
     def estimated_size(self):
@@ -397,7 +399,6 @@ class Transaction:
             if o.script_pubkey == script_pubkey:
                 self._txn.outs.remove(o)
 
-        self._recalculate_size()
         self.dust_change_amount += change_dust_amount
 
     def _remove_change(self):
@@ -417,8 +418,6 @@ class Transaction:
         else:
             return
 
-        self._recalculate_size()
-        
     def change_fee(self, fee):
         self.fee = fee
         # re-run all logic that will be effected by fee change, i.e there might
@@ -450,6 +449,6 @@ class Transaction:
         b_total_fee = sat_byte * self.estimated_size()
         self.change_fee(b_total_fee)
         a_total_fee = sat_byte * self.estimated_size()
-        
+
         self.fee -= b_total_fee - a_total_fee
         self.dust_change_amount += b_total_fee - a_total_fee
