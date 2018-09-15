@@ -1,2 +1,0 @@
-class NoWalletSelectedError(Exception):
-    pass

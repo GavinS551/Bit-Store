@@ -25,22 +25,21 @@ def main():
         app.btc_wallet.updater_thread.event.set()
 
 
-class TTKSimpleDialog(simpledialog._QueryString):
-    """ sub-classed _QueryString that sets the project icon """
-
-    def body(self, master):
-        super().body(master)
-        self.iconbitmap(RootApplication.ICON)
-        self.geometry('250x90')
-        self.resizable(False, False)
-
-    @staticmethod
-    def askstring(title, prompt, **kwargs):
-        d = TTKSimpleDialog(title, prompt, **kwargs)
-        return d.result
-
-
 class RootApplication(tk.Tk):
+
+    class TTKSimpleDialog(simpledialog._QueryString):
+        """ sub-classed _QueryString that sets the project icon """
+
+        def body(self, master):
+            super().body(master)
+            self.iconbitmap(RootApplication.ICON)
+            self.geometry('250x90')
+            self.resizable(False, False)
+
+        @staticmethod
+        def askstring(title, prompt, **kwargs):
+            d = RootApplication.TTKSimpleDialog(title, prompt, **kwargs)
+            return d.result
 
     ICON = os.path.join(os.path.dirname(__file__), 'assets', 'bc_logo.ico') if platform.system() == 'Windows' else None
 
@@ -119,10 +118,10 @@ class RootApplication(tk.Tk):
     def wallet_init(self, name, password):
         self.btc_wallet = wallet.Wallet(name=name, password=password)
 
-    @staticmethod
-    def password_prompt(parent):
-        return TTKSimpleDialog.askstring('Password Entry', 'Enter Password:',
-                                         show='*', parent=parent)
+    @classmethod
+    def password_prompt(cls, parent):
+        return cls.TTKSimpleDialog.askstring('Password Entry', 'Enter Password:',
+                                             show='*', parent=parent)
 
     @staticmethod
     def incorrect_password_prompt(parent):
