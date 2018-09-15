@@ -1,5 +1,4 @@
 import base58
-
 from btcpy.structs.transaction import MutableTransaction, MutableSegWitTransaction, TxIn, TxOut, Locktime, Sequence
 from btcpy.structs.script import P2pkhScript, P2shScript, Script, P2wpkhV0Script, ScriptSig
 from btcpy.structs.sig import P2pkhSolver, P2shSolver, P2wpkhV0Solver
@@ -240,6 +239,11 @@ class Transaction:
         else:
             raise ValueError('Couldn\'t generate a scriptPubKey for entered address')
 
+    @classmethod
+    def get_script_pubkey(cls, address):
+        script = cls.get_output_script(address)
+        return script(bytearray(cls.get_hash160(address)))
+
     def _choose_utxos(self):
         output_amount = sum([v for v in self.outputs_amounts.values()]) + self.fee
 
@@ -266,12 +270,10 @@ class Transaction:
         outputs = []
         for i, (addr, amount) in enumerate(self._modified_outputs_amounts.items()):
 
-            out_script = self.get_output_script(addr)
-
             outputs.append(TxOut(
                 value=amount,
                 n=i,
-                script_pubkey=out_script(bytearray(self.get_hash160(addr)))
+                script_pubkey=self.get_script_pubkey(addr)
             ))
 
         inputs = []
@@ -312,12 +314,17 @@ class Transaction:
         """ :param wif_keys: list of wif keys corresponding with
         self.input_addresses addresses, in same order
         """
+
+        # NB: they are not guaranteed to be in order as there
+        # may be more than one utxo associated with a single
+        # address, but there will always be 1 solver associated
+        # a private key
         unordered_solvers = []
         unordered_tx_outs = []
         unsigned = self._txn
 
         if self.is_signed:
-            raise ValueError('cannot sign _txn (already signed)')
+            raise ValueError('cannot sign txn (already signed)')
 
         for key in wif_keys:
             # create btcpy PrivateKeys from input WIF format keys
@@ -392,8 +399,7 @@ class Transaction:
         else:
             return
 
-        script = self.get_output_script(change_dust_addr)
-        script_pubkey = script(bytearray(self.get_hash160(change_dust_addr)))
+        script_pubkey = self.get_script_pubkey(change_dust_addr)
 
         for o in self._txn.outs:
             if o.script_pubkey == script_pubkey:
@@ -408,8 +414,7 @@ class Transaction:
 
         for address in self._modified_outputs_amounts:
             if address == self.change_address:
-                script = self.get_output_script(address)
-                script_pubkey = script(bytearray(self.get_hash160(address)))
+                script_pubkey = self.get_script_pubkey(address)
 
                 for o in self._txn.outs:
                     if o.script_pubkey == script_pubkey:
@@ -450,5 +455,9 @@ class Transaction:
         self.change_fee(b_total_fee)
         a_total_fee = sat_byte * self.estimated_size()
 
-        self.fee -= b_total_fee - a_total_fee
-        self.dust_change_amount += b_total_fee - a_total_fee
+        if b_total_fee < a_total_fee:
+            self.change_fee(a_total_fee)
+
+            if sat_byte * self.estimated_size() != a_total_fee:
+                self.fee -= a_total_fee - b_total_fee
+                self.dust_change_amount += a_total_fee - b_total_fee
