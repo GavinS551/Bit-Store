@@ -41,9 +41,12 @@ def threaded(func=None, daemon=False, name=None):
     return decorator
 
 
-def validate_address(address):
+def validate_address(address, allow_testnet=False):
     """ function that validates a btc address """
-    possible_network_bytes = (0x00, 0x05, 0x6F, 0xC4)
+    possible_network_bytes = (0x00, 0x05)
+
+    if allow_testnet:
+        possible_network_bytes += (0x6F, 0xC4)
 
     with suppress(ValueError):
         if base58.b58decode_check(address)[0] in possible_network_bytes:
