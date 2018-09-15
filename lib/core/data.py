@@ -120,14 +120,14 @@ class DataStore(Crypto):
                 raise ValueError(f'Entered key ({k}) is not valid!')
 
             else:
-                if not isinstance(v, type(self.data_format[k])):
+                if not isinstance(v, type(self.data_format[k])) and v is not None:
                     raise ValueError(f'Value ({v}) is wrong type. It must be a: '
-                                     f'{type(self.data_format[k])}')
+                                     f'{type(self.data_format[k])} or None')
 
                 else:
                     # if key is in sensitive data list, it will be encrypted twice
                     # to limit its exposure in ram, unencrypted
-                    if k in self.sensitive_keys:
+                    if k in self.sensitive_keys and v is not None:
                         # if value is a dict, encrypt all values
                         if isinstance(v, dict):
                             data[k] = {x: self.encrypt(y) for x, y in v.items()}
@@ -140,18 +140,22 @@ class DataStore(Crypto):
         self._write_to_file(data)
 
     def get_value(self, key):
+        value = self._data[key.upper()]
+
+        if value is None:
+            return value
+
         if key.upper() in self.sensitive_keys:
-            # if value is a dict, values wont be decrypted as that will be
-            # done only when needed to sign txns (only key that is currently
-            # implemented is a dict stores address/wif keys)
-            if isinstance(self._data[key.upper()], dict):
-                return self._data[key.upper()]
+            # if value is a dict, it is presumed that the values
+            # in the dict will be decrypted when needed
+            if isinstance(value, dict):
+                return value
 
             else:
-                return self.decrypt(self._data[key.upper()])
+                return self.decrypt(value)
 
         else:
-            return self._data[key.upper()]
+            return value
 
     # for use outside this class, where the password isn't actually used
     # to decrypt the file, but still needs to be verified for security
