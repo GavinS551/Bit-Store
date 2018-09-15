@@ -6,6 +6,7 @@ import datetime
 from functools import wraps
 from threading import Thread
 from queue import Empty
+from contextlib import suppress
 
 import base58
 
@@ -42,11 +43,13 @@ def threaded(func=None, daemon=False, name=None):
 
 def validate_address(address):
     """ function that validates a btc address """
-    try:
-        base58.b58decode_check(address)
-        return True
-    except ValueError:
-        return False
+    possible_network_bytes = (0x00, 0x05, 0x6F, 0xC4)
+
+    with suppress(ValueError):
+        if base58.b58decode_check(address)[0] in possible_network_bytes:
+            return True
+
+    return False
 
 
 def validate_addresses(addresses):
