@@ -69,7 +69,7 @@ class WalletImport(WalletCreation):
         except ValueError as ex:
             messagebox.showerror('Error', f'{ex.__str__()}')
 
-            
+
 class WalletImportPage2(ttk.Frame):
 
     def __init__(self, root):
@@ -119,11 +119,17 @@ class WalletImportPage2(ttk.Frame):
         create_button.grid(row=3, column=1, padx=10, pady=10, sticky='w')
 
     def on_back(self):
-        # remove the optional widgets, because if the user goes back
-        # and doesnt select the mnemonic import, these widgets will still be
-        # in the frame and will overlap with other labels/entries
-        self.passphrase_entry_label.grid_remove()
-        self.passphrase_entry.grid_remove()
+        # remove the optional widgets, or labels that change due to different
+        # attributes, because if the user goes back and doesn't select the
+        # mnemonic import, these widgets will still be
+        # in the frame and will overlap with other labels/entries that change
+        if self.passphrase_entry_label is not None:
+            self.passphrase_entry_label.grid_remove()
+
+        if self.passphrase_entry is not None:
+            self.passphrase_entry.grid_remove()
+
+        self.entry_label.grid_remove()
 
         self.root.show_frame('WalletImport')
 
@@ -144,8 +150,10 @@ class WalletImportPage2(ttk.Frame):
 
             if not hd.HDWallet.check_xkey(xkey, allow_testnet=False):
                 tk.messagebox.showerror('Error', 'Invalid extended key entered')
+                return
 
             if xkey[1:4] == 'pub':
                 tk.messagebox.showerror('Error', 'Public key entered: watch-only wallets not currently supported')
+                return
 
             self.wallet_import.create_wallet(xkey=xkey, bypass_mnemonic_display=True)
