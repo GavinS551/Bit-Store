@@ -25,7 +25,10 @@ class WalletCreation(ttk.Frame):
         self.name_entry = None
         self.mnemonic_passphrase_entry = None
 
+        # attributes for subclass support
         self.title = None
+        self.back_button = None
+        self.create_button = None
 
     def gui_draw(self):
         self.title = ttk.Label(self, text='Wallet Creation:', font=self.root.bold_title_font)
@@ -77,12 +80,12 @@ class WalletCreation(ttk.Frame):
         self.mnemonic_passphrase_entry = ttk.Entry(self)
         self.mnemonic_passphrase_entry.grid(row=6, column=1, pady=5, columnspan=2)
 
-        back_button = ttk.Button(self, text='Back',
-                                 command=lambda: self.root.show_frame('WalletSelect'))
-        back_button.grid(row=7, column=0, sticky='e', padx=10, pady=20)
+        self.back_button = ttk.Button(self, text='Back',
+                                      command=lambda: self.root.show_frame('WalletSelect'))
+        self.back_button.grid(row=7, column=0, sticky='e', padx=10, pady=20)
 
-        create_button = ttk.Button(self, text='Create', command=self.create_wallet)
-        create_button.grid(row=7, column=1, sticky='w', padx=10, pady=20)
+        self.create_button = ttk.Button(self, text='Create', command=self.create_wallet)
+        self.create_button.grid(row=7, column=1, sticky='w', padx=10, pady=20)
 
     def _verify_password(self):
         return self.password_entry.get() == self.confirm_pass_entry.get()
@@ -92,7 +95,7 @@ class WalletCreation(ttk.Frame):
     def create_wallet(self, mnemonic=None, xkey=None):
         if mnemonic is None and xkey is None:
             mnemonic = hd.HDWallet.gen_mnemonic()
-        
+
         try:
             name = self.name_entry.get()
             password = self.password_entry.get()
