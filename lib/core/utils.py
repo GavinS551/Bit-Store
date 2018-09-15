@@ -67,10 +67,13 @@ def float_to_str(float_, show_plus_sign=False):
 
 def datetime_str_from_timestamp(timestamp, fmt, utc=True):
     """ converts a unix timestamp to a datetime string. Uses local time if utc is false """
+
+    utc_datetime = datetime.datetime.utcfromtimestamp(timestamp)
     if utc:
-        return datetime.datetime.utcfromtimestamp(timestamp).strftime(fmt)
+        return utc_datetime.strftime(fmt)
     else:
-        return datetime.datetime.fromtimestamp(timestamp).strftime(fmt)
+        local_datetime = utc_datetime.replace(tzinfo=datetime.timezone.utc).astimezone(tz=None)
+        return local_datetime.strftime(fmt)
 
 
 class IterableQueue:

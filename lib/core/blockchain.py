@@ -62,7 +62,7 @@ class _BlockchainBaseClass:
 
             'txid': str,
             'date': str,
-            'block_height': int,
+            'block_height': int or None,
             'confirmations': int,
             'fee': int,
             'size': int,
@@ -172,10 +172,9 @@ class BlockchainInfo(_BlockchainBaseClass):
 
             transaction['txid'] = tx['hash']
 
-            # getting date as local time from unix timestamp
-            utc_time = datetime.datetime.utcfromtimestamp(tx['time'])
-            local_time = utc_time.astimezone()
-            transaction['date'] = local_time.strftime(config.DATETIME_FORMAT)
+            transaction['date'] = utils.datetime_str_from_timestamp(tx['time'],
+                                                                    config.DATETIME_FORMAT,
+                                                                    utc=False)
 
             try:
                 transaction['block_height'] = tx['block_height']
