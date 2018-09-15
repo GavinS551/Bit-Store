@@ -25,9 +25,11 @@ class WalletCreation(ttk.Frame):
         self.name_entry = None
         self.mnemonic_passphrase_entry = None
 
+        self.title = None
+
     def gui_draw(self):
-        title = ttk.Label(self, text='Wallet Creation:', font=self.root.bold_title_font)
-        title.grid(row=0, column=0, sticky='w', pady=10)
+        self.title = ttk.Label(self, text='Wallet Creation:', font=self.root.bold_title_font)
+        self.title.grid(row=0, column=0, sticky='w', pady=10)
 
         required_label = ttk.Label(self, text=' * Required entries', font=self.root.tiny_font)
         required_label.grid(row=0, column=1)

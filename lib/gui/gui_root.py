@@ -11,6 +11,7 @@ from ..core import config, wallet
 from .wallet_select import WalletSelect
 from .wallet_creation import (WalletCreation, WalletCreationLoading,
                               WalletCreationShowMnemonic, WalletCreationVerifyMnemonic)
+from .wallet_import import WalletImport
 from .main_wallet import MainWallet
 
 
@@ -72,7 +73,7 @@ class RootApplication(tk.Tk):
         # adding all frames to self.frames dict, and adding them to master_grid
         for f in (WalletSelect, WalletCreation, MainWallet,
                   WalletCreationLoading, WalletCreationShowMnemonic,
-                  WalletCreationVerifyMnemonic):
+                  WalletCreationVerifyMnemonic, WalletImport):
 
             frame = f(self)
             self.frames[f.__name__] = frame
