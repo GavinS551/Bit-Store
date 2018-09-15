@@ -93,11 +93,11 @@ class WalletCreation(ttk.Frame):
 
     # custom mnemonic and xkey params are meant for subclassing this class when
     # implementing wallet import feature
-    def create_wallet(self, mnemonic=None, xkey=None, mnemonic_passphrase=None):
+    def create_wallet(self, mnemonic=None, xkey=None, passphrase=None):
         if mnemonic is None and xkey is None:
             mnemonic = hd.HDWallet.gen_mnemonic()
 
-        if mnemonic_passphrase is None:
+        if passphrase is None:
             passphrase = self.mnemonic_passphrase_entry.get()
 
         try:

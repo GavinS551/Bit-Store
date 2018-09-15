@@ -643,7 +643,7 @@ class _SendDisplay(ttk.Frame):
         if self.to_satoshis(amount) < 1 or self.amount_over_balance:
             self.hide_fee_labels()
 
-        elif self.fee_labels_hidden:
+        else:
             self.show_fee_labels()
 
         size = self.transaction.estimated_size()
@@ -968,3 +968,10 @@ class _ReceiveDisplay(ttk.Frame):
     def on_copy(self):
         self.main_wallet.root.clipboard_clear()
         self.main_wallet.root.clipboard_append(self.address)
+
+
+class _AdvancedDisplay(ttk.Frame):
+
+    def __init__(self, master, main_wallet):
+        ttk.Frame.__init__(self, master, padding=5)
+        self.main_wallet = main_wallet
