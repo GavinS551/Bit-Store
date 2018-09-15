@@ -64,7 +64,7 @@ STANDARD_DATA_FORMAT = {
     'ADDRESS_BALS': {},
     'TXNS': [],
     'PRICE': 0.0,
-    'WALLET_BAL': [],
+    'WALLET_BAL': [0, 0],
     'UNSPENT_OUTS': [],
     'PASSWORD_HASH': '',
     'ADDRESS_WIF_KEYS': {}
@@ -111,4 +111,4 @@ POSSIBLE_PRICE_API_SOURCES = ['coinmarketcap']
 
 
 # standard format for datetime stings
-DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+DATETIME_FORMAT = '%Y-%m-%d %H:%M'
