@@ -2,11 +2,10 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 import os
+import shutil
 
 from ..core import config
-
 from ..exceptions.data_exceptions import IncorrectPasswordError
-from ..exceptions.gui_exceptions import *
 
 
 class WalletSelect(ttk.Frame):
@@ -23,7 +22,7 @@ class WalletSelect(ttk.Frame):
                                 font=self.root.bold_title_font)
         title_label.grid(row=0, column=0, sticky='n', pady=5)
 
-        self.wallet_list = tk.Listbox(self, width=30, height=10, font=self.root.title_font)
+        self.wallet_list = tk.Listbox(self, width=30, height=10, font=self.root.title_font, selectmode=tk.SINGLE)
 
         # fill wallet_list with all wallets
         for i, w in enumerate(self.wallets):
@@ -63,12 +62,17 @@ class WalletSelect(ttk.Frame):
                                           command=lambda: self.root.show_frame('WalletImport'))
         import_wallet_button.grid(row=3, column=0, padx=5, sticky='ew')
 
-        edit_wallet_button = ttk.Button(options_frame, text='Edit Wallet')
-        edit_wallet_button.grid(row=4, column=0, padx=5, sticky='ew')
+        rename_wallet_button = ttk.Button(options_frame, text='Rename Wallet',
+                                          command=self.rename_wallet)
+        rename_wallet_button.grid(row=4, column=0, padx=5, sticky='ew')
+
+        delete_wallet_button = ttk.Button(options_frame, text='Delete Wallet',
+                                          command=self.delete_wallet)
+        delete_wallet_button.grid(row=5, column=0, padx=5, sticky='ew')
 
         settings_button = ttk.Button(options_frame, text='Settings',
                                      command=self.root.settings_prompt)
-        settings_button.grid(row=5, column=0, pady=20, padx=5, sticky='ew')
+        settings_button.grid(row=6, column=0, pady=20, padx=5, sticky='ew')
 
     @property
     def wallets(self):
@@ -77,31 +81,78 @@ class WalletSelect(ttk.Frame):
                 if os.path.isdir(os.path.join(config.WALLET_DATA_DIR, w))]
 
     def select_wallet(self):
-        try:
-            if self.wallet_list.curselection():
-                selected_wallet = self.wallet_list.get(tk.ACTIVE)
 
-                # if <NEW WALLET> is selected, go to wallet creation frame
-                if selected_wallet == '<NEW WALLET>':
-                    self.root.show_frame('WalletCreation')
-                    return
+        if self.wallet_list.curselection():
+            selected_wallet = self.wallet_list.get(tk.ACTIVE)
 
-            else:
-                raise NoWalletSelectedError
-
-            password = self.root.password_prompt(self)
-
-            # if the password prompt window is exited without submitting,
-            # password will be None and will raise an Exception
-            if password is None:
+            # if <NEW WALLET> is selected, go to wallet creation frame
+            if selected_wallet == '<NEW WALLET>':
+                self.root.show_frame('WalletCreation')
                 return
 
-            self.root.wallet_init(name=selected_wallet, password=password)
-
-            self.root.show_frame('MainWallet')
-
-        except NoWalletSelectedError:
+        else:
             messagebox.showerror('Error', 'No wallet selected')
+            return
 
+        password = self.root.password_prompt(self)
+
+        # if the password prompt window is exited without submitting,
+        # password will be None and will raise an Exception
+        if password is None:
+            return
+
+        try:
+            self.root.wallet_init(name=selected_wallet, password=password)
         except IncorrectPasswordError:
             self.root.incorrect_password_prompt(self)
+            return
+
+        self.root.show_frame('MainWallet')
+
+    def rename_wallet(self):
+        if self.wallet_list.curselection():
+            selected_wallet = self.wallet_list.get(tk.ACTIVE)
+        else:
+            messagebox.showerror('Error', 'No wallet selected')
+            return
+
+        new_name = self.root.TTKSimpleDialog.askstring('Rename Wallet', 'Enter Name:', parent=self)
+
+        if new_name is None:
+            return
+
+        for w in self.wallets:
+            if w.lower() == new_name.lower():
+                tk.messagebox.showerror('Error', 'Wallet with same name already exists')
+                return
+
+        try:
+            old = os.path.join(config.WALLET_DATA_DIR, selected_wallet)
+            new = os.path.join(config.WALLET_DATA_DIR, new_name)
+
+            os.rename(old, new)
+            self.gui_draw()
+
+        except OSError as ex:
+            tk.messagebox.showerror('OSError', f'Unable to rename wallet folder: {ex.__str__()}')
+            self.gui_draw()
+            return
+
+    def delete_wallet(self):
+        if self.wallet_list.curselection():
+            selected_wallet = self.wallet_list.get(tk.ACTIVE)
+        else:
+            messagebox.showerror('Error', 'No wallet selected')
+            return
+
+        if not tk.messagebox.askyesno('Delete Wallet', 'Are you sure you want to delete this wallet?'):
+            return
+
+        try:
+            shutil.rmtree(os.path.join(config.WALLET_DATA_DIR, selected_wallet))
+            self.gui_draw()
+
+        except OSError as ex:
+            tk.messagebox.showerror('OSError', f'Unable to delete wallet folder: {ex.__str__()}')
+            self.gui_draw()
+            return
