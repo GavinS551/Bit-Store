@@ -5,8 +5,10 @@ import string
 import multiprocessing
 from operator import itemgetter
 from functools import lru_cache
+from contextlib import suppress
 
 import bitstring
+import base58
 from .bip32utils_updated.BIP32Key import BIP32Key, BIP32_HARDEN
 
 from .utils import IterableQueue
@@ -40,6 +42,9 @@ class HDWallet:
 
         if gap_limit <= 0:
             raise ValueError('Gap limit must be a positive int')
+
+        if not self.check_xkey(key):
+            raise ValueError(f'Invalid Extended Key: ({key})')
 
         self.is_private = False if key[1:4] == 'pub' else True
 
@@ -154,6 +159,19 @@ class HDWallet:
         nh = bin(int(hashlib.sha256(nd).hexdigest(), 16))[2:].zfill(256)[:len_b // 33]
 
         return h == nh
+
+    @staticmethod
+    def check_xkey(xkey, allow_testnet=True):
+        xkey_version_bytes = ('0488B21E', '0488ADE4')
+
+        if allow_testnet:
+            xkey_version_bytes += ('043587CF', '04358394')
+
+        with suppress(ValueError):
+            if base58.b58decode_check(xkey)[:4].hex().upper() in xkey_version_bytes:
+                return True
+
+        return False
 
     @staticmethod
     def check_path(path):
