@@ -57,7 +57,7 @@ class TransactionData(NamedTuple):
         return self.txid == other.txid
 
     def __hash__(self):
-        """ dataclass's default hash has to be overridden as inputs and
+        """ named tuple's default hash has to be overridden as inputs and
          outputs lists are un-hashable
          """
         return hash(self.txid)

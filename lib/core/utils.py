@@ -2,9 +2,11 @@
 
 import os
 import decimal
+import datetime
 from functools import wraps
 from threading import Thread
 from queue import Empty
+
 import base58
 
 
@@ -61,6 +63,14 @@ def float_to_str(float_, show_plus_sign=False):
 
         else:
             return '+' + format(d1, 'f')
+
+
+def datetime_str_from_timestamp(timestamp, fmt, utc=True):
+    """ converts a unix timestamp to a datetime string. Uses local time if utc is false """
+    if utc:
+        return datetime.datetime.utcfromtimestamp(timestamp).strftime(fmt)
+    else:
+        return datetime.datetime.fromtimestamp(timestamp).strftime(fmt)
 
 
 class IterableQueue:
