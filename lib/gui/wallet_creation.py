@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-from typing import NamedTuple, Any
+from typing import NamedTuple, Union
 
 from ..core import config, wallet, hd, utils
 
@@ -91,9 +91,41 @@ class WalletCreation(ttk.Frame):
     def _verify_password(self):
         return self.password_entry.get() == self.confirm_pass_entry.get()
 
+    def _validate_entries(self):
+        """ invalid entries raise ValueError """
+        name = self.name_entry.get().strip()
+        password = self.password_entry.get()
+
+        if self.path_entry.get() == '':
+            # setting default path
+            path = config.BIP32_PATHS['bip49path']
+        else:
+            path = self.path_entry.get()
+
+        if not name:
+            raise ValueError('No name entered')
+
+        if len(name) > MAX_NAME_LENGTH:
+            raise ValueError(f'Name is too long (max={MAX_NAME_LENGTH})')
+
+        for w in self.root.frames['WalletSelect'].wallets:
+            if w.lower() == name.lower():
+                raise ValueError('Wallet with same name already exists!')
+
+        if not password:
+            raise ValueError('No password entered')
+
+        if not self._verify_password():
+            self.password_entry.delete(0, 'end')
+            self.confirm_pass_entry.delete(0, 'end')
+            raise ValueError('Passwords don\'t match')
+
+        if not hd.HDWallet.check_path(path):
+            raise ValueError(f'Invalid path entered: ({path})')
+
     # custom mnemonic and xkey params are meant for subclassing this class when
     # implementing wallet import feature
-    def create_wallet(self, mnemonic=None, xkey=None, passphrase=None):
+    def create_wallet(self, mnemonic=None, xkey=None, passphrase=None, bypass_mnemonic_display=False):
         if mnemonic is None and xkey is None:
             mnemonic = hd.HDWallet.gen_mnemonic()
 
@@ -101,7 +133,7 @@ class WalletCreation(ttk.Frame):
             passphrase = self.mnemonic_passphrase_entry.get()
 
         try:
-            name = self.name_entry.get()
+            name = self.name_entry.get().strip()
             password = self.password_entry.get()
 
             if self.path_entry.get() == '':
@@ -112,27 +144,8 @@ class WalletCreation(ttk.Frame):
 
             is_segwit = True if self.segwit_check.get() == 1 else False
 
-            # error checking
-            if not name:
-                raise ValueError('No name entered')
-
-            if len(name) > MAX_NAME_LENGTH:
-                raise ValueError(f'Name is too long (max={MAX_NAME_LENGTH})')
-
-            for w in self.root.frames['WalletSelect'].wallets:
-                if w.lower() == name.lower():
-                    raise ValueError('Wallet with same name already exists!')
-
-            if not password:
-                raise ValueError('No password entered')
-
-            if not self._verify_password():
-                self.password_entry.delete(0, 'end')
-                self.confirm_pass_entry.delete(0, 'end')
-                raise ValueError('Passwords don\'t match')
-
-            if not hd.HDWallet.check_path(path):
-                raise ValueError(f'Invalid path entered: ({path})')
+            # error checking, invalid entries raise ValueError
+            self._validate_entries()
 
             if None not in [mnemonic, xkey]:
                 raise ValueError('Either "mnemonic" or "xkey" arguments must be None')
@@ -149,14 +162,14 @@ class WalletCreation(ttk.Frame):
                 passphrase: str
                 is_segwit: bool
                 path: str
-                mnemonic: Any
-                xkey: Any
+                mnemonic: Union[str, None]
+                xkey: Union[str, None]
 
             wd = WalletCreationData(name, password, passphrase,
                                     is_segwit, path, mnemonic, xkey)
 
             # thread is already started, see utils.threaded decorator
-            self._build_wallet_instance(wd)
+            self._build_wallet_instance(wd, bypass_mnemonic_display)
 
         except ValueError as ex:
             messagebox.showerror('Error', f'{ex.__str__()}')
@@ -168,7 +181,7 @@ class WalletCreation(ttk.Frame):
             self.root.show_frame('WalletCreation')
 
     @utils.threaded(name='GUI_MAKE_WALLET_THREAD')
-    def _build_wallet_instance(self, wallet_data):
+    def _build_wallet_instance(self, wallet_data, bypass_mnemonic_display=False):
         if wallet_data.xkey is None:
             hd_ = hd.HDWallet.from_mnemonic(wallet_data.mnemonic,
                                             wallet_data.path,
@@ -181,7 +194,11 @@ class WalletCreation(ttk.Frame):
 
         w = wallet.Wallet.new_wallet(wallet_data.name, wallet_data.password, hd_)
         self.root.btc_wallet = w
-        self.root.show_frame('WalletCreationShowMnemonic', mnemonic=wallet_data.mnemonic)
+
+        if bypass_mnemonic_display:
+            self.root.show_frame('MainWallet')
+        else:
+            self.root.show_frame('WalletCreationShowMnemonic', mnemonic=wallet_data.mnemonic)
 
 
 class WalletCreationLoading(ttk.Frame):

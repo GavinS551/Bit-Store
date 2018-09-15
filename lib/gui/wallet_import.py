@@ -56,11 +56,9 @@ class WalletImport(WalletCreation):
         return selected_type.get()
 
     def on_next(self):
-        if not all([entry.get() for entry in (self.password_entry,
-                                              self.confirm_pass_entry, self.name_entry)]):
-            tk.messagebox.showerror('Error', 'Please fill out all required entries before continuing')
+        try:
+            self._validate_entries()
 
-        else:
             import_type = self.import_type_dialog()
 
             if not import_type:
@@ -68,7 +66,10 @@ class WalletImport(WalletCreation):
 
             self.root.show_frame('WalletImportPage2', wallet_import=self, import_type=import_type)
 
+        except ValueError as ex:
+            messagebox.showerror('Error', f'{ex.__str__()}')
 
+            
 class WalletImportPage2(ttk.Frame):
 
     def __init__(self, root):
@@ -102,20 +103,20 @@ class WalletImportPage2(ttk.Frame):
         self.entry_label.grid(row=1, column=0, padx=(0, 20), sticky='w')
 
         self.entry = tk.Text(self, width=40, height=5, font=self.root.small_font, wrap=tk.WORD)
-        self.entry.grid(row=1, column=1, pady=20)
+        self.entry.grid(row=1, column=1, pady=10)
 
         if self.import_type == 'mnemonic':
             self.passphrase_entry_label = ttk.Label(self, text='Mnemonic Passphrase:', font=self.root.small_font)
             self.passphrase_entry_label.grid(row=2, column=0, padx=(0, 20), sticky='w')
 
             self.passphrase_entry = ttk.Entry(self)
-            self.passphrase_entry.grid(row=2, column=1, pady=20, sticky='ew')
+            self.passphrase_entry.grid(row=2, column=1, pady=10, sticky='ew')
 
         back_button = ttk.Button(self, text='Back', command=self.on_back)
         back_button.grid(row=3, column=0, padx=10, pady=20, sticky='e')
 
         create_button = ttk.Button(self, text='Create', command=self.on_create)
-        create_button.grid(row=3, column=1, padx=10, pady=20, sticky='w')
+        create_button.grid(row=3, column=1, padx=10, pady=10, sticky='w')
 
     def on_back(self):
         # remove the optional widgets, because if the user goes back
@@ -128,17 +129,18 @@ class WalletImportPage2(ttk.Frame):
 
     def on_create(self):
         if self.import_type == 'mnemonic':
-            mnemonic = self.entry.get(1.0, 'end-1c')
-            passphrase = self.passphrase_entry.get()
+            mnemonic = self.entry.get(1.0, 'end-1c').strip()
+            passphrase = self.passphrase_entry.get().strip()
 
             if not hd.HDWallet.check_mnemonic(mnemonic):
                 tk.messagebox.showerror('Error', 'Invalid Mnemonic Entered')
                 return
 
-            self.wallet_import.create_wallet(mnemonic=mnemonic, passphrase=passphrase)
+            self.wallet_import.create_wallet(mnemonic=mnemonic, passphrase=passphrase,
+                                             bypass_mnemonic_display=True)
 
         else:
-            xkey = self.entry.get(1.0, 'end-1c')
+            xkey = self.entry.get(1.0, 'end-1c').strip()
 
             if not hd.HDWallet.check_xkey(xkey, allow_testnet=False):
                 tk.messagebox.showerror('Error', 'Invalid extended key entered')
@@ -146,4 +148,4 @@ class WalletImportPage2(ttk.Frame):
             if xkey[1:4] == 'pub':
                 tk.messagebox.showerror('Error', 'Public key entered: watch-only wallets not currently supported')
 
-            self.wallet_import.create_wallet(xkey=xkey)
+            self.wallet_import.create_wallet(xkey=xkey, bypass_mnemonic_display=True)
