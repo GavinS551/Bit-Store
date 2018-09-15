@@ -27,6 +27,7 @@ class WalletCreation(ttk.Frame):
 
         # attributes for subclass support
         self.title = None
+        self.mnemonic_passphrase_label = None
         self.back_button = None
         self.create_button = None
 
@@ -74,8 +75,8 @@ class WalletCreation(ttk.Frame):
         recommend_label = ttk.Label(self, text='(Recommended)', font=self.root.tiny_font)
         recommend_label.grid(row=5, column=3, padx=5, sticky='w')
 
-        mnemonic_passphrase_label = ttk.Label(self, text='Mnemonic Passphrase:', font=self.root.small_font)
-        mnemonic_passphrase_label.grid(row=6, column=0, sticky='w')
+        self.mnemonic_passphrase_label = ttk.Label(self, text='Mnemonic Passphrase:', font=self.root.small_font)
+        self.mnemonic_passphrase_label.grid(row=6, column=0, sticky='w')
 
         self.mnemonic_passphrase_entry = ttk.Entry(self)
         self.mnemonic_passphrase_entry.grid(row=6, column=1, pady=5, columnspan=2)
@@ -92,15 +93,16 @@ class WalletCreation(ttk.Frame):
 
     # custom mnemonic and xkey params are meant for subclassing this class when
     # implementing wallet import feature
-    def create_wallet(self, mnemonic=None, xkey=None):
+    def create_wallet(self, mnemonic=None, xkey=None, mnemonic_passphrase=None):
         if mnemonic is None and xkey is None:
             mnemonic = hd.HDWallet.gen_mnemonic()
+
+        if mnemonic_passphrase is None:
+            passphrase = self.mnemonic_passphrase_entry.get()
 
         try:
             name = self.name_entry.get()
             password = self.password_entry.get()
-
-            passphrase = self.mnemonic_passphrase_entry.get()
 
             if self.path_entry.get() == '':
                 # setting default path
