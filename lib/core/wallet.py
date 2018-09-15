@@ -233,6 +233,12 @@ class Wallet:
 
         unsigned_txn.sign(wif_keys)
 
+    def clear_cached_api_data(self):
+        api_keys = ['TXNS', 'ADDRESS_BALS', 'WALLET_BAL', 'ADDRESS_BALS', 'UNSPENT_OUTS', 'PRICE']
+        k_v = {k: v for k, v in config.STANDARD_DATA_FORMAT.items() if k in api_keys}
+
+        self.data_store.write_value(**k_v)
+
     @staticmethod
     def broadcast_transaction(signed_txn):
         if not signed_txn.is_signed:
