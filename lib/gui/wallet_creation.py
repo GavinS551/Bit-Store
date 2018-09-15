@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 from typing import NamedTuple, Union
+import string
 
 from ..core import config, wallet, hd, utils
 
@@ -107,6 +108,9 @@ class WalletCreation(ttk.Frame):
 
         if len(name) > MAX_NAME_LENGTH:
             raise ValueError(f'Name is too long (max={MAX_NAME_LENGTH})')
+
+        if not all(c in string.ascii_letters + string.digits for c in name):
+            raise ValueError('Name must only contain standard alphanumeric characters')
 
         for w in self.root.frames['WalletSelect'].wallets:
             if w.lower() == name.lower():
