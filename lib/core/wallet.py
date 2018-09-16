@@ -16,6 +16,20 @@ from ..exceptions.wallet_exceptions import *
 
 API_REFRESH_RATE = 5
 WALLET_DATA_FILE_NAME = 'wallet_data'
+WALLET_INFO_FILE_NAME = 'w_info'
+
+
+def get_wallet(name, password):
+    """ function will return wallet of correct type (normal or watch-only) """
+    w_info_file = os.path.join(config.WALLET_DATA_DIR, name, WALLET_INFO_FILE_NAME)
+
+    with open(w_info_file) as f:
+        watch_only = json.load(f)['watch_only']
+
+    if watch_only:
+        return WatchOnlyWallet(name, password)
+    else:
+        return Wallet(name, password)
 
 
 class _ApiDataUpdaterThread(threading.Thread):
@@ -103,6 +117,7 @@ class _ApiDataUpdaterThread(threading.Thread):
 
 
 class Wallet:
+    _watchonly = False
 
     @classmethod
     def new_wallet(cls, name, password, hd_wallet_obj, offline=False):
@@ -140,18 +155,24 @@ class Wallet:
                 'MNEMONIC': hd_wallet_obj.mnemonic,
                 'XPRIV': hd_wallet_obj.master_private_key,
                 'XPUB': hd_wallet_obj.master_public_key,
+                'ACCOUNT_XPUB': hd_wallet_obj.account_public_key,
                 'PATH': hd_wallet_obj.path,
                 'GAP_LIMIT': hd_wallet_obj.gap_limit,
                 'SEGWIT': hd_wallet_obj.is_segwit,
                 'ADDRESSES_RECEIVING': addresses[0],
                 'ADDRESSES_CHANGE': addresses[1],
                 'ADDRESS_WIF_KEYS': dict(hd_wallet_obj.address_wifkey_pairs())
+                if hd_wallet_obj.address_wifkey_pairs() is not None else None
             }
 
             d_store.write_value(**info)
 
             hd_wallet_obj.delete_sensitive_data()
             del hd_wallet_obj
+
+            with open(os.path.join(dir_, WALLET_INFO_FILE_NAME), 'w') as w_info_file:
+                w_data = {'watch_only': cls._watchonly}
+                json.dump(w_data, w_info_file)
 
             return cls(name, password, offline=offline)
 
@@ -269,7 +290,7 @@ class Wallet:
         # so that different addresses are used, but all public attributes
         # would be the same). But really, users shouldn't just import transactions
         # if they don't know where they came from
-        valid_hash = hashlib.sha512(txn_bytes + self.xpub.encode('utf-8')).hexdigest()
+        valid_hash = hashlib.sha512(txn_bytes + self.account_xpub.encode('utf-8')).hexdigest()
 
         txn_data = {
             'txn': hex_txn,
@@ -298,7 +319,7 @@ class Wallet:
         txn_data = json.loads(json_data)
 
         txn_bytes = binascii.unhexlify(txn_data['txn'])
-        txn_hash = hashlib.sha512(txn_bytes + self.xpub.encode('utf-8')).hexdigest()
+        txn_hash = hashlib.sha512(txn_bytes + self.account_xpub.encode('utf-8')).hexdigest()
 
         if not txn_data['hash'] == txn_hash:
             raise ValueError('Cannot import transaction: Invalid hash')
@@ -338,6 +359,10 @@ class Wallet:
     @property
     def xpub(self):
         return self.data_store.get_value('XPUB')
+
+    @property
+    def account_xpub(self):
+        return self.data_store.get_value('ACCOUNT_XPUB')
 
     @property
     def path(self):
@@ -447,10 +472,7 @@ class Wallet:
 
 
 class WatchOnlyWallet(Wallet):
-    @classmethod
-    def new_wallet(cls, name, password, hd_wallet_obj, offline=False):
-        # override
-        raise NotImplementedError
+    _watchonly = True
 
     def sign_transaction(self, unsigned_txn, password):
         raise NotImplementedError

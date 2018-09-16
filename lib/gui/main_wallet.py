@@ -1,10 +1,11 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 
 import string
 from threading import Event
 import datetime
 from types import SimpleNamespace
+import pathlib
 
 import qrcode
 from PIL import ImageTk
@@ -25,6 +26,12 @@ class MainWallet(ttk.Frame):
         self.unit_factor = config.UNIT_FACTORS[self.display_units]
         self.max_decimal_places = config.UNITS_MAX_DECIMAL_PLACES[self.display_units]
 
+        # defined in gui_draw
+        self.notebook = None
+        self.tx_display = None
+        self.send_display = None
+        self.receive_display = None
+
         # attributes below will be updated in _refresh_data method
         self.wallet_balance = tk.DoubleVar()
         self.unconfirmed_wallet_balance = tk.DoubleVar()
@@ -37,25 +44,26 @@ class MainWallet(ttk.Frame):
         self.api_thread_status = tk.StringVar()
 
     def gui_draw(self):
+
         title_label = ttk.Label(self, text=self.root.btc_wallet.name,
                                 font=self.root.bold_title_font)
         title_label.grid(row=0, column=0)
 
-        notebook = ttk.Notebook(self)
+        self.notebook = ttk.Notebook(self)
 
-        tx_display = _TransactionDisplay(notebook, self)
-        tx_display.grid(sticky='nsew')
-        notebook.add(tx_display, text='Transactions')
+        self.tx_display = _TransactionDisplay(self.notebook, self)
+        self.tx_display.grid(sticky='nsew')
+        self.notebook.add(self.tx_display, text='Transactions')
 
-        send_display = _SendDisplay(notebook, self)
-        send_display.grid(sticky='nsew')
-        notebook.add(send_display, text='Send')
+        self.send_display = _SendDisplay(self.notebook, self)
+        self.send_display.grid(sticky='nsew')
+        self.notebook.add(self.send_display, text='Send')
 
-        receive_display = _ReceiveDisplay(notebook, self)
-        receive_display.grid(sticky='nsew')
-        notebook.add(receive_display, text='Receive')
+        self.receive_display = _ReceiveDisplay(self.notebook, self)
+        self.receive_display.grid(sticky='nsew')
+        self.notebook.add(self.receive_display, text='Receive')
 
-        notebook.grid(row=1, column=0, pady=(0, 10))
+        self.notebook.grid(row=1, column=0, pady=(0, 10))
 
         self._draw_bottom_info_bar()
         self._draw_menu_bar()
@@ -445,8 +453,10 @@ class _SendDisplay(ttk.Frame):
 
         button_frame = ttk.Frame(self)
 
-        send_button = ttk.Button(button_frame, text='Send', command=self.on_send)
-        send_button.grid(row=4, column=0, pady=20, padx=10)
+        # send button is cls attribute as it will have to be accessed by subclasses such
+        # as a public btc wallet implementation that cannot sign txns
+        self.send_button = ttk.Button(button_frame, text='Send', command=self.on_send)
+        self.send_button.grid(row=4, column=0, pady=20, padx=10)
 
         use_balance_button = ttk.Button(button_frame, text='Use Balance', command=self.on_use_balance)
         use_balance_button.grid(row=4, column=1, pady=20, padx=10)
@@ -975,3 +985,34 @@ class _AdvancedDisplay(ttk.Frame):
     def __init__(self, master, main_wallet):
         ttk.Frame.__init__(self, master, padding=5)
         self.main_wallet = main_wallet
+
+
+class WatchOnlyMainWallet(MainWallet):
+
+    def gui_draw(self):
+        super().gui_draw()
+
+        self.notebook.forget(self.send_display)
+
+        self.send_display = _WatchOnlySendDisplay(self.notebook, self)
+        self.send_display.grid(sticky='nsew')
+
+        self.notebook.add(self.send_display, text='Send')
+
+
+class _WatchOnlySendDisplay(_SendDisplay):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.send_button.configure(text='Export Txn', command=self.export_txn)
+
+    def export_txn(self):
+        export_path = filedialog.asksaveasfilename(initialdir=pathlib.Path.home())
+
+        try:
+            self.main_wallet.root.btc_wallet.file_export_transaction(file_path=export_path,
+                                                                     transaction=self.transaction)
+        except OSError as ex:
+            messagebox.showerror('Error', f'Unable to export transaction: {ex.__str__()}')
+
+        messagebox.showinfo('Transaction Exported', 'Transaction was successfully exported')

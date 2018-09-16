@@ -55,6 +55,7 @@ STANDARD_DATA_FORMAT = {
     'MNEMONIC': str,
     'XPRIV': str,
     'XPUB': str,
+    'ACCOUNT_XPUB': str,
     'PATH': str,
     'GAP_LIMIT': int,
     'SEGWIT': bool,

@@ -103,11 +103,15 @@ class WalletSelect(ttk.Frame):
 
         try:
             self.root.wallet_init(name=selected_wallet, password=password)
+
         except IncorrectPasswordError:
             self.root.incorrect_password_prompt(self)
             return
 
-        self.root.show_frame('MainWallet')
+        if self.root.btc_wallet._watchonly:
+            self.root.show_frame('WatchOnlyMainWallet')
+        else:
+            self.root.show_frame('MainWallet')
 
     def rename_wallet(self):
         if self.wallet_list.curselection():
@@ -149,7 +153,7 @@ class WalletSelect(ttk.Frame):
             return
 
         try:
-            shutil.rmtree(os.path.join(config.WALLET_DATA_DIR, selected_wallet))
+            shutil.rmtree(os.path.join(config.WALLET_DATA_DIR, selected_wallet), ignore_errors=True)
             self.gui_draw()
 
         except OSError as ex:

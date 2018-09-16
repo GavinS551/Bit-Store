@@ -142,8 +142,7 @@ class WalletImportPage2(ttk.Frame):
                 tk.messagebox.showerror('Error', 'Invalid Mnemonic Entered')
                 return
 
-            self.wallet_import.create_wallet(mnemonic=mnemonic, passphrase=passphrase,
-                                             bypass_mnemonic_display=True)
+            self.wallet_import.create_wallet(mnemonic=mnemonic, passphrase=passphrase)
 
         else:
             xkey = self.entry.get(1.0, 'end-1c').strip()
@@ -153,7 +152,16 @@ class WalletImportPage2(ttk.Frame):
                 return
 
             if xkey[1:4] == 'pub':
-                tk.messagebox.showerror('Error', 'Public key entered: watch-only wallets not currently supported')
-                return
+                tk.messagebox.showinfo('Watch-Only', 'A public extended key was entered. '
+                                                     'This will create a "watch-only" wallet '
+                                                     'that you will not be able to spend bitcoin '
+                                                     'with, but you will be able to create and '
+                                                     'export unsigned transactions, and monitor '
+                                                     'wallet activity.')
 
-            self.wallet_import.create_wallet(xkey=xkey, bypass_mnemonic_display=True)
+                # watch only wallets will have a path of m as they should be the xpub of the account
+                # to be monitored
+                self.wallet_import.path_entry.delete(0, tk.END)
+                self.wallet_import.path_entry.insert(tk.END, 'm')
+
+            self.wallet_import.create_wallet(xkey=xkey)

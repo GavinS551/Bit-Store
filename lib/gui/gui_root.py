@@ -4,6 +4,7 @@ from tkinter import ttk, messagebox
 import os
 import traceback
 import platform
+import json
 
 from . import ttk_simpledialog as simpledialog
 from ..core import config, wallet
@@ -12,7 +13,7 @@ from .wallet_select import WalletSelect
 from .wallet_creation import (WalletCreation, WalletCreationLoading,
                               WalletCreationShowMnemonic, WalletCreationVerifyMnemonic)
 from .wallet_import import WalletImport, WalletImportPage2
-from .main_wallet import MainWallet
+from .main_wallet import MainWallet, WatchOnlyMainWallet
 
 
 def main():
@@ -73,7 +74,7 @@ class RootApplication(tk.Tk):
         for f in (WalletSelect, WalletCreation, MainWallet,
                   WalletCreationLoading, WalletCreationShowMnemonic,
                   WalletCreationVerifyMnemonic, WalletImport,
-                  WalletImportPage2):
+                  WalletImportPage2, WatchOnlyMainWallet):
 
             frame = f(self)
             self.frames[f.__name__] = frame
@@ -116,7 +117,7 @@ class RootApplication(tk.Tk):
         self.style.configure('Treeview.Heading', font=(config.FONT, 10))
 
     def wallet_init(self, name, password):
-        self.btc_wallet = wallet.Wallet(name=name, password=password)
+        self.btc_wallet = wallet.get_wallet(name, password)
 
     @classmethod
     def password_prompt(cls, parent):

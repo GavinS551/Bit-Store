@@ -109,8 +109,8 @@ class WalletCreation(ttk.Frame):
         if len(name) > MAX_NAME_LENGTH:
             raise ValueError(f'Name is too long (max={MAX_NAME_LENGTH})')
 
-        if not all(c in string.ascii_letters + string.digits for c in name):
-            raise ValueError('Name must only contain standard alphanumeric characters')
+        if not all(c in string.ascii_letters + string.digits + ' ' for c in name):
+            raise ValueError('Name must only contain standard alphanumeric characters or spaces')
 
         for w in self.root.frames['WalletSelect'].wallets:
             if w.lower() == name.lower():
@@ -129,7 +129,7 @@ class WalletCreation(ttk.Frame):
 
     # custom mnemonic and xkey params are meant for subclassing this class when
     # implementing wallet import feature
-    def create_wallet(self, mnemonic=None, xkey=None, passphrase=None, bypass_mnemonic_display=False):
+    def create_wallet(self, mnemonic=None, xkey=None, passphrase=None):
         if mnemonic is None and xkey is None:
             mnemonic = hd.HDWallet.gen_mnemonic()
 
@@ -173,7 +173,7 @@ class WalletCreation(ttk.Frame):
                                     is_segwit, path, mnemonic, xkey)
 
             # thread is already started, see utils.threaded decorator
-            self._build_wallet_instance(wd, bypass_mnemonic_display)
+            self._build_wallet_instance(wd)
 
         except ValueError as ex:
             messagebox.showerror('Error', f'{ex.__str__()}')
@@ -185,22 +185,36 @@ class WalletCreation(ttk.Frame):
             self.root.show_frame('WalletCreation')
 
     @utils.threaded(name='GUI_MAKE_WALLET_THREAD')
-    def _build_wallet_instance(self, wallet_data, bypass_mnemonic_display=False):
+    def _build_wallet_instance(self, wallet_data):
+        watch_only_wallet = False
+        bypass_mnemonic_display = False
+
         if wallet_data.xkey is None:
             hd_ = hd.HDWallet.from_mnemonic(wallet_data.mnemonic,
                                             wallet_data.path,
                                             wallet_data.passphrase,
                                             wallet_data.is_segwit)
+
         else:
             hd_ = hd.HDWallet(wallet_data.xkey,
                               wallet_data.path,
                               wallet_data.is_segwit)
 
-        w = wallet.Wallet.new_wallet(wallet_data.name, wallet_data.password, hd_)
+            watch_only_wallet = not hd_.is_private
+            bypass_mnemonic_display = True
+
+        if watch_only_wallet:
+            w = wallet.WatchOnlyWallet.new_wallet(wallet_data.name, wallet_data.password, hd_)
+        else:
+            w = wallet.Wallet.new_wallet(wallet_data.name, wallet_data.password, hd_)
+
         self.root.btc_wallet = w
 
         if bypass_mnemonic_display:
-            self.root.show_frame('MainWallet')
+            if watch_only_wallet:
+                self.root.show_frame('WatchOnlyMainWallet')
+            else:
+                self.root.show_frame('MainWallet')
         else:
             self.root.show_frame('WalletCreationShowMnemonic', mnemonic=wallet_data.mnemonic)
 
@@ -287,7 +301,7 @@ class WalletCreationVerifyMnemonic(ttk.Frame):
         button_frame.grid(row=3, column=0, pady=20)
 
     def _verify_mnemonic(self):
-        return self.mnemonic.lower() == self.mnemonic_entry.get(1.0, 'end-1c').lower()
+        return self.mnemonic.lower() == self.mnemonic_entry.get(1.0, 'end-1c').strip().lower()
 
     def _on_continue(self):
         if self._verify_mnemonic():
