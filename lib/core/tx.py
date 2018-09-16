@@ -1,5 +1,3 @@
-import pickle
-
 import base58
 import btcpy
 from btcpy.structs.transaction import MutableTransaction, MutableSegWitTransaction, TxIn, TxOut, Locktime, Sequence
@@ -213,27 +211,6 @@ class Transaction:
         self._txn = self._get_unsigned_txn()
 
         self._remove_dust_change()
-
-    @classmethod
-    def deserialize(cls, bytes_obj):
-        """ attempts to deserialize a pickled Transaction instance.
-        Returns None if un-pickling fails. Raises value error if it succeeds
-        but the deserialized bytes aren't an instance of Transaction
-        """
-        try:
-            obj = pickle.loads(bytes_obj)
-
-            if not isinstance(obj, cls):
-                raise ValueError(f'Deserialized bytes are not an instance of {cls.__name__}')
-            else:
-                return obj
-
-        except pickle.PickleError:
-            return None
-
-    def serialize(self):
-        """ returns pickled bytes """
-        return pickle.dumps(self)
 
     @property
     def txid(self):

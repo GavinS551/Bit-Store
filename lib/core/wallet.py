@@ -234,6 +234,40 @@ class Wallet:
 
         unsigned_txn.sign(wif_keys)
 
+    @staticmethod
+    def serialize_transaction(transaction):
+        if not isinstance(transaction, tx.Transaction):
+            raise ValueError(f'transaction must be an instance of {tx.Transaction.__name__} class')
+
+        return pickle.dumps(transaction)
+
+    @staticmethod
+    def deserialize_transaction(txn_bytes):
+        """ if unpickling fails, returns None. Raises ValueError if
+        deserialized bytes are not instance of tx.Transaction"""
+        try:
+            obj = pickle.loads(txn_bytes)
+
+            if isinstance(obj, tx.Transaction):
+                return obj
+            else:
+                raise ValueError(f'Un-pickled object is not of type "{tx.Transaction.__name__}"')
+
+        except pickle.PickleError:
+            return None
+
+    def export_transaction(self):
+        pass
+
+    def load_transaction(self):
+        pass
+
+    def file_export_transaction(self):
+        pass
+
+    def file_load_transaction(self):
+        pass
+
     def clear_cached_api_data(self):
         api_keys = ['TXNS', 'ADDRESS_BALS', 'WALLET_BAL', 'ADDRESS_BALS', 'UNSPENT_OUTS', 'PRICE']
         k_v = {k: v() for k, v in config.STANDARD_DATA_FORMAT.items() if k in api_keys}
