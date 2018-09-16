@@ -4,6 +4,7 @@ import shutil
 import enum
 import time
 import json
+import pickle
 
 import requests.exceptions
 
@@ -235,7 +236,7 @@ class Wallet:
 
     def clear_cached_api_data(self):
         api_keys = ['TXNS', 'ADDRESS_BALS', 'WALLET_BAL', 'ADDRESS_BALS', 'UNSPENT_OUTS', 'PRICE']
-        k_v = {k: v for k, v in config.STANDARD_DATA_FORMAT.items() if k in api_keys}
+        k_v = {k: v() for k, v in config.STANDARD_DATA_FORMAT.items() if k in api_keys}
 
         self.data_store.write_value(**k_v)
 
@@ -289,15 +290,23 @@ class Wallet:
     @property
     def price(self):
         # price class should return int by default
-        return int(self.data_store.get_value('PRICE'))
+        return self.data_store.get_value('PRICE')
 
     @property
     def wallet_balance(self):
-        return self.data_store.get_value('WALLET_BAL')[0]
+        try:
+            return self.data_store.get_value('WALLET_BAL')[0]
+        # if wallet_balance is a blank list
+        except IndexError:
+            return 0
 
     @property
     def unconfirmed_wallet_balance(self):
-        return self.data_store.get_value('WALLET_BAL')[1]
+        try:
+            return self.data_store.get_value('WALLET_BAL')[1]
+        # if wallet_balance is a blank list
+        except IndexError:
+            return 0
 
     @property
     def fiat_wallet_balance(self):

@@ -52,22 +52,22 @@ DEFAULT_CONFIG = {
 
 
 STANDARD_DATA_FORMAT = {
-    'MNEMONIC': '',
-    'XPRIV': '',
-    'XPUB': '',
-    'PATH': '',
-    'GAP_LIMIT': 0,
-    'SEGWIT': True,
-    'ADDRESSES_RECEIVING': [],
-    'ADDRESSES_CHANGE': [],
-    'ADDRESSES_USED': [],
-    'ADDRESS_BALS': {},
-    'TXNS': [],
-    'PRICE': 0.0,
-    'WALLET_BAL': [0, 0],
-    'UNSPENT_OUTS': [],
-    'PASSWORD_HASH': '',
-    'ADDRESS_WIF_KEYS': {}
+    'MNEMONIC': str,
+    'XPRIV': str,
+    'XPUB': str,
+    'PATH': str,
+    'GAP_LIMIT': int,
+    'SEGWIT': bool,
+    'ADDRESSES_RECEIVING': list,
+    'ADDRESSES_CHANGE': list,
+    'ADDRESSES_USED': list,
+    'ADDRESS_BALS': dict,
+    'TXNS': list,
+    'PRICE': float,
+    'WALLET_BAL': list,
+    'UNSPENT_OUTS': list,
+    'PASSWORD_HASH': str,
+    'ADDRESS_WIF_KEYS': dict
 }
 
 

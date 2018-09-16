@@ -45,7 +45,8 @@ class DataStore(Crypto):
         self.data_format = data_format if data_format is not None else {}
 
         # json serialised data_format to be dumped to new file
-        self.json_blank_template = json.dumps(self.data_format)
+        # (types are instantiated in the template)
+        self.json_blank_template = json.dumps({k: v() for k, v in self.data_format.items()})
 
         # sensitive keys will have their values encrypted twice, so when the file is read
         # and stored in memory, their values will still be encrypted
@@ -120,7 +121,7 @@ class DataStore(Crypto):
                 raise ValueError(f'Entered key ({k}) is not valid!')
 
             else:
-                if not isinstance(v, type(self.data_format[k])) and v is not None:
+                if not isinstance(v, self.data_format[k]) and v is not None:
                     raise ValueError(f'Value ({v}) is wrong type. It must be a: '
                                      f'{type(self.data_format[k])} or None')
 
