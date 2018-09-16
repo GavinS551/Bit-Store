@@ -52,6 +52,9 @@ class DataStore(Crypto):
         # and stored in memory, their values will still be encrypted
         self.sensitive_keys = sensitive_keys if sensitive_keys is not None else []
 
+        if not all(self.data_format[k] in (str, dict) for k in self.sensitive_keys):
+            raise ValueError('Sensitive key values must be either a string or a dict')
+
         if not os.path.exists(self.file_path):
             raise ValueError(f'{self.file_path} does not exist!')
 
@@ -117,23 +120,29 @@ class DataStore(Crypto):
         data = self._data
         for k, v in kwargs.items():
 
+            # if v is None, set it to a new instance if its proper type
+            if v is None:
+                v = self.data_format[k]()
+
             if k not in self.data_format:
                 raise ValueError(f'Entered key ({k}) is not valid!')
 
             else:
-                if not isinstance(v, self.data_format[k]) and v is not None:
+                if not isinstance(v, self.data_format[k]):
                     raise ValueError(f'Value ({v}) is wrong type. It must be a: '
-                                     f'{type(self.data_format[k])} or None')
+                                     f'{self.data_format[k]}')
 
                 else:
                     # if key is in sensitive data list, it will be encrypted twice
                     # to limit its exposure in ram, unencrypted
-                    if k in self.sensitive_keys and v is not None:
+                    if k in self.sensitive_keys:
                         # if value is a dict, encrypt all values
                         if isinstance(v, dict):
                             data[k] = {x: self.encrypt(y) for x, y in v.items()}
-                        else:
+                        elif isinstance(v, str):
                             data[k] = self.encrypt(v)
+                        else:
+                            raise ValueError(f'Invalid sensitive data type: "{type(v)}"')
 
                     else:
                         data[k] = v
@@ -143,17 +152,11 @@ class DataStore(Crypto):
     def get_value(self, key):
         value = self._data[key.upper()]
 
-        if value is None:
-            return value
-
-        if key.upper() in self.sensitive_keys:
-            # if value is a dict, it is presumed that the values
-            # in the dict will be decrypted when needed
-            if isinstance(value, dict):
-                return value
-
-            else:
-                return self.decrypt(value)
+        # if value is a dict, it is presumed that the values
+        # in the dict will be decrypted when needed, so only strings
+        # are decrypted. (string and dicts are only types allowed in sensitive data)
+        if key.upper() in self.sensitive_keys and isinstance(value, str):
+            return self.decrypt(value)
 
         else:
             return value
