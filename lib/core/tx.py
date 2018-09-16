@@ -1,4 +1,7 @@
+import pickle
+
 import base58
+import btcpy
 from btcpy.structs.transaction import MutableTransaction, MutableSegWitTransaction, TxIn, TxOut, Locktime, Sequence
 from btcpy.structs.script import P2pkhScript, P2shScript, Script, P2wpkhV0Script, ScriptSig
 from btcpy.structs.sig import P2pkhSolver, P2shSolver, P2wpkhV0Solver
@@ -11,6 +14,21 @@ from ..exceptions.tx_exceptions import *
 
 TX_VERSION = 1
 DUST_THRESHOLD = 546  # satoshis
+
+
+def btcpy_monkey_patch():
+    """ fixes SegWitTransaction to work with pickling """
+    def _getattr(self, item):
+        if 'transaction' not in vars(self):
+            raise AttributeError("'{}' object has no attribute '{}'".format(type(self).__name__,
+                                                                            item))
+        else:
+            return getattr(self.transaction, item)
+
+    btcpy.structs.transaction.SegWitTransaction.__getattr__ = _getattr
+
+
+btcpy_monkey_patch()
 
 
 class _UTXOChooser:
@@ -195,6 +213,27 @@ class Transaction:
         self._txn = self._get_unsigned_txn()
 
         self._remove_dust_change()
+
+    @classmethod
+    def deserialize(cls, bytes_obj):
+        """ attempts to deserialize a pickled Transaction instance.
+        Returns None if un-pickling fails. Raises value error if it succeeds
+        but the deserialized bytes aren't an instance of Transaction
+        """
+        try:
+            obj = pickle.loads(bytes_obj)
+
+            if not isinstance(obj, cls):
+                raise ValueError(f'Deserialized bytes are not an instance of {cls.__name__}')
+            else:
+                return obj
+
+        except pickle.PickleError:
+            return None
+
+    def serialize(self):
+        """ returns pickled bytes """
+        return pickle.dumps(self)
 
     @property
     def txid(self):
