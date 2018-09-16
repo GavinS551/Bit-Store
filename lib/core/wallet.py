@@ -5,6 +5,8 @@ import enum
 import time
 import json
 import pickle
+import hashlib
+import binascii
 
 import requests.exceptions
 
@@ -256,17 +258,69 @@ class Wallet:
         except pickle.PickleError:
             return None
 
-    def export_transaction(self):
-        pass
+    def export_transaction(self, transaction):
+        """ exported transaction in json format """
+        txn_bytes = self.serialize_transaction(transaction)
+        hex_txn = txn_bytes.hex()
 
-    def load_transaction(self):
-        pass
+        # xpub key is added as the salt, to add a bit more security
+        # to the exported transaction, as pickle can introduce
+        # security concerns (e.g. the transaction object could be modified
+        # so that different addresses are used, but all public attributes
+        # would be the same). But really, users shouldn't just import transactions
+        # if they don't know where they came from
+        valid_hash = hashlib.sha512(txn_bytes + self.xpub.encode('utf-8')).hexdigest()
 
-    def file_export_transaction(self):
-        pass
+        txn_data = {
+            'txn': hex_txn,
+            'hash': valid_hash
+        }
 
-    def file_load_transaction(self):
-        pass
+        return json.dumps(txn_data)
+
+    @staticmethod
+    def _check_transaction_import_format(json_data):
+        try:
+            d = json.loads(json_data)
+            if not all(k in ('txn', 'hash') for k in d.keys()):
+                return False
+
+        except json.JSONDecodeError:
+            return False
+
+        return True
+
+    def load_transaction(self, json_data):
+        """ returns a Transaction object """
+        if not self._check_transaction_import_format(json_data):
+            raise ValueError('Cannot import transaction: Invalid format')
+
+        txn_data = json.loads(json_data)
+
+        txn_bytes = binascii.unhexlify(txn_data['txn'])
+        txn_hash = hashlib.sha512(txn_bytes + self.xpub.encode('utf-8')).hexdigest()
+
+        if not txn_data['hash'] == txn_hash:
+            raise ValueError('Cannot import transaction: Invalid hash')
+
+        txn = self.deserialize_transaction(txn_bytes)
+
+        if txn is None:
+            raise ValueError('Cannot import transaction: deserialization failure')
+        else:
+            return txn
+
+    def file_export_transaction(self, file_path, transaction):
+        """ writes a transaction export to file """
+        txn_data = self.export_transaction(transaction)
+
+        with open(file_path, 'w') as f:
+            f.write(txn_data)
+
+    def file_load_transaction(self, file_path):
+        """ returns a transaction import from file """
+        with open(file_path, 'r') as f:
+            return self.load_transaction(f.read())
 
     def clear_cached_api_data(self):
         api_keys = ['TXNS', 'ADDRESS_BALS', 'WALLET_BAL', 'ADDRESS_BALS', 'UNSPENT_OUTS', 'PRICE']
