@@ -275,9 +275,6 @@ class HDWallet:
 
     def _multi_processed_wif_keys(self):
         """ Returns a tuple of receiving and change WIF keys up to the limit specified """
-        if not self.is_private:
-            raise PublicHDWalletObjectError('Can\'t derive private key from watch-only wallet')
-
         receiving = []
         change = []
 
@@ -292,9 +289,6 @@ class HDWallet:
         return receiving, change
 
     def _non_multi_processed_wif_keys(self):
-        if not self.is_private:
-            raise PublicHDWalletObjectError('Can\'t derive private key from watch-only wallet')
-
         receiving = []
         change = []
 
@@ -311,6 +305,9 @@ class HDWallet:
             return self._non_multi_processed_addresses()
 
     def wif_keys(self):
+        if not self.is_private:
+            return None
+
         if self.multi_processed:
             return self._multi_processed_wif_keys()
         else:
@@ -319,7 +316,7 @@ class HDWallet:
     def address_wifkey_pairs(self):
         """ Returns a list of tuples with addresses mapped to their WIF keys """
         if not self.is_private:
-            raise PublicHDWalletObjectError('Can\'t derive private key from watch-only wallet')
+            return None
 
         addresses = self.addresses()
         wif_keys = self.wif_keys()
