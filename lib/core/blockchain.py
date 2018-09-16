@@ -1,5 +1,4 @@
 import time
-import datetime
 import math
 
 import requests
@@ -67,7 +66,7 @@ class _BlockchainBaseClass:
             'fee': int,
             'size': int,
             'inputs': [{'value': int, 'address': str, 'n': int}, ...],
-            'outputs': [{'value': int, 'address': str, 'n': int, 'spent': bool}, ...],
+            'outputs': [{'value': int, 'address': str, 'n': int, 'spent': bool, 'script': str}, ...],
             'wallet_amount': int
 
         }, ...]
