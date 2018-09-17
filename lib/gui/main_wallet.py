@@ -989,12 +989,10 @@ class WatchOnlyMainWallet(MainWallet):
     def gui_draw(self):
         super().gui_draw()
 
+        send_idx = 1  # index of send_display in self.notebook
         self.notebook.forget(self.send_display)
-
         self.send_display = _WatchOnlySendDisplay(self.notebook, self)
-        self.send_display.grid(sticky='nsew')
-
-        self.notebook.add(self.send_display, text='Send')
+        self.notebook.insert(send_idx, self.send_display, text='Send')
 
 
 class _WatchOnlySendDisplay(_SendDisplay):
