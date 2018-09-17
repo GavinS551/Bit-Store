@@ -5,7 +5,8 @@ import datetime
 from .core import config
 
 
-def get_logger():
+def get_logger(log_to_file=True):
+    """ if log_to_file is False, log to stderr """
 
     # create dir for log files if it doesn't exist
     if not os.path.isdir(config.LOGGER_DIR):
@@ -13,8 +14,13 @@ def get_logger():
 
     formatter = logging.Formatter(fmt='%(asctime)s : %(levelname)s : %(module)s : %(message)s')
 
-    handler = _FileHandlerManager(log_dir=config.LOGGER_DIR,
-                                  max_logs=config.MAX_LOG_FILES_STORED).get_file_handler()
+    if log_to_file:
+        handler = _FileHandlerManager(log_dir=config.LOGGER_DIR,
+                                      max_logs=config.MAX_LOG_FILES_STORED).get_file_handler()
+
+    else:
+        handler = logging.StreamHandler()
+
     handler.setFormatter(formatter)
 
     logger = logging.getLogger('root')
