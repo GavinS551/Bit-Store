@@ -122,6 +122,11 @@ class RootApplication(tk.Tk):
     def wallet_init(self, name, password):
         self.btc_wallet = wallet.get_wallet(name, password)
 
+        if self.btc_wallet.get_metadata(name)['watch_only']:
+            self.show_frame('WatchOnlyMainWallet')
+        else:
+            self.show_frame('MainWallet')
+
     @classmethod
     def password_prompt(cls, parent):
         return cls.TTKSimpleDialog.askstring('Password Entry', 'Enter Password:',

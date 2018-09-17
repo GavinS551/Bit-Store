@@ -102,16 +102,12 @@ class WalletSelect(ttk.Frame):
             return
 
         try:
+            # main_wallet frame will be shown here
             self.root.wallet_init(name=selected_wallet, password=password)
 
         except IncorrectPasswordError:
             self.root.incorrect_password_prompt(self)
             return
-
-        if self.root.btc_wallet._watchonly:
-            self.root.show_frame('WatchOnlyMainWallet')
-        else:
-            self.root.show_frame('MainWallet')
 
     def rename_wallet(self):
         if self.wallet_list.curselection():
