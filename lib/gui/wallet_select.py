@@ -4,7 +4,7 @@ from tkinter import ttk, messagebox
 import os
 import shutil
 
-from ..core import config
+from ..core import config, wallet
 from ..exceptions.data_exceptions import IncorrectPasswordError
 
 
@@ -78,7 +78,7 @@ class WalletSelect(ttk.Frame):
     def wallets(self):
         # list of all directories in program's DATA_DIR (i.e all wallets)
         return [w for w in os.listdir(config.WALLET_DATA_DIR)
-                if os.path.isdir(os.path.join(config.WALLET_DATA_DIR, w))]
+                if os.path.isdir(os.path.join(config.WALLET_DATA_DIR, w)) and wallet.is_wallet(w)]
 
     def select_wallet(self):
 

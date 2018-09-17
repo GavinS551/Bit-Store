@@ -113,3 +113,9 @@ POSSIBLE_PRICE_API_SOURCES = ['coinmarketcap']
 
 # standard format for datetime stings
 DATETIME_FORMAT = '%Y-%m-%d %H:%M'
+
+
+WALLET_DATA_FILE_NAME = 'wallet_data'
+
+
+WALLET_INFO_FILE_NAME = 'w_info'

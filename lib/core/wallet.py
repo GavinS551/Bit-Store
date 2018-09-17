@@ -15,8 +15,6 @@ from ..exceptions.wallet_exceptions import *
 
 
 API_REFRESH_RATE = 5
-WALLET_DATA_FILE_NAME = 'wallet_data'
-WALLET_INFO_FILE_NAME = 'w_info'  # wallet metadata
 
 
 def get_wallet(name, password):
@@ -27,6 +25,12 @@ def get_wallet(name, password):
         return WatchOnlyWallet(name, password)
     else:
         return Wallet(name, password)
+
+
+def is_wallet(name):
+    """ checks if the directory is a valid wallet """
+    full_path = lambda w: os.path.join(config.WALLET_DATA_DIR, w)
+    return all(f in os.listdir(full_path(name)) for f in (config.WALLET_DATA_FILE_NAME, config.WALLET_INFO_FILE_NAME))
 
 
 class _ApiDataUpdaterThread(threading.Thread):
@@ -117,7 +121,7 @@ class Wallet:
 
     @staticmethod
     def get_metadata(name):
-        w_info_file = os.path.join(config.WALLET_DATA_DIR, name, WALLET_INFO_FILE_NAME)
+        w_info_file = os.path.join(config.WALLET_DATA_DIR, name, config.WALLET_INFO_FILE_NAME)
 
         with open(w_info_file) as f:
             m_data = json.load(f)
@@ -131,7 +135,7 @@ class Wallet:
             raise ValueError('hd_wallet_obj must be an instance of Bip32 class')
 
         dir_ = os.path.join(config.WALLET_DATA_DIR, name)
-        data_file_path = os.path.join(dir_, WALLET_DATA_FILE_NAME)
+        data_file_path = os.path.join(dir_, config.WALLET_DATA_FILE_NAME)
 
         # Everything is in a try/except block so files get cleaned up
         # before exception is raised
@@ -175,7 +179,7 @@ class Wallet:
             hd_wallet_obj.delete_sensitive_data()
             del hd_wallet_obj
 
-            with open(os.path.join(dir_, WALLET_INFO_FILE_NAME), 'w') as w_info_file:
+            with open(os.path.join(dir_, config.WALLET_INFO_FILE_NAME), 'w') as w_info_file:
                 w_data = {'watch_only': cls == WatchOnlyWallet}
                 json.dump(w_data, w_info_file)
 
