@@ -244,12 +244,13 @@ class Transaction:
 
     @staticmethod
     def get_output_script(address):
-        # normal, P2PKH btc addresses begin with '1'
-        if address[0] == '1':
+        # P2PKH addresses have version byte 0x00 ('1' prefix when encoded)
+        addr_bytes = base58.b58decode_check(address)
+        if addr_bytes[0] == 0x00:
             return P2pkhScript
 
-        # and P2SH addresses begin with '3' (applies to non-native segwit addresses as well)
-        elif address[0] == '3':
+        # and P2SH addresses has version byte 0x05 ('3' prefix when encoded)
+        elif addr_bytes[0] == 0x05:
             return P2shScript
 
         else:
