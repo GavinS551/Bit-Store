@@ -223,7 +223,7 @@ class _Settings(tk.Toplevel):
 
     def draw_transaction_settings(self):
         frame = self.transaction_settings
-        padx = (0, 20)
+        padx = (0, 52)
 
         spend_unconfirmed_outs_label = ttk.Label(frame, text='Spend Unconfirmed Outputs:',
                                                  font=self.root.tiny_font)
@@ -243,7 +243,7 @@ class _Settings(tk.Toplevel):
 
     def draw_api_settings(self):
         frame = self.api_settings
-        padx = (0, 20)
+        padx = (0, 42)
 
         blockchain_api_label = ttk.Label(frame, text='Blockchain API:', font=self.root.tiny_font)
         blockchain_api_label.grid(row=0, column=0, padx=padx, pady=10, sticky='w')
