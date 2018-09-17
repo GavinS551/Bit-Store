@@ -182,7 +182,8 @@ class WalletCreation(ttk.Frame):
             # have to be re-shown as the loading frame was raised after error-
             # checking entry fields
             # TODO make this work with exceptions in thread
-            self.root.show_frame('WalletCreation')
+            if self.root.current_frame != self.__class__.__name__:
+                self.root.show_frame(self.__class__.__name__)
 
     @utils.threaded(name='GUI_MAKE_WALLET_THREAD')
     def _build_wallet_instance(self, wallet_data):

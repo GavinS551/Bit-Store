@@ -668,9 +668,6 @@ class _SendDisplay(ttk.Frame):
 
     @utils.threaded(daemon=True, name='GUI_MAKE_TXN_THREAD')
     def _make_transaction(self):
-        """ this method should be started before first key press on amount entries,
-        so a size will be calculated already for fee
-        """
 
         # to ensure only one thread is run at the same time
         if self._thread_running:
@@ -1015,4 +1012,5 @@ class _WatchOnlySendDisplay(_SendDisplay):
         except OSError as ex:
             messagebox.showerror('Error', f'Unable to export transaction: {ex.__str__()}')
 
-        messagebox.showinfo('Transaction Exported', 'Transaction was successfully exported')
+        else:
+            messagebox.showinfo('Transaction Exported', 'Transaction was successfully exported')

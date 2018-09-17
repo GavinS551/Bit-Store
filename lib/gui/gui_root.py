@@ -80,6 +80,8 @@ class RootApplication(tk.Tk):
             self.frames[f.__name__] = frame
             frame.grid(row=0, column=0, sticky='nsew')
 
+        self.current_frame = None
+
         # starting frame
         self.show_frame('WalletSelect')
 
@@ -112,6 +114,8 @@ class RootApplication(tk.Tk):
         f.gui_draw()
         f.tkraise()
         self.update_idletasks()
+
+        self.current_frame = frame
 
     def set_style(self):
         self.style.configure('Treeview.Heading', font=(config.FONT, 10))
