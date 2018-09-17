@@ -211,7 +211,8 @@ class HDWallet:
 
         if split_path[0].lower() == 'm' and len(split_path) == 1:
             return self.bip32
-        else:
+        elif split_path[0].lower() == 'm':
+            # remove redundant m if it is part of bigger path
             del split_path[0]
 
         if split_path[0][-1] == "'":

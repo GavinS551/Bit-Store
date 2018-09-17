@@ -23,9 +23,7 @@ public_addresses = public_bip32_.addresses()
 def test_public():
     assert not public_bip32_.is_private
     assert public_bip32_.addresses()[0] == normal_addresses[0]
-
-    with pytest.raises(PublicHDWalletObjectError):
-        _ = public_bip32_.wif_keys()
+    assert public_bip32_.wif_keys() is None
 
     with pytest.raises(PublicHDWalletObjectError):
         _ = HDWallet(key=PUBLIC_KEY, path="39'/0'/0'")
