@@ -1013,4 +1013,5 @@ class _WatchOnlySendDisplay(_SendDisplay):
             messagebox.showerror('Error', f'Unable to export transaction: {ex.__str__()}')
 
         else:
+            self.on_clear()
             messagebox.showinfo('Transaction Exported', 'Transaction was successfully exported')
