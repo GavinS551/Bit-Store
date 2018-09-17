@@ -31,6 +31,7 @@ class MainWallet(ttk.Frame):
         self.tx_display = None
         self.send_display = None
         self.receive_display = None
+        self.title_label = None
 
         # attributes below will be updated in _refresh_data method
         self.wallet_balance = tk.DoubleVar()
@@ -45,9 +46,9 @@ class MainWallet(ttk.Frame):
 
     def gui_draw(self):
 
-        title_label = ttk.Label(self, text=self.root.btc_wallet.name,
-                                font=self.root.bold_title_font)
-        title_label.grid(row=0, column=0)
+        self.title_label = ttk.Label(self, text=self.root.btc_wallet.name,
+                                     font=self.root.bold_title_font)
+        self.title_label.grid(row=0, column=0)
 
         self.notebook = ttk.Notebook(self)
 
@@ -1025,6 +1026,8 @@ class WatchOnlyMainWallet(MainWallet):
 
     def gui_draw(self):
         super().gui_draw()
+
+        self.title_label.config(text=self.root.btc_wallet.name + ' [WATCH-ONLY]')
 
         send_idx = 1  # index of send_display in self.notebook
         self.notebook.forget(self.send_display)
