@@ -16,15 +16,12 @@ from ..exceptions.wallet_exceptions import *
 
 API_REFRESH_RATE = 5
 WALLET_DATA_FILE_NAME = 'wallet_data'
-WALLET_INFO_FILE_NAME = 'w_info'
+WALLET_INFO_FILE_NAME = 'w_info'  # wallet metadata
 
 
 def get_wallet(name, password):
     """ function will return wallet of correct type (normal or watch-only) """
-    w_info_file = os.path.join(config.WALLET_DATA_DIR, name, WALLET_INFO_FILE_NAME)
-
-    with open(w_info_file) as f:
-        watch_only = json.load(f)['watch_only']
+    watch_only = Wallet.get_metadata(name)['watch_only']
 
     if watch_only:
         return WatchOnlyWallet(name, password)
@@ -117,7 +114,15 @@ class _ApiDataUpdaterThread(threading.Thread):
 
 
 class Wallet:
-    _watchonly = False
+
+    @staticmethod
+    def get_metadata(name):
+        w_info_file = os.path.join(config.WALLET_DATA_DIR, name, WALLET_INFO_FILE_NAME)
+
+        with open(w_info_file) as f:
+            m_data = json.load(f)
+
+        return m_data
 
     @classmethod
     def new_wallet(cls, name, password, hd_wallet_obj, offline=False):
@@ -171,7 +176,7 @@ class Wallet:
             del hd_wallet_obj
 
             with open(os.path.join(dir_, WALLET_INFO_FILE_NAME), 'w') as w_info_file:
-                w_data = {'watch_only': cls._watchonly}
+                w_data = {'watch_only': cls == WatchOnlyWallet}
                 json.dump(w_data, w_info_file)
 
             return cls(name, password, offline=offline)
@@ -472,7 +477,6 @@ class Wallet:
 
 
 class WatchOnlyWallet(Wallet):
-    _watchonly = True
 
     def sign_transaction(self, unsigned_txn, password):
         raise NotImplementedError
