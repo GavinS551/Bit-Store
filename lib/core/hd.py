@@ -177,13 +177,12 @@ class HDWallet:
     def check_path(path):
         """ returns True if path is in a valid format and vice-versa"""
 
-        # single m represents deriving directly from master key
-        if path == 'm':
-            return True
-
         valid_chars = string.digits + '/' + "'"
         valid_index_chars = string.digits + "'"
         split_path = path.split('/')
+
+        if split_path[0].lower() == 'm':
+            del split_path[0]
 
         if not all([c in valid_chars for c in path]):
             return False
@@ -209,9 +208,11 @@ class HDWallet:
         """returns an 'account' child key. i.e the last derivation of the path"""
         # First get a child key (ck) to derive from further in a loop
         split_path = self.path.split('/')
-        
-        if split_path[0] == 'm':
+
+        if split_path[0].lower() == 'm' and len(split_path) == 1:
             return self.bip32
+        else:
+            del split_path[0]
 
         if split_path[0][-1] == "'":
             ck = self.bip32.ChildKey(int(split_path[0][:-1]) + BIP32_HARDEN)
