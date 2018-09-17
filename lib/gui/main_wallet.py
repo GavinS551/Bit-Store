@@ -913,6 +913,43 @@ class _SendDisplay(ttk.Frame):
 
         button_frame.grid(row=2, column=0, padx=10, pady=10)
 
+    def export_txn(self):
+        if not all((self.amount_btc_entry.get(), self.fee_entry.get(), self.address_entry.get())):
+            tk.messagebox.showerror('Invalid Entries', 'Please fill out all entries before sending')
+
+        elif self.amount_over_balance:
+            tk.messagebox.showerror('Insufficient Funds', 'Amount to send exceeds wallet balance')
+
+        elif float(self.amount_btc_entry.get()) <= 0 or \
+                float(self.amount_btc_entry.get()) <= 0 or \
+                int(self.fee_entry.get()) <= 0:
+            tk.messagebox.showerror('Invalid Amount(s)', 'Amount(s) must be positive, non-zero, numbers')
+
+        else:
+            default_name = 'signed.txn' if self.transaction.is_signed else 'unsigned.txn'
+
+            export_path = filedialog.asksaveasfilename(title='Export Transaction',
+                                                       initialdir=pathlib.Path.home(),
+                                                       initialfile=default_name,
+                                                       filetypes=[('Transaction Files', '*.txn')])
+
+            if not export_path:
+                return
+
+            # append file extension if its not there
+            if not export_path.split('.')[-1] == 'txn':
+                export_path += '.txn'
+
+            try:
+                self.main_wallet.root.btc_wallet.file_export_transaction(file_path=export_path,
+                                                                         transaction=self.transaction)
+            except OSError as ex:
+                messagebox.showerror('Error', f'Unable to export transaction: {ex.__str__()}')
+
+            else:
+                self.on_clear()
+                messagebox.showinfo('Transaction Exported', 'Transaction was successfully exported')
+
 
 class _ReceiveDisplay(ttk.Frame):
 
@@ -1000,16 +1037,3 @@ class _WatchOnlySendDisplay(_SendDisplay):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.send_button.configure(text='Export Txn', command=self.export_txn)
-
-    def export_txn(self):
-        export_path = filedialog.asksaveasfilename(initialdir=pathlib.Path.home())
-
-        try:
-            self.main_wallet.root.btc_wallet.file_export_transaction(file_path=export_path,
-                                                                     transaction=self.transaction)
-        except OSError as ex:
-            messagebox.showerror('Error', f'Unable to export transaction: {ex.__str__()}')
-
-        else:
-            self.on_clear()
-            messagebox.showinfo('Transaction Exported', 'Transaction was successfully exported')
