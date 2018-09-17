@@ -4,7 +4,6 @@ from tkinter import ttk, messagebox
 import os
 import traceback
 import platform
-import json
 
 from . import ttk_simpledialog as simpledialog
 from ..core import config, wallet
