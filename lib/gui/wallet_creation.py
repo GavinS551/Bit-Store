@@ -129,7 +129,7 @@ class WalletCreation(ttk.Frame):
 
     # custom mnemonic and xkey params are meant for subclassing this class when
     # implementing wallet import feature
-    def create_wallet(self, mnemonic=None, xkey=None, passphrase=None):
+    def create_wallet(self, mnemonic=None, xkey=None, passphrase=None, bypass_mnemonic_display=False):
         if mnemonic is None and xkey is None:
             mnemonic = hd.HDWallet.gen_mnemonic()
 
@@ -173,7 +173,7 @@ class WalletCreation(ttk.Frame):
                                     is_segwit, path, mnemonic, xkey)
 
             # thread is already started, see utils.threaded decorator
-            self._build_wallet_instance(wd)
+            self._build_wallet_instance(wd, bypass_mnemonic_display=bypass_mnemonic_display)
 
         except ValueError as ex:
             messagebox.showerror('Error', f'{ex.__str__()}')
@@ -186,9 +186,8 @@ class WalletCreation(ttk.Frame):
                 self.root.show_frame(self.__class__.__name__)
 
     @utils.threaded(name='GUI_MAKE_WALLET_THREAD')
-    def _build_wallet_instance(self, wallet_data):
+    def _build_wallet_instance(self, wallet_data, bypass_mnemonic_display=False):
         watch_only_wallet = False
-        bypass_mnemonic_display = False
 
         if wallet_data.xkey is None:
             hd_ = hd.HDWallet.from_mnemonic(wallet_data.mnemonic,

@@ -142,7 +142,7 @@ class WalletImportPage2(ttk.Frame):
                 tk.messagebox.showerror('Error', 'Invalid Mnemonic Entered')
                 return
 
-            self.wallet_import.create_wallet(mnemonic=mnemonic, passphrase=passphrase)
+            self.wallet_import.create_wallet(mnemonic=mnemonic, passphrase=passphrase, bypass_mnemonic_display=True)
 
         else:
             xkey = self.entry.get(1.0, 'end-1c').strip()
@@ -164,4 +164,4 @@ class WalletImportPage2(ttk.Frame):
                 self.wallet_import.path_entry.delete(0, tk.END)
                 self.wallet_import.path_entry.insert(tk.END, 'm')
 
-            self.wallet_import.create_wallet(xkey=xkey)
+            self.wallet_import.create_wallet(xkey=xkey, bypass_mnemonic_display=True)
