@@ -48,7 +48,7 @@ def validate_address(address, allow_testnet=False):
     if allow_testnet:
         possible_network_bytes += (0x6F, 0xC4)
 
-    with suppress(ValueError):
+    with suppress(ValueError, TypeError):
         if base58.b58decode_check(address)[0] in possible_network_bytes:
             return True
 

@@ -167,7 +167,7 @@ class HDWallet:
         if allow_testnet:
             xkey_version_bytes += ('043587CF', '04358394')
 
-        with suppress(ValueError):
+        with suppress(ValueError, TypeError):
             if base58.b58decode_check(xkey)[:4].hex().upper() in xkey_version_bytes:
                 return True
 
