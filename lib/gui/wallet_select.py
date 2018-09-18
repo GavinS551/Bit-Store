@@ -122,7 +122,7 @@ class WalletSelect(ttk.Frame):
             return
 
         for w in self.wallets:
-            if w.lower() == new_name.lower():
+            if w.lower() == new_name.lower() and w.lower() != selected_wallet.lower():
                 tk.messagebox.showerror('Error', 'Wallet with same name already exists')
                 return
 
