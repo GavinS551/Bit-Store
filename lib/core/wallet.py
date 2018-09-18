@@ -144,8 +144,8 @@ class Wallet:
             if not os.path.isdir(dir_):
                 os.makedirs(dir_, exist_ok=True)
 
-            elif not os.path.exists(data_file_path) and os.path.isdir(dir_):
-                # won't raise exception if wallet folder exists, but no data file
+            elif not is_wallet(name) and os.path.isdir(dir_):
+                # won't raise exception if wallet folder exists but doesn't contain any data needed
                 pass
 
             else:

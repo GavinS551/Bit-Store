@@ -96,7 +96,7 @@ UNITS_MAX_DECIMAL_PLACES = {
 BIP32_PATHS = {
     'bip49path': "49'/0'/0'",
     'bip44path': "44'/0'/0'"
-},
+}
 
 
 # lowercase for comparisons
