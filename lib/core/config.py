@@ -46,8 +46,6 @@ def write_values(**kwargs):
     utils.atomic_file_write(data, CONFIG_FILE)
 
 
-BIP32_PATHS = read_file()['BIP32_PATHS']
-
 PRICE_API_SOURCE = read_file()['PRICE_API_SOURCE']
 
 BLOCKCHAIN_API_SOURCE = read_file()['BLOCKCHAIN_API_SOURCE']

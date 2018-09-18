@@ -25,11 +25,6 @@ LOGGER_DIR = os.path.join(DATA_DIR, 'logs')
 
 DEFAULT_CONFIG = {
 
-    'BIP32_PATHS': {
-        'bip49path': "49'/0'/0'",
-        'bip44path': "44'/0'/0'"
-    },
-
     'PRICE_API_SOURCE': 'coinmarketcap',
 
     'BLOCKCHAIN_API_SOURCE': 'blockchain.info',
@@ -96,6 +91,12 @@ UNITS_MAX_DECIMAL_PLACES = {
     'bits': 2,
     'sat': 0
 }
+
+
+BIP32_PATHS = {
+    'bip49path': "49'/0'/0'",
+    'bip44path': "44'/0'/0'"
+},
 
 
 # lowercase for comparisons
