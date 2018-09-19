@@ -184,7 +184,7 @@ class HDWallet:
         if split_path[0].lower() == 'm':
             del split_path[0]
 
-        if not all([c in valid_chars for c in path]):
+        if not all([c in valid_chars for c in path if c.lower() != 'm']):
             return False
 
         for idx in split_path:
