@@ -313,7 +313,7 @@ class _TransactionDisplay(ttk.Frame):
         # Transactions class will allow the sorting of txns by date,
         # and txns are stored as structs.TransactionData instances
         transactions = structs.Transactions.from_list(self.main_wallet.root.btc_wallet.transactions)
-        sorted_txns = transactions.date_sorted_transactions()
+        sorted_txns = transactions.date_sorted_transactions(ascending=False)
 
         # satoshis will be divided by this number to get amount in terms of self.main_wallet.display_units
         f = self.main_wallet.unit_factor

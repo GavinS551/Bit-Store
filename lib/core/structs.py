@@ -52,7 +52,7 @@ class Transactions:
 
     @classmethod
     def from_list(cls, txn_list):
-        """ returns a Transactions class from a list of txns in standard format """
+        """ returns a Transactions class from a list of dicts (format they are stored in) """
         return cls(transactions=[TransactionData(**t) for t in txn_list])
 
     def __init__(self, transactions):
@@ -61,13 +61,13 @@ class Transactions:
 
     @functools.lru_cache(maxsize=None)
     def date_sorted_transactions(self, ascending=True):
-        """ returns self.transactions sorted by date, ascending """
+        """ returns self.transactions sorted by date """
         def _date_sort_key(txn):
             return datetime.strptime(txn.date, config.DATETIME_FORMAT)
 
         # sorting transactions by ascending txn date
         sorted_transactions = sorted(self._transactions, key=_date_sort_key,
-                                     reverse=ascending)
+                                     reverse=not ascending)
 
         return sorted_transactions
 
@@ -80,7 +80,7 @@ class Transactions:
         running_total = 0
         # using date sorted transactions as the oldest chronological txn
         # will be the first change (+) in the wallet balance
-        for txn in self.date_sorted_transactions(ascending=False):
+        for txn in self.date_sorted_transactions():
             running_total += txn.wallet_amount
             balances_dict[txn] = running_total
 
