@@ -95,4 +95,4 @@ def test_gap_limit():
 
 
 def test_address_wifkey_pairs():
-    assert bip32_.address_wifkey_pairs() == list(zip(normal_addresses[0] + normal_addresses[1], normal_wif_keys[0] + normal_wif_keys[1]))
+    assert bip32_.address_wifkey_pairs() == dict(zip(normal_addresses[0] + normal_addresses[1], normal_wif_keys[0] + normal_wif_keys[1]))

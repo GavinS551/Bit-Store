@@ -324,14 +324,14 @@ class HDWallet:
             return self._non_multi_processed_wif_keys()
 
     def address_wifkey_pairs(self):
-        """ Returns a list of tuples with addresses mapped to their WIF keys """
+        """ Returns a dict with addresses mapped to their WIF keys """
         if not self.is_private:
             return None
 
         addresses = self.addresses()
         wif_keys = self.wif_keys()
 
-        return list(zip(addresses[0] + addresses[1], wif_keys[0] + wif_keys[1]))
+        return dict(zip(addresses[0] + addresses[1], wif_keys[0] + wif_keys[1]))
 
     def set_gap_limit(self, num):
         if not isinstance(num, int):

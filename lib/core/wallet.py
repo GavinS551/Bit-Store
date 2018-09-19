@@ -170,8 +170,7 @@ class Wallet:
                 'SEGWIT': hd_wallet_obj.is_segwit,
                 'ADDRESSES_RECEIVING': addresses[0],
                 'ADDRESSES_CHANGE': addresses[1],
-                'ADDRESS_WIF_KEYS': dict(hd_wallet_obj.address_wifkey_pairs())
-                if hd_wallet_obj.address_wifkey_pairs() is not None else None
+                'ADDRESS_WIF_KEYS': hd_wallet_obj.address_wifkey_pairs()
             }
 
             d_store.write_value(**info)
