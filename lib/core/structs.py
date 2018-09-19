@@ -38,21 +38,6 @@ class TransactionData(NamedTuple):
     outputs: list
     wallet_amount: int
 
-    @property
-    def standard_format(self):
-        """ returns data in standard format """
-        return {
-            'txid': self.txid,
-            'date': self.date,
-            'block_height': self.block_height,
-            'confirmations': self.confirmations,
-            'fee': self.fee,
-            'vsize': self.vsize,
-            'inputs': self.inputs,
-            'outputs': self.outputs,
-            'wallet_amount': self.wallet_amount
-        }
-
     def __eq__(self, other):
         return self.txid == other.txid
 
@@ -71,7 +56,7 @@ class Transactions:
         return cls(transactions=[TransactionData(**t) for t in txn_list])
 
     def __init__(self, transactions):
-        # list of TransactionData dataclasses
+        # list of TransactionData named tuples
         self._transactions = transactions
 
     @functools.lru_cache(maxsize=None)
