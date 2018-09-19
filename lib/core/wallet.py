@@ -175,7 +175,6 @@ class Wallet:
 
             d_store.write_value(**info)
 
-            hd_wallet_obj.delete_sensitive_data()
             del hd_wallet_obj
 
             with open(os.path.join(dir_, config.WALLET_INFO_FILE_NAME), 'w') as w_info_file:

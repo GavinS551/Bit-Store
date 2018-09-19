@@ -229,10 +229,6 @@ class HDWallet:
 
         return ck
 
-    def delete_sensitive_data(self):
-        self.bip32.SetPublic()
-        del self.bip32
-
     @lru_cache(maxsize=None)
     def _gen_addresses(self, idx):
         """ used with multiprocessing """
