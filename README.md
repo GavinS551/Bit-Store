@@ -32,8 +32,7 @@ or alternatively, you can build a standalone executable yourself by typing:
 python build.py
 ```
 
-and the packaged executable will be in the created "dist" directory, and can be moved elsewhere. NB: Python 3.6
-is the latest version compatible with PyInstaller, so any python version higher than 3.6 will fail to create a usable executable.
+and the packaged executable will be in the created "dist" directory, and can be moved elsewhere.
 
 ## Running Tests
 
