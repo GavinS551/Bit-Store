@@ -116,6 +116,9 @@ class RootApplication(tk.Tk):
 
         self.current_frame = frame
 
+    def show_main_wallet_frame(self):
+        """ figures out what MainWallet frame to use """
+
     def set_style(self):
         self.style.configure('Treeview.Heading', font=(config.FONT, 10))
 
@@ -135,6 +138,11 @@ class RootApplication(tk.Tk):
     @staticmethod
     def incorrect_password_prompt(parent):
         tk.messagebox.showerror('Error', 'Incorrect Password', parent=parent)
+
+    @staticmethod
+    def show_error(title, message, **kwargs):
+        """ raises a tk messagebox error. Needed for threads to raise errors in main thread """
+        tk.messagebox.showerror(title, message, **kwargs)
 
     def settings_prompt(self):
         _Settings(self)

@@ -176,47 +176,49 @@ class WalletCreation(ttk.Frame):
             self._build_wallet_instance(wd, bypass_mnemonic_display=bypass_mnemonic_display)
 
         except ValueError as ex:
-            messagebox.showerror('Error', f'{ex.__str__()}')
+            messagebox.showerror('Error', str(ex))
 
-            # if an exception was raised during wallet creation, the frame will
-            # have to be re-shown as the loading frame was raised after error-
-            # checking entry fields
-            # TODO make this work with exceptions in thread
-            if self.root.current_frame != self.__class__.__name__:
-                self.root.show_frame(self.__class__.__name__)
+            # if loading screen had started, go back
+            self.root.show_frame(self.__class__.__name__)
 
     @utils.threaded(name='GUI_MAKE_WALLET_THREAD')
     def _build_wallet_instance(self, wallet_data, bypass_mnemonic_display=False):
-        watch_only_wallet = False
+        try:
+            watch_only_wallet = False
 
-        if wallet_data.xkey is None:
-            hd_ = hd.HDWallet.from_mnemonic(wallet_data.mnemonic,
-                                            wallet_data.path,
-                                            wallet_data.passphrase,
-                                            wallet_data.is_segwit)
+            if wallet_data.xkey is None:
+                hd_ = hd.HDWallet.from_mnemonic(wallet_data.mnemonic,
+                                                wallet_data.path,
+                                                wallet_data.passphrase,
+                                                wallet_data.is_segwit)
 
-        else:
-            hd_ = hd.HDWallet(wallet_data.xkey,
-                              wallet_data.path,
-                              wallet_data.is_segwit)
-
-            watch_only_wallet = not hd_.is_private
-            bypass_mnemonic_display = True
-
-        if watch_only_wallet:
-            w = wallet.WatchOnlyWallet.new_wallet(wallet_data.name, wallet_data.password, hd_)
-        else:
-            w = wallet.Wallet.new_wallet(wallet_data.name, wallet_data.password, hd_)
-
-        self.root.btc_wallet = w
-
-        if bypass_mnemonic_display:
-            if watch_only_wallet:
-                self.root.show_frame('WatchOnlyMainWallet')
             else:
-                self.root.show_frame('MainWallet')
-        else:
-            self.root.show_frame('WalletCreationShowMnemonic', mnemonic=wallet_data.mnemonic)
+                hd_ = hd.HDWallet(wallet_data.xkey,
+                                  wallet_data.path,
+                                  wallet_data.is_segwit)
+
+                watch_only_wallet = not hd_.is_private
+                bypass_mnemonic_display = True
+
+            if watch_only_wallet:
+                w = wallet.WatchOnlyWallet.new_wallet(wallet_data.name, wallet_data.password, hd_)
+            else:
+                w = wallet.Wallet.new_wallet(wallet_data.name, wallet_data.password, hd_)
+
+            self.root.btc_wallet = w
+
+            if bypass_mnemonic_display:
+                if watch_only_wallet:
+                    self.root.show_frame('WatchOnlyMainWallet')
+                else:
+                    self.root.show_frame('MainWallet')
+            else:
+                self.root.show_frame('WalletCreationShowMnemonic', mnemonic=wallet_data.mnemonic)
+
+        except Exception as ex:
+            # if an exception was raised, leave loading frame
+            self.root.show_frame(self.__class__.__name__)
+            self.root.show_error('Error', str(ex))
 
 
 class WalletCreationLoading(ttk.Frame):
