@@ -103,7 +103,7 @@ class WalletSelect(ttk.Frame):
 
         try:
             # main_wallet frame will be shown here
-            self.root.wallet_init(name=selected_wallet, password=password)
+            self.root.wallet_init(name=selected_wallet, password=password, show_frame=True)
 
         except IncorrectPasswordError:
             self.root.incorrect_password_prompt(self)

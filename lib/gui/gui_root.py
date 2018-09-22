@@ -82,7 +82,7 @@ class RootApplication(tk.Tk):
         self.current_frame = None
 
         # starting frame
-        self.show_frame('WalletSelect')
+        self.show_frame(WalletSelect.__name__)
 
         # init will be done in other frames, this is a placeholder
         # will be a lib.core.wallet Wallet instance acting as the main interface for the gui
@@ -116,19 +116,17 @@ class RootApplication(tk.Tk):
 
         self.current_frame = frame
 
-    def show_main_wallet_frame(self):
-        """ figures out what MainWallet frame to use """
-
     def set_style(self):
         self.style.configure('Treeview.Heading', font=(config.FONT, 10))
 
-    def wallet_init(self, name, password):
+    def wallet_init(self, name, password, show_frame=False):
         self.btc_wallet = wallet.get_wallet(name, password)
 
-        if self.btc_wallet.get_metadata(name)['watch_only']:
-            self.show_frame('WatchOnlyMainWallet')
-        else:
-            self.show_frame('MainWallet')
+        if show_frame:
+            if self.btc_wallet.get_metadata(name)['watch_only']:
+                self.show_frame('WatchOnlyMainWallet')
+            else:
+                self.show_frame('MainWallet')
 
     @classmethod
     def password_prompt(cls, parent):
