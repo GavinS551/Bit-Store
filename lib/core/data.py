@@ -32,6 +32,22 @@ class Crypto:
 
 class DataStore(Crypto):
 
+    # dict of file paths and instances of DataStore.
+    _instances = {}
+
+    # if the same file_path is used, the same object will be returned.
+    # any file should only have one DataStore object associated with them
+    # as it could get messy with multiple objects writing to the same file
+    # (especially when dealing with threads).
+    def __new__(cls, file_path, *args, **kwargs):
+        if file_path in cls._instances:
+            return cls._instances[file_path]
+        else:
+            new_cls = super().__new__(cls)
+            cls._instances[file_path] = new_cls
+
+            return new_cls
+
     def __init__(self, file_path, password, data_format=None, sensitive_keys=None):
         """
         :param file_path: path to data file
