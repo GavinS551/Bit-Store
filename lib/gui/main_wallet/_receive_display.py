@@ -5,7 +5,7 @@ import qrcode
 from PIL import ImageTk
 
 
-class _ReceiveDisplay(ttk.Frame):
+class ReceiveDisplay(ttk.Frame):
 
     def __init__(self, master, main_wallet):
         ttk.Frame.__init__(self, master, padding=5)

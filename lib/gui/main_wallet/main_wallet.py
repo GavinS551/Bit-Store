@@ -3,10 +3,10 @@ from tkinter import ttk, messagebox
 
 import datetime
 
-from ._tx_display import _TransactionDisplay
-from ._send_display import _SendDisplay
-from ._receive_display import _ReceiveDisplay
-from ._console_display import _ConsoleDisplay
+from ._tx_display import TransactionDisplay
+from ._send_display import SendDisplay
+from ._receive_display import ReceiveDisplay
+from ._console_display import ConsoleDisplay
 
 from ...core import config
 
@@ -51,19 +51,19 @@ class MainWallet(ttk.Frame):
         self.notebook = ttk.Notebook(self)
         self.notebook.enable_traversal()
 
-        self.tx_display = _TransactionDisplay(self.notebook, self)
+        self.tx_display = TransactionDisplay(self.notebook, self)
         self.tx_display.grid(sticky='nsew')
         self.notebook.add(self.tx_display, text='Transactions', underline=0)
 
-        self.send_display = _SendDisplay(self.notebook, self)
+        self.send_display = SendDisplay(self.notebook, self)
         self.send_display.grid(sticky='nsew')
         self.notebook.add(self.send_display, text='Send', underline=0)
 
-        self.receive_display = _ReceiveDisplay(self.notebook, self)
+        self.receive_display = ReceiveDisplay(self.notebook, self)
         self.receive_display.grid(sticky='nsew')
         self.notebook.add(self.receive_display, text='Receive', underline=0)
 
-        self.console_display = _ConsoleDisplay(self.notebook, self)
+        self.console_display = ConsoleDisplay(self.notebook, self)
         self.console_display.grid(sticky='nsew')
         self.notebook.add(self.console_display, text='Console', underline=0)
 
@@ -257,11 +257,11 @@ class WatchOnlyMainWallet(MainWallet):
 
         send_idx = 1  # index of send_display in self.notebook
         self.notebook.forget(self.send_display)
-        self.send_display = _WatchOnlySendDisplay(self.notebook, self)
+        self.send_display = WatchOnlySendDisplay(self.notebook, self)
         self.notebook.insert(send_idx, self.send_display, text='Send')
 
 
-class _WatchOnlySendDisplay(_SendDisplay):
+class WatchOnlySendDisplay(SendDisplay):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

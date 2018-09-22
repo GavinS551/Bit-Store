@@ -36,7 +36,7 @@ class Console:
         return self._output.getvalue()
 
     @staticmethod
-    def _fallback_cmd():
+    def fallback_cmd():
         print(f'Invalid command. Use ? or "help" to see all valid commands.')
 
     def _create_default_helpers(self):
@@ -52,13 +52,6 @@ class Console:
 
         for m in missing_helpers:
             setattr(self, f'help_{m}', lambda: print(inspect.getdoc(getattr(self, f'do_{m}'))))
-
-    @staticmethod
-    def validate_string(string_):
-        valid_chars = string.ascii_letters + string.digits + ' '
-        # string.split(sep=' ') will have empty strings in it if
-        # there were more than 1 consecutive spaces in any place
-        return all(char in valid_chars for char in string_) and all(string_.spit(sep=' '))
 
     def exec_cmd(self, str_cmd, default=None):
         """ method will try and call self.do_{str_cmd} method. If it fails,
@@ -93,7 +86,7 @@ class Console:
                 if default is not None:
                     default()
                 else:
-                    self._fallback_cmd()
+                    self.fallback_cmd()
 
             except IncorrectArgsError as ex:
                 print(f'Error: {ex.cmd} command expects {ex.n_expected_args} arg(s) but received {ex.n_passed_args}')
@@ -106,10 +99,3 @@ class Console:
         """ Displays all possible commands. """
         print('Possible Commands:\n')
         print('\n'.join([d[len('do_'):] for d in dir(self) if callable(getattr(self, d)) and d.startswith('do_')]))
-
-
-if __name__ == '__main__':
-    c = Console()
-    c.exec_cmd('help ')
-
-    print(c._output.getvalue())

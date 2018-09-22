@@ -4,7 +4,7 @@ from tkinter import ttk
 from ...core import config, structs, utils
 
 
-class _TransactionDisplay(ttk.Frame):
+class TransactionDisplay(ttk.Frame):
 
     def __init__(self, master, main_wallet):
         ttk.Frame.__init__(self, master)

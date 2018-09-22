@@ -10,7 +10,7 @@ from ...core import config, utils
 from ...core.tx import InsufficientFundsError
 
 
-class _SendDisplay(ttk.Frame):
+class SendDisplay(ttk.Frame):
     """ beware of spaghetti code """
 
     def __init__(self, master, main_wallet):

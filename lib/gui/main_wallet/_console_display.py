@@ -1,8 +1,10 @@
 import tkinter as tk
 from tkinter import ttk
 
+from ...core import console
 
-class _ConsoleDisplay(ttk.Frame):
+
+class ConsoleDisplay(ttk.Frame):
 
     def __init__(self, master, main_wallet):
         ttk.Frame.__init__(self, master, padding=5)
