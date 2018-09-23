@@ -41,8 +41,15 @@ class Console:
         self.command_history = []
 
     @property
-    def output(self):
+    def full_output(self):
         return self._output.getvalue()
+
+    @property
+    def output(self):
+        """ unlike full_output, this property uses the read() method on
+        StringIO so the stream position is moved and kept every call
+        """
+        return self._output.read()
 
     def clear_output(self):
         self._output = io.StringIO()
