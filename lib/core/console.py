@@ -38,6 +38,8 @@ class Console:
 
         self._create_default_helpers()
 
+        self.command_history = []
+
     @property
     def output(self):
         return self._output.getvalue()
@@ -74,6 +76,8 @@ class Console:
         cmd = str_cmd.split(sep=' ')[0].lower()
         # anything after the first space are arguments
         args = str_cmd.split(sep=' ')[1:]
+
+        self.command_history.append(cmd)
 
         # redirect stdout to self.output
         with contextlib.redirect_stdout(self._output):
