@@ -36,32 +36,28 @@ class Console:
         if intro is not None:
             self._output.write(intro)
 
-        self._create_default_helpers()
-
         self.command_history = []
 
-    @property
-    def full_output(self):
-        return self._output.getvalue()
+        self._create_default_helpers()
 
     @property
     def output(self):
-        """ unlike full_output, this property uses the read() method on
-        StringIO so the stream position is moved and kept every call
-        """
-        return self._output.read()
+        return self._output.getvalue()
 
     def clear_output(self):
         self._output = io.StringIO()
 
     @staticmethod
     def fallback_cmd():
-        print(f'Invalid command. Use ? or "help" to see all valid commands.')
+        print(f'Invalid command. Type ? or "help" to see all valid commands.')
 
     def _create_default_helpers(self):
         """ finds all self.do_{cmd} methods and assigns a default self.help_{cmd}
          if not already present. (default help_cmd is print(inspect.getdoc(self.do_{cmd})) )
         """
+
+        make_helper = lambda method: lambda: print(inspect.getdoc(getattr(self, f'do_{method}')))
+
         do_methods = {m[len('do_'):] for m in dir(self) if callable(getattr(self, m))
                       and m.startswith('do_')}
         help_methods = {m[len('help_'):] for m in dir(self) if callable(getattr(self, m))
@@ -70,9 +66,9 @@ class Console:
         missing_helpers = do_methods - help_methods
 
         for m in missing_helpers:
-            setattr(self, f'help_{m}', lambda: print(inspect.getdoc(getattr(self, f'do_{m}'))))
+            setattr(self, f'help_{m}', make_helper(m))
 
-    def exec_cmd(self, str_cmd, default=None):
+    def exec_cmd(self, str_cmd, default=None, print_cmd=True):
         """ method will try and call self.do_{str_cmd} method. If it fails,
         an optional default method will be called. If default is None, it will call
         self._fallback_cmd.
@@ -89,6 +85,9 @@ class Console:
         # redirect stdout to self.output
         with contextlib.redirect_stdout(self._output):
             try:
+                if print_cmd:
+                    print(cmd, *args)
+
                 # if help is on its own
                 if cmd in ('?', 'help') and not args:
                     self.do_help()
@@ -97,7 +96,7 @@ class Console:
                 elif cmd in ('?', 'help') and args:
                     if len(args) > 1:
                         raise IncorrectArgsError('help', 1, len(args))
-                    self.do_help(args[0])
+                    getattr(self, f'help_{args[0]}')()
 
                 else:
                     getattr(self, f'do_{cmd}')(*args)
@@ -116,12 +115,8 @@ class Console:
                 print(traceback.format_exc())
 
     # if a cmd_name is passed in, a specific self.help_function will be called
-    def do_help(self, cmd_name=None):
+    def do_help(self):
         """ Displays all possible commands. """
-        if cmd_name:
-            getattr(self, f'help_{cmd_name}')()
-
-        else:
-            print('Possible Commands:')
-            print('(Use "help <command>" for specific information)\n')
-            print('\n'.join([d[len('do_'):] for d in dir(self) if callable(getattr(self, d)) and d.startswith('do_')]))
+        print('Possible Commands:')
+        print('(Use "help <command>" for specific information)\n')
+        print('\n'.join([d[len('do_'):] for d in dir(self) if callable(getattr(self, d)) and d.startswith('do_')]))
