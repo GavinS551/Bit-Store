@@ -23,7 +23,7 @@ def blockchain_api(addresses, refresh_rate, source):
 
     # input validation
     if not isinstance(addresses, list):
-        raise ValueError('Address(es) must be in a list!')
+        raise TypeError('Address(es) must be in a list!')
 
     if not utils.validate_addresses(addresses):
         raise ValueError('Invalid Address entered')

@@ -331,7 +331,7 @@ class HDWallet:
 
     def set_gap_limit(self, num):
         if not isinstance(num, int):
-            raise ValueError('Gap limit must be an int')
+            raise TypeError('Gap limit must be an int')
         elif num <= 0:
             raise ValueError('Gap limit must be at least 1')
         else:

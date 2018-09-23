@@ -10,7 +10,7 @@ import binascii
 
 import requests.exceptions
 
-from . import blockchain, config, data, tx, price, hd, structs
+from . import blockchain, config, data, tx, price, hd, structs, utils
 from ..exceptions.wallet_exceptions import *
 
 
@@ -47,7 +47,7 @@ class _ApiDataUpdaterThread(threading.Thread):
             raise TypeError('wallet_instance must be an instance of Wallet class')
 
         if not isinstance(refresh_rate, int):
-            raise ValueError('Refresh rate must be an int')
+            raise TypeError('Refresh rate must be an int')
 
         # due to api request limits
         if refresh_rate < 5:
@@ -132,7 +132,7 @@ class Wallet:
     def new_wallet(cls, name, password, hd_wallet_obj, offline=False):
 
         if not isinstance(hd_wallet_obj, hd.HDWallet):
-            raise ValueError('hd_wallet_obj must be an instance of Bip32 class')
+            raise TypeError('hd_wallet_obj must be an instance of Bip32 class')
 
         dir_ = os.path.join(config.WALLET_DATA_DIR, name)
         data_file_path = os.path.join(dir_, config.WALLET_DATA_FILE_NAME)
@@ -245,6 +245,15 @@ class Wallet:
     # fee will be modified later using transactions change_fee method, as the
     # size of the transaction is currently unknown
     def make_unsigned_transaction(self, outs_amounts, fee=0, locktime=0):
+
+        if not utils.validate_addresses(a for a in outs_amounts):
+            raise ValueError('Invalid address(es) entered')
+
+        if not all(isinstance(i, int) for i in outs_amounts.values()) and isinstance(fee, int):
+            raise TypeError('Output values must be positive ints')
+
+        if not all(j > 0 for j in outs_amounts.values()) and fee > 0:
+            raise ValueError('Outputs must be > 0')
 
         txn = tx.Transaction(utxo_data=self.unspent_outputs,
                              outputs_amounts=outs_amounts,
