@@ -8,7 +8,6 @@ import contextlib
 import io
 import traceback
 import inspect
-import string
 
 
 class IncorrectArgsError(Exception):
@@ -22,6 +21,14 @@ class IncorrectArgsError(Exception):
 
 
 class Console:
+    """
+    This class should be sub-classed. You defined methods called do_{something},
+    and when the string "{something}" is passed into exec_cmd, the method do_{something}
+    will be called. Default help commands will be created for do_ methods, which just displays
+    the method's docstring, which is usually enough. More complicated help commands can be
+    created by defining a help_{something} method that will be called instead. The default do_help
+    will list all possible do_ commands.
+    """
 
     def __init__(self, intro=None):
         self._output = io.StringIO()
@@ -34,6 +41,9 @@ class Console:
     @property
     def output(self):
         return self._output.getvalue()
+
+    def clear_output(self):
+        self._output = io.StringIO()
 
     @staticmethod
     def fallback_cmd():
@@ -72,12 +82,11 @@ class Console:
                 if cmd in ('?', 'help') and not args:
                     self.do_help()
 
-                # if it has args, then call self.help_{arg[0]}
+                # if it has args, then pass into do_help
                 elif cmd in ('?', 'help') and args:
                     if len(args) > 1:
                         raise IncorrectArgsError('help', 1, len(args))
-
-                    getattr(self, f'help_{args[0]}')()
+                    self.do_help(args[0])
 
                 else:
                     getattr(self, f'do_{cmd}')(*args)
@@ -95,7 +104,13 @@ class Console:
             except Exception:
                 print(traceback.format_exc())
 
-    def do_help(self):
+    # if a cmd_name is passed in, a specific self.help_function will be called
+    def do_help(self, cmd_name=None):
         """ Displays all possible commands. """
-        print('Possible Commands:\n')
-        print('\n'.join([d[len('do_'):] for d in dir(self) if callable(getattr(self, d)) and d.startswith('do_')]))
+        if cmd_name:
+            getattr(self, f'help_{cmd_name}')()
+
+        else:
+            print('Possible Commands:')
+            print('(Use "help <command>" for specific information)\n')
+            print('\n'.join([d[len('do_'):] for d in dir(self) if callable(getattr(self, d)) and d.startswith('do_')]))
