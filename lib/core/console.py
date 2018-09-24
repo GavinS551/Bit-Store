@@ -114,8 +114,11 @@ class Console(metaclass=ConsoleArgErrorsMeta):
     """
 
     def __init__(self, intro=None, stdout=None):
-        # if stdout is None, it can be accessed by the output property
-        # and will be assigned to a StringIO object
+        # if stdout is None, it will default to a StringIO object.
+        # All methods executed in self.exec_cmd will have stdout
+        # redirected.
+        # complete stdout value can be accessed through self.output property
+        # that will not move file stream (uses getvalue() method)
         if stdout is None:
             self._output = io.StringIO()
         else:
@@ -162,20 +165,45 @@ class Console(metaclass=ConsoleArgErrorsMeta):
         an optional default method will be called. If default is None, it will call
         self._fallback_cmd.
         """
-        # remove all double spaces, and all other whitespace in the command string
-        str_cmd = " ".join(str_cmd.split())
-
-        cmd = str_cmd.split(sep=' ')[0].lower()
-        # anything after the first space are arguments
-        args = str_cmd.split(sep=' ')[1:]
-
-        self.command_history.append(cmd)
-
         # redirect stdout to self.output
         with contextlib.redirect_stdout(self._output):
+
+            # remove all double spaces, and all other whitespace in the command string
+            str_cmd = " ".join(str_cmd.split())
+
+            cmd = str_cmd.split(sep=' ')[0].lower()
+            # anything after the first space are arguments
+            _args = ' '.join(str_cmd.split(sep=' ')[1:])
+
+            # print command so double quotes in args will persist
             if print_cmd:
-                print(cmd, *args)
+                print(cmd, _args)
                 print()
+
+            args = []
+            _last_chop_idx = 0
+            _ignore_spaces = False
+            for i, char in enumerate(_args):
+                if char == '"' and not _ignore_spaces:
+                    _ignore_spaces = True
+
+                # second quote found
+                elif char == '"' and _ignore_spaces:
+                    args.append(_args[_last_chop_idx+1:i])
+                    _last_chop_idx = i
+                    _ignore_spaces = False
+
+                elif char == ' ' and not _ignore_spaces:
+                    args.append(_args[_last_chop_idx:i])
+                    _last_chop_idx = i
+
+                elif i == len(_args) - 1:
+                    if _ignore_spaces:
+                        print('Error: Closing quote not found!\n')
+                        return
+                    args.append(_args[_last_chop_idx:])
+
+                self.command_history.append(cmd)
 
             try:
                 if cmd == '?':
