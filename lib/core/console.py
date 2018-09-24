@@ -39,9 +39,20 @@ class ConsoleArgErrorsMeta(type):
             try:
                 func(*args, **kwargs)
 
-            except (IncorrectArgsError, TypeError):
+            except (IncorrectArgsError, TypeError) as ex:
 
                 sig = inspect.signature(func)
+
+                # makes sure TypeError was raised from incorrect
+                # args. If it was raised for any other reason it
+                # will be re-raised
+                if isinstance(ex, TypeError):
+                    
+                    # - 1 to ignore self arg
+                    other_type_error = len(sig.parameters) - 1 == len(args) + len(kwargs)
+
+                    if other_type_error:
+                        raise ex
 
                 cmd_name = func.__name__[len('do_'):]
                 num_args = len(sig.parameters)
@@ -155,6 +166,16 @@ class Console(metaclass=ConsoleArgErrorsMeta):
             try:
                 cmd_attr = getattr(self, f'do_{cmd}')
 
+            except AttributeError:
+                if default is not None:
+                    default()
+                else:
+                    self.fallback_cmd()
+
+                return
+
+            try:
+
                 if print_cmd:
                     print(cmd, *args)
 
@@ -169,12 +190,6 @@ class Console(metaclass=ConsoleArgErrorsMeta):
                 else:
                     cmd_attr(*args)
 
-            except AttributeError:
-                if default is not None:
-                    default()
-                else:
-                    self.fallback_cmd()
-
             except IncorrectArgsError as ex:
                 print(str(ex))
 
@@ -185,7 +200,6 @@ class Console(metaclass=ConsoleArgErrorsMeta):
     # if a cmd_name is passed in, a specific self.help_function will be called
     def do_help(self, cmd=None):
         """ Displays all possible commands. """
-
         if cmd is not None:
             getattr(self, f'help_{cmd}')()
 
