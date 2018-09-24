@@ -163,7 +163,12 @@ class Console(metaclass=ConsoleArgErrorsMeta):
 
         # redirect stdout to self.output
         with contextlib.redirect_stdout(self._output):
+            if print_cmd:
+                print(cmd, *args)
+
             try:
+                if cmd == '?':
+                    cmd = 'help'
                 cmd_attr = getattr(self, f'do_{cmd}')
 
             except AttributeError:
@@ -175,9 +180,6 @@ class Console(metaclass=ConsoleArgErrorsMeta):
                 return
 
             try:
-
-                if print_cmd:
-                    print(cmd, *args)
 
                 # if help is on its own
                 if cmd in ('?', 'help') and not args:
