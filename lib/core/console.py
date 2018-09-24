@@ -24,14 +24,15 @@ class ConsoleArgErrorsMeta(type):
 
     def __new__(mcs, name, bases, attrs):
 
-        for name, value in attrs.items():
-            if isinstance(value, types.FunctionType) and name.startswith('do_'):
-                attrs[name] = mcs._args_error_info_decorate(value)
+        for name_, value in attrs.items():
+            if isinstance(value, types.FunctionType) and name_.startswith('do_'):
+                attrs[name_] = mcs._args_error_info_decorate(value)
 
-        return super().__new__(mcs, name, bases, attrs)
+        mcs.created_cls = super().__new__(mcs, name, bases, attrs)
+        return mcs.created_cls
 
-    @staticmethod
-    def _args_error_info_decorate(func):
+    @classmethod
+    def _args_error_info_decorate(mcs, func):
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -47,9 +48,18 @@ class ConsoleArgErrorsMeta(type):
                 # args. If it was raised for any other reason it
                 # will be re-raised
                 if isinstance(ex, TypeError):
-                    
-                    # - 1 to ignore self arg
-                    other_type_error = len(sig.parameters) - 1 == len(args) + len(kwargs)
+                    cls = mcs.created_cls
+                    # check if a self or cls arg should be ignored
+                    if isinstance(cls.__dict__[func.__name__], classmethod) or \
+                       not isinstance(cls.__dict__[func.__name__], staticmethod):
+                        impl_arg_num = 1
+                    else:
+                        impl_arg_num = 0
+
+                    if len(sig.parameters) - impl_arg_num != len(args) - impl_arg_num + len(kwargs):
+                        other_type_error = False
+                    else:
+                        other_type_error = True
 
                     if other_type_error:
                         raise ex
@@ -82,7 +92,7 @@ class ConsoleArgErrorsMeta(type):
                     if i < len(arg_annos):
                         str_arg_annos += ', '
 
-                err_str = f'Error: "{cmd_name}" expects {num_args} arguments'
+                err_str = f'Error: "{cmd_name}" expects {num_args} argument(s)'
                 if num_args > 0:
                     err_str += f': {str_arg_annos}'
 
@@ -135,7 +145,7 @@ class Console(metaclass=ConsoleArgErrorsMeta):
          if not already present. (default help_cmd is print(inspect.getdoc(self.do_{cmd})) )
         """
 
-        make_helper = lambda method: lambda: print(f"{method}: {inspect.getdoc(getattr(self, f'do_{method}'))}")
+        make_helper = lambda method: lambda: print(f"'{method}': {inspect.getdoc(getattr(self, f'do_{method}'))}")
 
         do_methods = {m[len('do_'):] for m in dir(self) if callable(getattr(self, m))
                       and m.startswith('do_')}
@@ -165,6 +175,7 @@ class Console(metaclass=ConsoleArgErrorsMeta):
         with contextlib.redirect_stdout(self._output):
             if print_cmd:
                 print(cmd, *args)
+                print()
 
             try:
                 if cmd == '?':
