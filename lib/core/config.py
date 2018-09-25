@@ -32,6 +32,13 @@ def read_file():
         return DEFAULT_CONFIG
 
 
+def expected_type(key):
+    if key not in DEFAULT_CONFIG:
+        raise ValueError(f'{key} is an invalid key')
+
+    return type(DEFAULT_CONFIG[key])
+
+
 def write_values(**kwargs):
     config = read_file()
 
@@ -39,6 +46,9 @@ def write_values(**kwargs):
 
         if k not in DEFAULT_CONFIG:
             raise ValueError(f'{k} is an invalid key')
+
+        if not isinstance(v, type(DEFAULT_CONFIG[k])):
+            raise TypeError(f'{v} is of incorrect type. \'{type(DEFAULT_CONFIG[k])}\' is expected')
 
         config[k] = v
 
