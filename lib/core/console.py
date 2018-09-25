@@ -30,8 +30,7 @@ class ConsoleArgErrorsMeta(type):
             if isinstance(value, types.FunctionType) and name_.startswith('do_'):
                 attrs[name_] = mcs._args_error_info_decorate(value)
 
-        mcs.created_cls = super().__new__(mcs, name, bases, attrs)
-        return mcs.created_cls
+        return super().__new__(mcs, name, bases, attrs)
 
     @classmethod
     def _args_error_info_decorate(mcs, func):
@@ -51,7 +50,7 @@ class ConsoleArgErrorsMeta(type):
                 # will be re-raised
                 if isinstance(ex, TypeError):
 
-                    if len(sig.parameters) - 1 != len(args) - 1 + len(kwargs):
+                    if len(sig.parameters) != len(args) + len(kwargs):
                         other_type_error = False
                     else:
                         other_type_error = True
@@ -89,7 +88,7 @@ class ConsoleArgErrorsMeta(type):
 
                 err_str = f'Error: "{cmd_name}" expects {num_args} argument(s) '
                 if num_args > 0:
-                    err_str += f'<name: type>: {str_arg_annos}'
+                    err_str += f'<arg: type>: {str_arg_annos}'
 
                 raise IncorrectArgsError(err_str)
 
@@ -163,7 +162,24 @@ class Console(metaclass=ConsoleArgErrorsMeta):
         for m in missing_helpers:
             setattr(self, f'help_{m}', make_helper(m))
 
-    def exec_cmd(self, str_cmd, default=None, print_cmd=True):
+    @staticmethod
+    def _parse_str_cmd(str_cmd):
+        """ returns a tuple containing cmd name, and args (in list).
+        (separated by spaces except when string is enclosed in double-quotes)
+        """
+
+        # remove all double spaces, and all other whitespace in the command string
+        str_cmd = ' '.join(str_cmd.split())
+
+        cmd = str_cmd.split()[0].lower()
+
+        # anything after the first space are arguments
+        _args = ' '.join(str_cmd.split()[1:])
+        args = [a for a in csv.reader([_args], delimiter=' ')][0]
+
+        return cmd, args
+
+    def exec_cmd(self, str_cmd, default=None, print_cmd=True, merge_dup_history=True):
         """ method will try and call self.do_{str_cmd} method. If there is not defined do_
         method, an optional default method will be called. If default is None, it will call
         self._fallback_cmd.
@@ -171,22 +187,23 @@ class Console(metaclass=ConsoleArgErrorsMeta):
         # redirect stdout to self.output
         with contextlib.redirect_stdout(self._output):
 
-            # remove all double spaces, and all other whitespace in the command string
-            str_cmd = ' '.join(str_cmd.split())
-
-            cmd = str_cmd.split()[0].lower()
-
-            # anything after the first space are arguments
-            _args = ' '.join(str_cmd.split()[1:])
-            args = [a for a in csv.reader([_args], delimiter=' ')][0]
+            cmd, args = self._parse_str_cmd(str_cmd)
 
             # print command so double quotes in args will persist
             if print_cmd:
-                print(cmd, _args, '\n')
+                print(str_cmd, '\n')
 
-            self.command_history.append(cmd)
+            # only append command if it is different from the last executed one,
+            # and appropriate arg is set
+            if merge_dup_history:
+                # first check if the list is empty, to prevent an index error on empty list
+                if not self.command_history or not self.command_history[-1] == cmd:
+                    self.command_history.append(cmd)
+            else:
+                self.command_history.append(cmd)
 
             try:
+                # special case for question mark
                 if cmd == '?':
                     cmd = 'help'
                 cmd_attr = getattr(self, f'do_{cmd}')
