@@ -179,7 +179,7 @@ class Console(metaclass=ConsoleArgErrorsMeta):
 
         return cmd, args
 
-    def exec_cmd(self, str_cmd, default=None, print_cmd=True, merge_dup_history=True):
+    def exec_cmd(self, str_cmd, default=None, print_cmd=True):
         """ method will try and call self.do_{str_cmd} method. If there is not defined do_
         method, an optional default method will be called. If default is None, it will call
         self._fallback_cmd.
@@ -193,14 +193,7 @@ class Console(metaclass=ConsoleArgErrorsMeta):
             if print_cmd:
                 print(str_cmd, '\n')
 
-            # only append command if it is different from the last executed one,
-            # and appropriate arg is set
-            if merge_dup_history:
-                # first check if the list is empty, to prevent an index error on empty list
-                if not self.command_history or not self.command_history[-1] == cmd:
-                    self.command_history.append(cmd)
-            else:
-                self.command_history.append(cmd)
+            self.command_history.append(str_cmd)
 
             try:
                 # special case for question mark

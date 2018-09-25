@@ -3,8 +3,9 @@ from tkinter import ttk
 
 import io
 import functools
+import ast
 
-from ...core import console, utils, blockchain, data
+from ...core import console, utils, blockchain, data, config
 
 
 def catch_incorrect_password(func):
@@ -12,6 +13,7 @@ def catch_incorrect_password(func):
     def decorator(*args, **kwargs):
         try:
             func(*args, **kwargs)
+
         except data.IncorrectPasswordError:
             print('Error: Password Incorrect')
 
@@ -21,25 +23,58 @@ def catch_incorrect_password(func):
 class _CMDHistory:
 
     def __init__(self, cmd_history: list):
+        """ allows for easy navigation through list of historic commands.
+        this class will skip past duplicated commands when next/previous is
+        called.
+        """
         # history sorted from oldest -> newest
         self.history = cmd_history
+        self._last_history = self.history.copy()
         self._pointer = 0
 
+    def _reset_ptr_on_change(self):
+        if self.history != self._last_history:
+            # if a new command was executed, reset pointer
+            self._pointer = 0
+            self._last_history = self.history.copy()
+
     def previous(self):
+        # if cmd history is empty, just return empty string to avoid index errors
+        if not len(self.history):
+            return ''
+
+        self._reset_ptr_on_change()
+
         try:
             # last idx in history is latest cmd
             self._pointer += 1
-            return self.history[-self._pointer]
+            cmd = self.history[-self._pointer]
+
+            if cmd == self.history[-(self._pointer + 1)]:
+                return self.previous()
 
         except IndexError:
             self._pointer -= 1
-            return self.history[-self._pointer]
+            cmd = self.history[-self._pointer]
+
+        return cmd
 
     def next(self):
+        # if cmd history is empty, just return empty string to avoid index errors
+        if not len(self.history):
+            return ''
+
+        self._reset_ptr_on_change()
 
         if self._pointer > 1:
             self._pointer -= 1
-            return self.history[-self._pointer]
+            cmd = self.history[-self._pointer]
+
+            if cmd == self.history[-(self._pointer - 1)]:
+                return self.next()
+            else:
+                return cmd
+
         else:
             self._pointer = 0
             return ''
@@ -140,6 +175,33 @@ class GUIConsole(console.Console):
     def do_wallet_metadata(self):
         """ Prints wallet metadata """
         print(self.wallet.get_metadata(name=self.wallet.name))
+
+    def do_setconfig(self, key: str, value):
+        """ Sets a config file key to specified value """
+        key = key.upper()  # all keys are uppercase
+        expected_type = config.expected_type(key)
+
+        try:
+            if type(value) != expected_type:
+                value = ast.literal_eval(value)
+
+            if not isinstance(value, expected_type):
+                raise TypeError
+
+        # ValueError from failed ast.literal_eval
+        except (TypeError, ValueError):
+            print(f'Error: Invalid value type. Type "{expected_type.__name__}" was expected')
+
+        try:
+            config.write_values(**{key: value})
+            print("Value written. Please restart the program for these changes to take effect.")
+
+        except ValueError:
+            print(f'Error: Invalid key: "{key}"')
+
+    def do_exit(self):
+        """ Exit program """
+        self.root.destroy()
 
 
 class ConsoleDisplay(ttk.Frame):
