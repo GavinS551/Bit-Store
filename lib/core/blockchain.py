@@ -19,7 +19,7 @@ def broadcast_transaction(hex_transaction):
     return request.ok
 
 
-def blockchain_api(addresses, refresh_rate, source):
+def blockchain_api(addresses, refresh_rate, source, timeout=10):
 
     # input validation
     if not isinstance(addresses, list):
@@ -38,17 +38,18 @@ def blockchain_api(addresses, refresh_rate, source):
     source_cls = sources[source][0]
     source_url = sources[source][1]
 
-    return source_cls(addresses, refresh_rate, source_url)
+    return source_cls(addresses, refresh_rate, source_url, timeout=timeout)
 
 
 class _BlockchainBaseClass:
     """ subclasses need to overwrite transactions property and make
      sure it returns transactions in data format seen in doc-string of the property"""
 
-    def __init__(self, addresses, refresh_rate, url):
+    def __init__(self, addresses, refresh_rate, url, timeout=10):
 
         self.addresses = addresses
         self.url = url
+        self.timeout = timeout
 
         self.last_request_time = 0
         self.last_requested_data = {}
@@ -144,7 +145,7 @@ class BlockchainInfo(_BlockchainBaseClass):
                 url += f'{address}|'
             url += '&n=100'  # show up to 100 (max) transactions
 
-            request = requests.get(url, timeout=10)
+            request = requests.get(url, timeout=self.timeout)
             data = request.json()
 
             request.raise_for_status()
