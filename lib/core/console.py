@@ -10,6 +10,7 @@ import traceback
 import inspect
 import functools
 import types
+import csv
 
 
 class IncorrectArgsError(Exception):
@@ -20,6 +21,7 @@ class IncorrectArgsError(Exception):
     pass
 
 
+# TODO fix staticmethods and classmethods
 class ConsoleArgErrorsMeta(type):
 
     def __new__(mcs, name, bases, attrs):
@@ -48,15 +50,8 @@ class ConsoleArgErrorsMeta(type):
                 # args. If it was raised for any other reason it
                 # will be re-raised
                 if isinstance(ex, TypeError):
-                    cls = mcs.created_cls
-                    # check if a self or cls arg should be ignored
-                    if isinstance(cls.__dict__[func.__name__], classmethod) or \
-                       not isinstance(cls.__dict__[func.__name__], staticmethod):
-                        impl_arg_num = 1
-                    else:
-                        impl_arg_num = 0
 
-                    if len(sig.parameters) - impl_arg_num != len(args) - impl_arg_num + len(kwargs):
+                    if len(sig.parameters) - 1 != len(args) - 1 + len(kwargs):
                         other_type_error = False
                     else:
                         other_type_error = True
@@ -92,9 +87,9 @@ class ConsoleArgErrorsMeta(type):
                     if i < len(arg_annos):
                         str_arg_annos += ', '
 
-                err_str = f'Error: "{cmd_name}" expects {num_args} argument(s)'
+                err_str = f'Error: "{cmd_name}" expects {num_args} argument(s) '
                 if num_args > 0:
-                    err_str += f': {str_arg_annos}'
+                    err_str += f'<name: type>: {str_arg_annos}'
 
                 raise IncorrectArgsError(err_str)
 
@@ -110,7 +105,11 @@ class Console(metaclass=ConsoleArgErrorsMeta):
     created by defining a help_{something} method that will be called instead. The default do_help
     will list all possible do_ commands.
 
-    TODO: add info about IncorrectArgsError Handling
+    If incorrect amount of arguments are passed into a command, it will automatically
+    be caught and a detailed error message containing expected args and type annotations
+    (if present) will be displayed. If IncorrectArgsError is raised inside any do_ method,
+    the above will also happen (no need to pass any params to Exception). This is helpful for
+    type validation as the type annotations will be displayed in the error message.
     """
 
     def __init__(self, intro=None, stdout=None):
@@ -148,7 +147,11 @@ class Console(metaclass=ConsoleArgErrorsMeta):
          if not already present. (default help_cmd is print(inspect.getdoc(self.do_{cmd})) )
         """
 
-        make_helper = lambda method: lambda: print(f"'{method}': {inspect.getdoc(getattr(self, f'do_{method}'))}")
+        make_helper = \
+            lambda method: lambda: print(f"'{method}': "
+                                         f"<args = "
+                                         f"{list(inspect.signature(getattr(self, f'do_{method}')).parameters.keys())}> "
+                                         f"{inspect.getdoc(getattr(self, f'do_{method}'))}")
 
         do_methods = {m[len('do_'):] for m in dir(self) if callable(getattr(self, m))
                       and m.startswith('do_')}
@@ -161,49 +164,27 @@ class Console(metaclass=ConsoleArgErrorsMeta):
             setattr(self, f'help_{m}', make_helper(m))
 
     def exec_cmd(self, str_cmd, default=None, print_cmd=True):
-        """ method will try and call self.do_{str_cmd} method. If it fails,
-        an optional default method will be called. If default is None, it will call
+        """ method will try and call self.do_{str_cmd} method. If there is not defined do_
+        method, an optional default method will be called. If default is None, it will call
         self._fallback_cmd.
         """
         # redirect stdout to self.output
         with contextlib.redirect_stdout(self._output):
 
             # remove all double spaces, and all other whitespace in the command string
-            str_cmd = " ".join(str_cmd.split())
+            str_cmd = ' '.join(str_cmd.split())
 
-            cmd = str_cmd.split(sep=' ')[0].lower()
+            cmd = str_cmd.split()[0].lower()
+
             # anything after the first space are arguments
-            _args = ' '.join(str_cmd.split(sep=' ')[1:])
+            _args = ' '.join(str_cmd.split()[1:])
+            args = [a for a in csv.reader([_args], delimiter=' ')][0]
 
             # print command so double quotes in args will persist
             if print_cmd:
-                print(cmd, _args)
-                print()
+                print(cmd, _args, '\n')
 
-            args = []
-            _last_chop_idx = 0
-            _ignore_spaces = False
-            for i, char in enumerate(_args):
-                if char == '"' and not _ignore_spaces:
-                    _ignore_spaces = True
-
-                # second quote found
-                elif char == '"' and _ignore_spaces:
-                    args.append(_args[_last_chop_idx+1:i])
-                    _last_chop_idx = i
-                    _ignore_spaces = False
-
-                elif char == ' ' and not _ignore_spaces:
-                    args.append(_args[_last_chop_idx:i])
-                    _last_chop_idx = i
-
-                elif i == len(_args) - 1:
-                    if _ignore_spaces:
-                        print('Error: Closing quote not found!\n')
-                        return
-                    args.append(_args[_last_chop_idx:])
-
-                self.command_history.append(cmd)
+            self.command_history.append(cmd)
 
             try:
                 if cmd == '?':
