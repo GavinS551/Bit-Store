@@ -12,12 +12,12 @@ def init():
             os.makedirs(dir_, exist_ok=True)
 
     # config file init
-    if not os.path.exists(CONFIG_FILE):
+    if not os.path.isfile(CONFIG_FILE):
         with open(CONFIG_FILE, 'w') as cf:
             json.dump(DEFAULT_CONFIG, cf, indent=4, sort_keys=False)
 
     # add new config variables into the file
-    missing_vars = set(DEFAULT_CONFIG) - {k for k in read_file() if k in DEFAULT_CONFIG}
+    missing_vars = set(DEFAULT_CONFIG.keys()) - {k for k in read_file()}
     write_values(**{k: DEFAULT_CONFIG[k] for k in missing_vars})
 
 
