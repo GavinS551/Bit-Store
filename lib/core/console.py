@@ -11,6 +11,7 @@ import inspect
 import functools
 import types
 import csv
+import ast
 
 
 class IncorrectArgsError(Exception):
@@ -178,6 +179,31 @@ class Console(metaclass=ConsoleArgErrorsMeta):
         args = [a for a in csv.reader([_args], delimiter=' ')][0]
 
         return cmd, args
+
+    @staticmethod
+    def string_eval(string, expected_type=None):
+        """ uses ast.literal_eval to safely eval string to basic python built-ins.
+        If type is provided, then the method will only return the evaluated string
+        if it matches the provided type.
+
+        Raises RuntimeError if eval fails.
+        Raises TypeError if evaluated string type != type_ (if it is provided)
+        """
+        if expected_type == str:
+            return string
+
+        try:
+            string_eval = ast.literal_eval(string)
+
+        except (ValueError, SyntaxError) as ex:
+            raise RuntimeError(f'Cannot evaluate string. ({type(ex).__name__})')
+
+        if expected_type is not None and not isinstance(string_eval, expected_type):
+            raise TypeError(f'Evaluated string doesn\'t match provided type. '
+                            f'(\'{expected_type.__name__}\' expected. Evaled type is '
+                            f'\'{type(string_eval).__name__}\')')
+        else:
+            return string_eval
 
     def exec_cmd(self, str_cmd, default=None, print_cmd=True):
         """ method will try and call self.do_{str_cmd} method. If there is not defined do_

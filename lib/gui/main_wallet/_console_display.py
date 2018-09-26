@@ -3,7 +3,6 @@ from tkinter import ttk
 
 import io
 import functools
-import ast
 
 from ...core import console, utils, blockchain, data, config
 
@@ -178,26 +177,24 @@ class GUIConsole(console.Console):
 
     def do_setconfig(self, key: str, value):
         """ Sets a config file key to specified value """
-        key = key.upper()  # all keys are uppercase
-        expected_type = config.expected_type(key)
-
         try:
-            if type(value) != expected_type:
-                value = ast.literal_eval(value)
+            expected_type = config.expected_type(key)
+            val = self.string_eval(value, expected_type=expected_type)
 
-            if not isinstance(value, expected_type):
-                raise TypeError
+        # caught in expected_type assignment, rest of errors caught in val assignment
+        except KeyError:
+            print(f'Error: Invalid key \'{key}\'')
 
-        # ValueError from failed ast.literal_eval
-        except (TypeError, ValueError):
-            print(f'Error: Invalid value type. Type "{expected_type.__name__}" was expected')
+        except RuntimeError:
+            print(f'Error: Unable to convert "{value}" to expected type. '
+                  f'Please ensure that "{value}" is a valid \'{expected_type.__name__}\' literal')
 
-        try:
-            config.write_values(**{key: value})
+        except TypeError:
+            print(f'Error: key "{key}" expects a value of type \'{expected_type.__name__}\'')
+
+        else:
+            config.write_values(**{key: val})
             print("Value written. Please restart the program for these changes to take effect.")
-
-        except ValueError:
-            print(f'Error: Invalid key: "{key}"')
 
     def do_exit(self):
         """ Exit program """
