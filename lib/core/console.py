@@ -164,7 +164,7 @@ class Console(metaclass=ConsoleArgErrorsMeta):
             setattr(self, f'help_{m}', make_helper(m))
 
     @staticmethod
-    def _parse_str_cmd(str_cmd):
+    def parse_str_cmd(str_cmd):
         """ returns a tuple containing cmd name, and args (in list).
         (separated by spaces except when string is enclosed in double-quotes)
         """
@@ -205,7 +205,7 @@ class Console(metaclass=ConsoleArgErrorsMeta):
         else:
             return string_eval
 
-    def exec_cmd(self, str_cmd, default=None, print_cmd=True):
+    def exec_cmd(self, str_cmd, default=None, print_cmd=True, password_arg_idx=None):
         """ method will try and call self.do_{str_cmd} method. If there is not defined do_
         method, an optional default method will be called. If default is None, it will call
         self._fallback_cmd.
@@ -213,13 +213,16 @@ class Console(metaclass=ConsoleArgErrorsMeta):
         # redirect stdout to self.output
         with contextlib.redirect_stdout(self._output):
 
-            cmd, args = self._parse_str_cmd(str_cmd)
+            cmd, args = self.parse_str_cmd(str_cmd)
 
-            # print command so double quotes in args will persist
+            pwd_clean_str_cmd = str_cmd
+            if password_arg_idx is not None:
+                pwd_clean_str_cmd = pwd_clean_str_cmd.replace(args[password_arg_idx], '*' * 10)
+
             if print_cmd:
-                print(str_cmd, '\n')
+                print(pwd_clean_str_cmd, '\n')
 
-            self.command_history.append(str_cmd)
+            self.command_history.append(pwd_clean_str_cmd)
 
             try:
                 # special case for question mark
@@ -243,7 +246,7 @@ class Console(metaclass=ConsoleArgErrorsMeta):
 
                 # if it has args, then pass into do_help
                 elif cmd in ('?', 'help') and args:
-                    self.do_help(cmd=args[0])
+                    self.do_help(cmd=args[0], _default=default)
 
                 else:
                     cmd_attr(*args)
@@ -256,10 +259,17 @@ class Console(metaclass=ConsoleArgErrorsMeta):
                 print(traceback.format_exc())
 
     # if a cmd_name is passed in, a specific self.help_function will be called
-    def do_help(self, cmd=None):
+    def do_help(self, cmd=None, _default=None):
         """ Displays all possible commands. """
         if cmd is not None:
-            getattr(self, f'help_{cmd}')()
+            try:
+                getattr(self, f'help_{cmd}')()
+
+            except AttributeError:
+                if _default is not None:
+                    _default()
+                else:
+                    self.fallback_cmd()
 
         else:
             print('Possible Commands:')

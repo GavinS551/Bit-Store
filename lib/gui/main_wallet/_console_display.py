@@ -50,7 +50,10 @@ class _CMDHistory:
             cmd = self.history[-self._pointer]
 
             if cmd == self.history[-(self._pointer + 1)]:
-                return self.previous()
+                try:
+                    return self.previous()
+                finally:
+                    return self.history[-(self._pointer + 1)]
 
         except IndexError:
             self._pointer -= 1
@@ -235,10 +238,11 @@ class ConsoleDisplay(ttk.Frame):
 
         self.console_entry.bind('<Return>', self.execute_command)
 
+        # TODO: Refactor history code, there are a few bugs and I have no idea what the class does...
         # use up/down arrows to scroll through command history
-        self._cmd_history = _CMDHistory(self.console.command_history)
-        self.console_entry.bind('<Up>', lambda x: self._set_historic_command(x, previous=True))
-        self.console_entry.bind('<Down>', lambda x: self._set_historic_command(x, previous=False))
+        # self._cmd_history = _CMDHistory(self.console.command_history)
+        # self.console_entry.bind('<Up>', lambda x: self._set_historic_command(x, previous=True))
+        # self.console_entry.bind('<Down>', lambda x: self._set_historic_command(x, previous=False))
 
     @utils.threaded(daemon=True, name='GUI_CONSOLE_THREAD')
     def execute_command(self, event):
@@ -253,7 +257,14 @@ class ConsoleDisplay(ttk.Frame):
         event.widget['state'] = tk.DISABLED
 
         try:
-            self.console.exec_cmd(cmd)
+            # if wallet password is contained in args, it will be passed into exec
+            # command for the password to be blanked from console history
+            pass_idx = None
+            for i, arg in enumerate(console.Console.parse_str_cmd(cmd)[1]):
+                if self.root.btc_wallet.data_store.validate_password(arg):
+                    pass_idx = i
+
+            self.console.exec_cmd(cmd, password_arg_idx=pass_idx)
 
         finally:
             event.widget['state'] = tk.NORMAL
