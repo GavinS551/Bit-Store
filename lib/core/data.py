@@ -72,7 +72,7 @@ class DataStore(Crypto):
             raise ValueError('Sensitive key values must be either a string or a dict')
 
         if not os.path.exists(self.file_path):
-            raise ValueError(f'{self.file_path} does not exist!')
+            raise FileNotFoundError(f'{self.file_path} does not exist!')
 
         with open(self.file_path, 'r') as d:
             # new file handling
