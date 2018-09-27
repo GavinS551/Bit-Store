@@ -1,4 +1,5 @@
 import traceback
+import multiprocessing
 
 from lib import logger
 from lib.core import config
@@ -6,6 +7,9 @@ from lib.gui import gui_root
 
 
 if __name__ == '__main__':
+    # PyInstaller fix
+    multiprocessing.freeze_support()
+
     # making sure all program directories exist, and creating them otherwise.
     config.init()
 
