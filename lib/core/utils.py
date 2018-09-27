@@ -82,12 +82,6 @@ def datetime_str_from_timestamp(timestamp, fmt, utc=True):
         return local_datetime.strftime(fmt)
 
 
-def remove_duplicates(sequence):
-    """ Removes duplicates from a sequence, while preserving order. Returns a list """
-    # dict is ordered on Python 3.6+
-    return list(dict.fromkeys(sequence))
-
-
 class IterableQueue:
 
     def __init__(self, queue):

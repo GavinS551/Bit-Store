@@ -3,6 +3,7 @@ from tkinter import ttk
 
 import io
 import functools
+import itertools
 
 from ...core import console, utils, blockchain, data, config
 
@@ -22,63 +23,41 @@ def catch_incorrect_password(func):
 class _CMDHistory:
 
     def __init__(self, cmd_history: list):
-        """ allows for easy navigation through list of historic commands.
-        this class will skip past duplicated commands when next/previous is
-        called.
-        """
-        # history sorted from oldest -> newest
-        self.history = cmd_history
-        self._last_history = self.history.copy()
-        self._pointer = 0
+        """ allows for easy navigation through list of historic commands. """
+        self._cmd_history = cmd_history
+        self._idx = 0
 
-    def _reset_ptr_on_change(self):
+        self._last_history = None
+
+    @staticmethod
+    def condense_duplicates(list_):
+        return [x[0] for x in itertools.groupby(list_)]
+
+    @property
+    def history(self):
+        return [''] + list(reversed(self.condense_duplicates(self._cmd_history)))
+
+    def _reset_on_history_change(self):
         if self.history != self._last_history:
-            # if a new command was executed, reset pointer
-            self._pointer = 0
-            self._last_history = self.history.copy()
+            self._last_history = self.history
+            self._idx = 0
 
     def previous(self):
-        # if cmd history is empty, just return empty string to avoid index errors
-        if not len(self.history):
-            return ''
-
-        self._reset_ptr_on_change()
-
+        self._reset_on_history_change()
         try:
-            # last idx in history is latest cmd
-            self._pointer += 1
-            cmd = self.history[-self._pointer]
-
-            if cmd == self.history[-(self._pointer + 1)]:
-                try:
-                    return self.previous()
-                finally:
-                    return self.history[-(self._pointer + 1)]
+            self._idx += 1
+            return self.history[self._idx]
 
         except IndexError:
-            self._pointer -= 1
-            cmd = self.history[-self._pointer]
-
-        return cmd
+            self._idx -= 1
+            return self.history[self._idx]
 
     def next(self):
-        # if cmd history is empty, just return empty string to avoid index errors
-        if not len(self.history):
-            return ''
-
-        self._reset_ptr_on_change()
-
-        if self._pointer > 1:
-            self._pointer -= 1
-            cmd = self.history[-self._pointer]
-
-            if cmd == self.history[-(self._pointer - 1)]:
-                return self.next()
-            else:
-                return cmd
-
+        self._reset_on_history_change()
+        if self._idx > 0:
+            self._idx -= 1
+            return self.history[self._idx]
         else:
-            self._pointer = 0
             return ''
 
 
@@ -238,11 +217,10 @@ class ConsoleDisplay(ttk.Frame):
 
         self.console_entry.bind('<Return>', self.execute_command)
 
-        # TODO: Refactor history code, there are a few bugs and I have no idea what the class does...
         # use up/down arrows to scroll through command history
-        # self._cmd_history = _CMDHistory(self.console.command_history)
-        # self.console_entry.bind('<Up>', lambda x: self._set_historic_command(x, previous=True))
-        # self.console_entry.bind('<Down>', lambda x: self._set_historic_command(x, previous=False))
+        self._cmd_history = _CMDHistory(self.console.command_history)
+        self.console_entry.bind('<Up>', lambda x: self._set_historic_command(x, previous=True))
+        self.console_entry.bind('<Down>', lambda x: self._set_historic_command(x, previous=False))
 
     @utils.threaded(daemon=True, name='GUI_CONSOLE_THREAD')
     def execute_command(self, event):
