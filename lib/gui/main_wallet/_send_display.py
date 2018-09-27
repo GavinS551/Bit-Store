@@ -396,15 +396,15 @@ class SendDisplay(ttk.Frame):
                     cached_txns[(amount, fee_entry)] = transaction
                     self.transaction = transaction
 
+                    set_amounts_colour('black')
+                    self.amount_over_balance = False
+
                     # update transaction size/total fee if changing fee changed
                     # the size. May not be needed if this thread can update
                     # self.transaction before the bound entry methods can call
                     # self._totals_set. but that obviously can't be counted on,
                     # so we call it here as well
                     self._totals_set()
-
-                    set_amounts_colour('black')
-                    self.amount_over_balance = False
 
                 except InsufficientFundsError:
                     set_amounts_colour('red')
