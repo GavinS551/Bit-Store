@@ -82,6 +82,13 @@ def datetime_str_from_timestamp(timestamp, fmt, utc=True):
         return local_datetime.strftime(fmt)
 
 
+def remove_duplicates(iter_):
+    """ Removes duplicates from an iterable, while preserving order. Returns a list """
+    # Credit <https://bit.ly/2R1wDNv>
+    seen = set()
+    return [x for x in iter_ if not (x in seen or seen.add(x))]
+
+
 class IterableQueue:
 
     def __init__(self, queue):
