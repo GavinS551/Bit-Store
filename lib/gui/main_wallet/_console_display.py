@@ -4,6 +4,7 @@ from tkinter import ttk
 import io
 import functools
 import itertools
+from typing import Any, Union
 
 from ...core import console, utils, blockchain, data, config
 
@@ -157,7 +158,7 @@ class GUIConsole(console.Console):
         """ Prints wallet metadata """
         print(self.wallet.get_metadata(name=self.wallet.name))
 
-    def do_setconfig(self, key: str, value):
+    def do_setconfig(self, key: str, value: Any):
         """ Sets a config file key to specified value """
         try:
             expected_type = config.expected_type(key)

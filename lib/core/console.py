@@ -68,7 +68,13 @@ class ConsoleArgErrorsMeta(type):
                 arg_annos = []
                 for n, p in sig.parameters.items():
                     if p.annotation != sig.empty:
-                        arg_annos.append((n, p.annotation.__name__))
+                        try:
+                            arg_annos.append((n, p.annotation.__name__))
+                        except AttributeError:
+                            # to allow for names of type annotations such as "Any"
+                            # that aren't built-in types, and don't have a __name__
+                            arg_annos.append((n, str(p.annotation).split('.')[-1]))
+
                     else:
                         arg_annos.append((n, None))
 
