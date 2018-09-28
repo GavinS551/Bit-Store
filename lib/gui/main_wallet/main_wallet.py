@@ -8,7 +8,7 @@ from ._send_display import SendDisplay
 from ._receive_display import ReceiveDisplay
 from ._console_display import ConsoleDisplay
 
-from ...core import config, utils
+from ...core import config, utils, data
 
 
 class MainWallet(ttk.Frame):
@@ -30,6 +30,10 @@ class MainWallet(ttk.Frame):
         self.receive_display = None
         self.console_display = None
         self.title_label = None
+
+        self.menu_bar = None
+        self.wallet_menu = None
+        self.options_menu = None
 
         # attributes below will be updated in _refresh_data method
         self.wallet_balance = tk.DoubleVar()
@@ -75,21 +79,22 @@ class MainWallet(ttk.Frame):
         self._refresh_data()
 
     def _draw_menu_bar(self):
-        menu_bar = tk.Menu(self.root)
+        self.menu_bar = tk.Menu(self.root)
 
-        wallet_menu = tk.Menu(menu_bar, tearoff=0)
-        wallet_menu.add_command(label='Information', command=self._info_window)
-        wallet_menu.add_separator()
-        wallet_menu.add_command(label='Show Mnemonic')
-        wallet_menu.add_command(label='Change Password', command=self._change_password_window)
+        self.wallet_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.wallet_menu.add_command(label='Information')
+        self.wallet_menu.add_separator()
+        self.wallet_menu.add_command(label='Display Mnemonic', command=self._show_mnemonic_window)
+        self.wallet_menu.add_command(label='Change Password', command=self._change_password_window)
 
-        options_menu = tk.Menu(menu_bar, tearoff=0)
-        options_menu.add_command(label='Settings', command=self.root.settings_prompt)
+        self.options_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.options_menu.add_command(label='Settings', command=self.root.settings_prompt)
 
-        menu_bar.add_cascade(label='Wallet', menu=wallet_menu)
-        menu_bar.add_cascade(label='Options', menu=options_menu)
+        self.menu_bar.add_cascade(label='Wallet', menu=self.wallet_menu)
+        self.menu_bar.add_cascade(label='Options', menu=self.options_menu)
+        self.menu_bar.add_command(label='About', command=self._about_window)
 
-        self.root.config(menu=menu_bar)
+        self.root.config(menu=self.menu_bar)
 
     def _draw_bottom_info_bar(self):
         bottom_info_frame = ttk.Frame(self)
@@ -248,25 +253,25 @@ class MainWallet(ttk.Frame):
 
         self.root.after(self.refresh_data_rate, self._refresh_data)
 
-    def _info_window(self):
+    def _about_window(self):
         toplevel = self.root.get_toplevel(self)
 
         frame = ttk.Frame(toplevel, padding=5)
 
         author_label = ttk.Label(frame, text='Author:', font=self.root.small_font + ('bold',))
-        author_label.grid(row=0, column=0, padx=5, sticky='w')
+        author_label.grid(row=0, column=0, padx=5, pady=5, sticky='w')
 
         author = ttk.Label(frame, text='Gavin Shaughnessy', font=self.root.small_font)
         author.grid(row=0, column=1)
 
         license_label = ttk.Label(frame, text='License:', font=self.root.small_font + ('bold',))
-        license_label.grid(row=1, column=0, padx=5, sticky='w')
+        license_label.grid(row=1, column=0, padx=5, pady=5, sticky='w')
 
         license_ = ttk.Label(frame, text='MIT License', font=self.root.small_font)
         license_.grid(row=1, column=1)
 
         python_ver_label = ttk.Label(frame, text='Python Version:', font=self.root.small_font + ('bold',))
-        python_ver_label.grid(row=2, column=0, padx=5, sticky='w')
+        python_ver_label.grid(row=2, column=0, padx=5, pady=5, sticky='w')
 
         python_ver = ttk.Label(frame, text='.'.join(str(sys.version_info[i]) for i in range(3)))
         python_ver.grid(row=2, column=1)
@@ -277,9 +282,36 @@ class MainWallet(ttk.Frame):
         frame.grid(sticky='nsew')
 
     def _show_mnemonic_window(self):
-        toplevel = self.root.get_toplevel(self)
+        password = self.root.password_prompt(self)
+        if not password:
+            return
 
-        
+        try:
+            mnemonic = self.root.btc_wallet.get_mnemonic(password)
+
+        except data.IncorrectPasswordError:
+            self.root.incorrect_password_prompt(self)
+            return
+
+        toplevel = self.root.get_toplevel(self)
+        toplevel.grab_set()
+
+        frame = ttk.Frame(toplevel, padding=20)
+
+        title = ttk.Label(toplevel, text='Mnemonic:', font=self.root.bold_title_font)
+        title.grid(row=0, column=0, pady=(20, 10), padx=20)
+
+        info_label = ttk.Label(toplevel, text='Keep this phrase in a safe place. '
+                                              'It can be used to recover and spend '
+                                              'all bitcoin in this wallet.',
+                               font=self.root.small_font, wrap=350, justify=tk.CENTER)
+        info_label.grid(row=1, column=0, pady=5, padx=20)
+
+        mnemonic_label = ttk.Label(toplevel, text=mnemonic, font=('Courier New', 14, 'bold'),
+                                   wrap=350, justify=tk.CENTER)
+        mnemonic_label.grid(row=2, column=0, pady=(10, 30), padx=20)
+
+        frame.grid(sticky='nsew')
 
 
 class WatchOnlyMainWallet(MainWallet):
@@ -293,6 +325,8 @@ class WatchOnlyMainWallet(MainWallet):
         self.notebook.forget(self.send_display)
         self.send_display = WatchOnlySendDisplay(self.notebook, self)
         self.notebook.insert(send_idx, self.send_display, text='Send')
+
+        self.wallet_menu.entryconfig('Display Mnemonic', state=tk.DISABLED)
 
 
 class WatchOnlySendDisplay(SendDisplay):
