@@ -33,8 +33,8 @@ class ConsoleArgErrorsMeta(type):
 
         return super().__new__(mcs, name, bases, attrs)
 
-    @classmethod
-    def _args_error_info_decorate(mcs, func):
+    @staticmethod
+    def _args_error_info_decorate(func):
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
