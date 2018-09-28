@@ -9,7 +9,6 @@ import io
 import traceback
 import inspect
 import functools
-import types
 import csv
 import ast
 
@@ -22,13 +21,12 @@ class IncorrectArgsError(Exception):
     pass
 
 
-# TODO fix staticmethods and classmethods
 class ConsoleArgErrorsMeta(type):
 
     def __new__(mcs, name, bases, attrs):
 
         for name_, value in attrs.items():
-            if isinstance(value, types.FunctionType) and name_.startswith('do_'):
+            if callable(value) and name_.startswith('do_'):
                 attrs[name_] = mcs._args_error_info_decorate(value)
 
         return super().__new__(mcs, name, bases, attrs)
@@ -116,6 +114,8 @@ class Console(metaclass=ConsoleArgErrorsMeta):
     (if present) will be displayed. If IncorrectArgsError is raised inside any do_ method,
     the above will also happen (no need to pass any params to Exception). This is helpful for
     type validation as the type annotations will be displayed in the error message.
+
+    NOTE: do_ methods cannot be static/class methods, or the metaclass cannot decorate them.
     """
 
     def __init__(self, intro=None, stdout=None):
