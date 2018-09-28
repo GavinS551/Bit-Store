@@ -82,9 +82,9 @@ class MainWallet(ttk.Frame):
         self.menu_bar = tk.Menu(self.root)
 
         self.wallet_menu = tk.Menu(self.menu_bar, tearoff=0)
-        self.wallet_menu.add_command(label='Information')
+        self.wallet_menu.add_command(label='Information', command=self._info_window)
         self.wallet_menu.add_separator()
-        self.wallet_menu.add_command(label='Display Mnemonic', command=self._show_mnemonic_window)
+        self.wallet_menu.add_command(label='Display Mnemonic', command=self._mnemonic_window)
         self.wallet_menu.add_command(label='Change Password', command=self._change_password_window)
 
         self.options_menu = tk.Menu(self.menu_bar, tearoff=0)
@@ -255,6 +255,7 @@ class MainWallet(ttk.Frame):
 
     def _about_window(self):
         toplevel = self.root.get_toplevel(self)
+        toplevel.grab_set()
 
         frame = ttk.Frame(toplevel, padding=5)
 
@@ -281,7 +282,7 @@ class MainWallet(ttk.Frame):
 
         frame.grid(sticky='nsew')
 
-    def _show_mnemonic_window(self):
+    def _mnemonic_window(self):
         password = self.root.password_prompt(self)
         if not password:
             return
@@ -296,20 +297,74 @@ class MainWallet(ttk.Frame):
         toplevel = self.root.get_toplevel(self)
         toplevel.grab_set()
 
-        frame = ttk.Frame(toplevel, padding=20)
+        frame = ttk.Frame(toplevel)
 
-        title = ttk.Label(toplevel, text='Mnemonic:', font=self.root.bold_title_font)
+        title = ttk.Label(frame, text='Mnemonic:', font=self.root.bold_title_font)
         title.grid(row=0, column=0, pady=(20, 10), padx=20)
 
-        info_label = ttk.Label(toplevel, text='Keep this phrase in a safe place. '
-                                              'It can be used to recover and spend '
-                                              'all bitcoin in this wallet.',
+        info_label = ttk.Label(frame, text='Keep this phrase in a safe place. '
+                                           'It can be used to recover and spend '
+                                           'all bitcoin in this wallet.',
                                font=self.root.small_font, wrap=350, justify=tk.CENTER)
         info_label.grid(row=1, column=0, pady=5, padx=20)
 
-        mnemonic_label = ttk.Label(toplevel, text=mnemonic, font=('Courier New', 14, 'bold'),
+        mnemonic_label = ttk.Label(frame, text=mnemonic, font=('Courier New', 14, 'bold'),
                                    wrap=350, justify=tk.CENTER)
         mnemonic_label.grid(row=2, column=0, pady=(10, 30), padx=20)
+
+        frame.grid(sticky='nsew')
+
+    def _info_window(self):
+        toplevel = self.root.get_toplevel(self, resizable=False)
+        toplevel.grab_set()
+
+        _mxpub = self.root.btc_wallet.xpub
+        _axpub = self.root.btc_wallet.account_xpub
+        _path = self.root.btc_wallet.path
+        _gap_limit = self.root.btc_wallet.gap_limit
+
+        frame = ttk.Frame(toplevel, padding=10)
+
+        note_label = ttk.Label(toplevel, text='Note: Use the "Account XPUB" '
+                                              'to create a watch-only version of this wallet',
+                               font=self.root.small_font + ('bold',))
+        note_label.grid(row=0, column=0, pady=(10, 0))
+
+        master_xpub_label = ttk.Label(frame, text='Master XPUB:', font=self.root.tiny_font)
+        master_xpub_label.grid(row=0, column=0, pady=10, padx=10, sticky='e')
+
+        master_xpub = tk.Text(frame, height=2, font=self.root.tiny_font)
+        master_xpub.insert(tk.END, _mxpub)
+        master_xpub['state'] = tk.DISABLED
+        master_xpub.configure(inactiveselectbackground=master_xpub.cget("selectbackground"))
+        master_xpub.grid(row=0, column=1)
+
+        account_xpub_label = ttk.Label(frame, text='Account XPUB:', font=self.root.tiny_font)
+        account_xpub_label.grid(row=1, column=0, pady=10, padx=10, sticky='e')
+
+        account_xpub = tk.Text(frame, height=2, font=self.root.tiny_font)
+        account_xpub.insert(tk.END, _axpub)
+        account_xpub['state'] = tk.DISABLED
+        account_xpub.configure(inactiveselectbackground=account_xpub.cget("selectbackground"))
+        account_xpub.grid(row=1, column=1)
+
+        path_label = ttk.Label(frame, text='Derivation Path:', font=self.root.tiny_font)
+        path_label.grid(row=2, column=0, pady=5, padx=10, sticky='e')
+
+        path = tk.Text(frame, height=1, font=self.root.tiny_font)
+        path.insert(tk.END, _path)
+        path['state'] = tk.DISABLED
+        path.configure(inactiveselectbackground=path.cget("selectbackground"))
+        path.grid(row=2, column=1)
+
+        gap_limit_label = ttk.Label(frame, text='Gap Limit:', font=self.root.tiny_font)
+        gap_limit_label.grid(row=3, column=0, pady=5, padx=10, sticky='e')
+
+        gap_limit = tk.Text(frame, height=1, font=self.root.tiny_font)
+        gap_limit.insert(tk.END, _gap_limit)
+        gap_limit['state'] = tk.DISABLED
+        gap_limit.configure(inactiveselectbackground=gap_limit.cget("selectbackground"))
+        gap_limit.grid(row=3, column=1)
 
         frame.grid(sticky='nsew')
 
