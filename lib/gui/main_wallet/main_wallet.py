@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 
+import sys
+
 from ._tx_display import TransactionDisplay
 from ._send_display import SendDisplay
 from ._receive_display import ReceiveDisplay
@@ -249,6 +251,33 @@ class MainWallet(ttk.Frame):
 
     def _info_window(self):
         toplevel = tk.Toplevel(self)
+        toplevel.iconbitmap(self.root.ICON)
+        toplevel.resizable(False, False)
+
+        frame = ttk.Frame(toplevel, padding=5)
+
+        author_label = ttk.Label(frame, text='Author:', font=self.root.small_font + ('bold',))
+        author_label.grid(row=0, column=0, padx=5, sticky='w')
+
+        author = ttk.Label(frame, text='Gavin Shaughnessy', font=self.root.small_font)
+        author.grid(row=0, column=1)
+
+        license_label = ttk.Label(frame, text='License:', font=self.root.small_font + ('bold',))
+        license_label.grid(row=1, column=0, padx=5, sticky='w')
+
+        license_ = ttk.Label(frame, text='MIT License', font=self.root.small_font)
+        license_.grid(row=1, column=1)
+
+        python_ver_label = ttk.Label(frame, text='Python Version:', font=self.root.small_font + ('bold',))
+        python_ver_label.grid(row=2, column=0, padx=5, sticky='w')
+
+        python_ver = ttk.Label(frame, text='.'.join(str(sys.version_info[i]) for i in range(3)))
+        python_ver.grid(row=2, column=1)
+
+        ok_button = ttk.Button(frame, text='OK', command=toplevel.destroy)
+        ok_button.grid(row=3, column=0, pady=(10, 0), columnspan=2)
+
+        frame.grid(sticky='nsew')
 
 
 class WatchOnlyMainWallet(MainWallet):
