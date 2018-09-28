@@ -251,7 +251,7 @@ class WalletCreationShowMnemonic(ttk.Frame):
         title_label = ttk.Label(self, text='Wallet Mnemonic Seed:', font=self.root.bold_title_font)
         title_label.grid(row=0, column=0, sticky='n', pady=20)
 
-        info_label = ttk.Label(self, text='Please write down the mnemonic seed-phrase below '
+        info_label = ttk.Label(self, text='Please write down the mnemonic phrase below '
                                           'and keep it in a safe place as it contains all information '
                                           'needed to spend your Bitcoin. This is how you can recover '
                                           'your wallet in the future.',
