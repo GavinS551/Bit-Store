@@ -26,8 +26,8 @@ class Crypto:
         return token.decode('utf-8')
 
     def decrypt(self, string_token):
-        string = self._fernet.decrypt(string_token.encode('utf-8'))
-        return string.decode('utf-8')
+        str_bytes = self._fernet.decrypt(string_token.encode('utf-8'))
+        return str_bytes.decode('utf-8')
 
 
 class DataStore(Crypto):
