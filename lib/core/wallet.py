@@ -15,6 +15,7 @@ from ..exceptions.wallet_exceptions import *
 
 
 API_REFRESH_RATE = 5
+API_REFRESH_RATE_LOWER = 5
 
 
 def get_wallet(name, password):
@@ -50,8 +51,8 @@ class _ApiDataUpdaterThread(threading.Thread):
             raise TypeError('Refresh rate must be an int')
 
         # due to api request limits
-        if refresh_rate < 5:
-            raise ValueError('Refresh rate must be at least 5 seconds')
+        if refresh_rate < API_REFRESH_RATE_LOWER:
+            raise ValueError(f'Refresh rate must be at least {API_REFRESH_RATE_LOWER} seconds')
 
         threading.Thread.__init__(self, name='API_DATA_UPDATER')
         # event will be set outside of this class
