@@ -4,7 +4,7 @@ from tkinter import ttk
 import io
 import functools
 import itertools
-from typing import Any, Union
+from typing import Any
 
 from ...core import console, utils, blockchain, data, config
 
@@ -177,7 +177,15 @@ class GUIConsole(console.Console):
 
         else:
             config.write_values(**{key: val})
-            print("Value written. Please restart the program for these changes to take effect.")
+            print('Value written. Please restart the program for these changes to take effect.')
+
+    def do_getconfig(self, key: str):
+        """ Prints current value for a config key """
+        try:
+            print(config.get_value(key))
+
+        except KeyError:
+            print(f'Error: Cannot find config key \'{key}\'')
 
     def do_exit(self):
         """ Exit program """

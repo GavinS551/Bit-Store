@@ -11,7 +11,8 @@ class TransactionDisplay(ttk.Frame):
         self.main_wallet = main_wallet
 
         self.tree_view = ttk.Treeview(self, columns=('Date', 'Amount', 'Fiat Amount', 'Balance', 'Fiat Balance')) \
-            if config.GUI_SHOW_FIAT_TX_HISTORY else ttk.Treeview(self, columns=('Date', 'Amount', 'Balance'))
+            if config.get_value('GUI_SHOW_FIAT_TX_HISTORY') \
+            else ttk.Treeview(self, columns=('Date', 'Amount', 'Balance'))
 
         # these headings and columns are always the same order/dimensions
         self.tree_view.heading('#0', text='Confirmations')
@@ -21,11 +22,11 @@ class TransactionDisplay(ttk.Frame):
         self.tree_view.column('#0', minwidth=100, width=100)
         self.tree_view.column('#2', minwidth=120, width=120)
 
-        if config.GUI_SHOW_FIAT_TX_HISTORY:
+        if config.get_value('GUI_SHOW_FIAT_TX_HISTORY'):
 
-            self.tree_view.heading('#3', text=f'({config.FIAT})')
+            self.tree_view.heading('#3', text=f'({config.get_value("FIAT")})')
             self.tree_view.heading('#4', text=f'Balance ({self.main_wallet.display_units})')
-            self.tree_view.heading('#5', text=f'({config.FIAT})')
+            self.tree_view.heading('#5', text=f'({config.get_value("FIAT")})')
 
             self.tree_view.column('#1', minwidth=220, width=220)
             self.tree_view.column('#3', minwidth=90, width=90)
@@ -55,7 +56,7 @@ class TransactionDisplay(ttk.Frame):
         self._refresh_transactions()
 
     def _insert_row(self, *args):
-        if config.GUI_SHOW_FIAT_TX_HISTORY:
+        if config.get_value('GUI_SHOW_FIAT_TX_HISTORY'):
             self.tree_view.insert('', tk.END, text=args[0], values=(args[1], args[2], args[3], args[4], args[5]))
         else:
             self.tree_view.insert('', tk.END, text=args[0], values=(args[1], args[2], args[3]))
@@ -81,7 +82,7 @@ class TransactionDisplay(ttk.Frame):
         price = self.main_wallet.price.get()
         f2s = utils.float_to_str
 
-        if config.GUI_SHOW_FIAT_TX_HISTORY:
+        if config.get_value('GUI_SHOW_FIAT_TX_HISTORY'):
             display_data = [[t.confirmations, t.date, f'{f2s(t.wallet_amount / f, show_plus_sign=True)}',
                              f2s(round(sat_to_btc(t.wallet_amount) * price, 2), show_plus_sign=True),
                              f'{f2s(transactions.balances[t] / f)}',

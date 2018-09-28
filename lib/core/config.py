@@ -1,7 +1,7 @@
 import json
 import functools
 
-from . import utils
+from . import utils, _config_vars
 from ._config_vars import *
 
 
@@ -62,26 +62,9 @@ def get_value(key):
     except KeyError:
         if key in DEFAULT_CONFIG:
             return DEFAULT_CONFIG[key]
+
+        elif hasattr(_config_vars, key):
+            return getattr(_config_vars, key)
+
         else:
             raise
-
-
-PRICE_API_SOURCE = get_value('PRICE_API_SOURCE')
-
-BLOCKCHAIN_API_SOURCE = get_value('BLOCKCHAIN_API_SOURCE')
-
-FIAT = get_value('FIAT')
-
-BTC_UNITS = get_value('BTC_UNITS')
-
-FONT = get_value('FONT')
-
-SPEND_UNCONFIRMED_UTXOS = get_value('SPEND_UNCONFIRMED_UTXOS')
-
-SPEND_UTXOS_INDIVIDUALLY = get_value('SPEND_UTXOS_INDIVIDUALLY')
-
-MAX_LOG_FILES_STORED = get_value('MAX_LOG_FILES_STORED')
-
-GUI_SHOW_FIAT_TX_HISTORY = get_value('GUI_SHOW_FIAT_TX_HISTORY')
-
-USE_LOCALTIME = get_value('USE_LOCALTIME')

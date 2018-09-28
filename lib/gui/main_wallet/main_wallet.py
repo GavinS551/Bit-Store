@@ -17,7 +17,7 @@ class MainWallet(ttk.Frame):
 
         self.refresh_data_rate = 1000  # milliseconds
 
-        self.display_units = config.BTC_UNITS
+        self.display_units = config.get_value('BTC_UNITS')
         self.unit_factor = config.UNIT_FACTORS[self.display_units]
         self.max_decimal_places = config.UNITS_MAX_DECIMAL_PLACES[self.display_units]
 
@@ -117,7 +117,7 @@ class MainWallet(ttk.Frame):
         balance_frame.grid(row=0, column=0, sticky='s')
 
         fiat_balance_frame = ttk.Frame(bottom_info_frame)
-        fiat_balance_label = ttk.Label(fiat_balance_frame, text=f'{config.FIAT} Balance:',
+        fiat_balance_label = ttk.Label(fiat_balance_frame, text=f'{config.get_value("FIAT")} Balance:',
                                        font=self.root.tiny_font)
         fiat_balance = ttk.Label(fiat_balance_frame, textvariable=self.fiat_wallet_balance,
                                  font=self.root.tiny_font + ('bold',))
@@ -235,8 +235,10 @@ class MainWallet(ttk.Frame):
             status = f'API Connection Status: Last API call failed'
 
         elif updater_thread.connection_status == status_enum.good:
-            status = (f'API Connection Status: Updated at ' 
-                      f'{utils.datetime_str_from_timestamp(timestamp, fmt="%H:%M:%S", utc=not config.USE_LOCALTIME)}')
+            time_str = utils.datetime_str_from_timestamp(timestamp,
+                                                         fmt="%H:%M:%S",
+                                                         utc=not config.get_value("USE_LOCALTIME"))
+            status = f'API Connection Status: Updated at {time_str}'
 
         else:
             status = 'Error: Unable to retrieve API status'

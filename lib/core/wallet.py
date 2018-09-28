@@ -80,8 +80,10 @@ class _ApiDataUpdaterThread(threading.Thread):
 
             addresses = self.wallet_instance.all_addresses
 
-            bd = blockchain.blockchain_api(addresses, self.refresh_rate, source=config.BLOCKCHAIN_API_SOURCE)
-            price_data = price.BitcoinPrice(currency=config.FIAT, source=config.PRICE_API_SOURCE)
+            bd = blockchain.blockchain_api(addresses, self.refresh_rate,
+                                           source=config.get_value('BLOCKCHAIN_API_SOURCE'))
+            price_data = price.BitcoinPrice(currency=config.get_value('FIAT'),
+                                            source=config.get_value('PRICE_API_SOURCE'))
 
             try:
                 api_data = {
@@ -262,8 +264,8 @@ class Wallet:
                              fee=fee,
                              is_segwit=self.is_segwit,
                              locktime=locktime,
-                             use_unconfirmed_utxos=config.SPEND_UNCONFIRMED_UTXOS,
-                             use_full_address_utxos=not config.SPEND_UTXOS_INDIVIDUALLY)
+                             use_unconfirmed_utxos=config.get_value('SPEND_UNCONFIRMED_UTXOS'),
+                             use_full_address_utxos=not config.get_value('SPEND_UTXOS_INDIVIDUALLY'))
 
         return txn
 

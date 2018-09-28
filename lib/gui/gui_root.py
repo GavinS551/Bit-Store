@@ -46,10 +46,10 @@ class RootApplication(tk.Tk):
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
 
-        self.bold_title_font = (config.FONT, 14, 'bold')
-        self.title_font = (config.FONT, 14)
-        self.small_font = (config.FONT, 10)
-        self.tiny_font = (config.FONT, 8)
+        self.bold_title_font = (config.get_value('FONT'), 14, 'bold')
+        self.title_font = (config.get_value('FONT'), 14)
+        self.small_font = (config.get_value('FONT'), 10)
+        self.tiny_font = (config.get_value('FONT'), 8)
 
         self.resizable(False, False)
 
@@ -117,7 +117,7 @@ class RootApplication(tk.Tk):
         self.current_frame = frame
 
     def set_style(self):
-        self.style.configure('Treeview.Heading', font=(config.FONT, 10))
+        self.style.configure('Treeview.Heading', font=(config.get_value('FONT'), 10))
 
     def wallet_init(self, name, password, show_frame=False):
         self.btc_wallet = wallet.get_wallet(name, password)
@@ -159,13 +159,13 @@ class _Settings(tk.Toplevel):
         self.root = root
 
         # settings variables, set to current values
-        self.spend_unconfirmed_outs = tk.BooleanVar(value=config.SPEND_UNCONFIRMED_UTXOS)
-        self.spend_utxos_individually = tk.BooleanVar(value=config.SPEND_UTXOS_INDIVIDUALLY)
-        self.blockchain_api = tk.StringVar(value=config.BLOCKCHAIN_API_SOURCE)
-        self.price_api = tk.StringVar(value=config.PRICE_API_SOURCE)
-        self.fiat_unit = tk.StringVar(value=config.FIAT)
-        self.btc_units = tk.StringVar(value=config.BTC_UNITS)
-        self.show_fiat_history = tk.BooleanVar(value=config.GUI_SHOW_FIAT_TX_HISTORY)
+        self.spend_unconfirmed_outs = tk.BooleanVar(value=config.get_value('SPEND_UNCONFIRMED_UTXOS'))
+        self.spend_utxos_individually = tk.BooleanVar(value=config.get_value('SPEND_UTXOS_INDIVIDUALLY'))
+        self.blockchain_api = tk.StringVar(value=config.get_value('BLOCKCHAIN_API_SOURCE'))
+        self.price_api = tk.StringVar(value=config.get_value('PRICE_API_SOURCE'))
+        self.fiat_unit = tk.StringVar(value=config.get_value('FIAT'))
+        self.btc_units = tk.StringVar(value=config.get_value('BTC_UNITS'))
+        self.show_fiat_history = tk.BooleanVar(value=config.get_value('GUI_SHOW_FIAT_TX_HISTORY'))
 
         # config variable names as keys with their corresponding tk Variables
         self.config_vars = {
