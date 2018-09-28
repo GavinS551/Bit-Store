@@ -151,7 +151,6 @@ class MainWallet(ttk.Frame):
         status_frame.grid(pady=(10, 0))
 
     def _change_password_window(self):
-
         data_store = self.root.btc_wallet.data_store
 
         change_pass_window = tk.Toplevel(self)
@@ -250,9 +249,7 @@ class MainWallet(ttk.Frame):
         self.root.after(self.refresh_data_rate, self._refresh_data)
 
     def _info_window(self):
-        toplevel = tk.Toplevel(self)
-        toplevel.iconbitmap(self.root.ICON)
-        toplevel.resizable(False, False)
+        toplevel = self.root.get_toplevel(self)
 
         frame = ttk.Frame(toplevel, padding=5)
 
@@ -278,6 +275,11 @@ class MainWallet(ttk.Frame):
         ok_button.grid(row=3, column=0, pady=(10, 0), columnspan=2)
 
         frame.grid(sticky='nsew')
+
+    def _show_mnemonic_window(self):
+        toplevel = self.root.get_toplevel(self)
+
+        
 
 
 class WatchOnlyMainWallet(MainWallet):

@@ -145,6 +145,13 @@ class RootApplication(tk.Tk):
     def settings_prompt(self):
         _Settings(self)
 
+    def get_toplevel(self, parent, resizable=False):
+        toplevel = tk.Toplevel(parent)
+        toplevel.iconbitmap(self.ICON)
+        toplevel.resizable(resizable, resizable)
+
+        return toplevel
+
 
 class _Settings(tk.Toplevel):
 

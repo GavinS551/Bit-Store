@@ -436,8 +436,7 @@ class SendDisplay(ttk.Frame):
                                       'cost more than what you are sending, and the transaction '
                                       'may take longer to confirm.')
 
-        window = tk.Toplevel(self)
-        window.iconbitmap(self.main_wallet.root.ICON)
+        window = self.main_wallet.root.get_toplevel(self, resizable=True)
 
         bold_title = self.main_wallet.root.bold_title_font
         bold_small = self.main_wallet.root.small_font + ('bold',)
@@ -471,8 +470,8 @@ class SendDisplay(ttk.Frame):
                 self.main_wallet.root.update()
 
             load_window.destroy()
-            sent_window = tk.Toplevel(self)
-            sent_window.iconbitmap(self.main_wallet.root.ICON)
+            sent_window = self.main_wallet.root.get_toplevel(self, resizable=True)
+
             title_ = ttk.Label(sent_window, text='Transaction Sent!', font=bold_title)
             title_.grid(padx=20, pady=20)
 
