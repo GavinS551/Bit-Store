@@ -41,7 +41,9 @@ DEFAULT_CONFIG = {
 
     'MAX_LOG_FILES_STORED': 10,
 
-    'GUI_SHOW_FIAT_TX_HISTORY': True
+    'GUI_SHOW_FIAT_TX_HISTORY': True,
+
+    'USE_LOCALTIME': True
 
 }
 

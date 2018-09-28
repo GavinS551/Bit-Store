@@ -174,7 +174,7 @@ class BlockchainInfo(_BlockchainBaseClass):
 
             transaction['date'] = utils.datetime_str_from_timestamp(tx['time'],
                                                                     config.DATETIME_FORMAT,
-                                                                    utc=False)
+                                                                    utc=not config.USE_LOCALTIME)
 
             try:
                 transaction['block_height'] = tx['block_height']

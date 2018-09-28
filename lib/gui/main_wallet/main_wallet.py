@@ -1,14 +1,12 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-import datetime
-
 from ._tx_display import TransactionDisplay
 from ._send_display import SendDisplay
 from ._receive_display import ReceiveDisplay
 from ._console_display import ConsoleDisplay
 
-from ...core import config
+from ...core import config, utils
 
 
 class MainWallet(ttk.Frame):
@@ -78,7 +76,7 @@ class MainWallet(ttk.Frame):
         menu_bar = tk.Menu(self.root)
 
         wallet_menu = tk.Menu(menu_bar, tearoff=0)
-        wallet_menu.add_command(label='Information')
+        wallet_menu.add_command(label='Information', command=self._info_window)
         wallet_menu.add_separator()
         wallet_menu.add_command(label='Show Mnemonic')
         wallet_menu.add_command(label='Change Password', command=self._change_password_window)
@@ -238,7 +236,7 @@ class MainWallet(ttk.Frame):
 
         elif updater_thread.connection_status == status_enum.good:
             status = (f'API Connection Status: Updated at ' 
-                      f'{datetime.datetime.fromtimestamp(timestamp).strftime("%H:%M:%S")}')
+                      f'{utils.datetime_str_from_timestamp(timestamp, fmt="%H:%M:%S", utc=not config.USE_LOCALTIME)}')
 
         else:
             status = 'Error: Unable to retrieve API status'
@@ -246,6 +244,9 @@ class MainWallet(ttk.Frame):
         self.api_thread_status.set(status)
 
         self.root.after(self.refresh_data_rate, self._refresh_data)
+
+    def _info_window(self):
+        toplevel = tk.Toplevel(self)
 
 
 class WatchOnlyMainWallet(MainWallet):

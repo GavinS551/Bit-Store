@@ -56,20 +56,32 @@ def write_values(**kwargs):
     utils.atomic_file_write(data, CONFIG_FILE)
 
 
-PRICE_API_SOURCE = read_file()['PRICE_API_SOURCE']
+def get_value(key):
+    try:
+        return read_file()[key]
+    except KeyError:
+        if key in DEFAULT_CONFIG:
+            return DEFAULT_CONFIG[key]
+        else:
+            raise
 
-BLOCKCHAIN_API_SOURCE = read_file()['BLOCKCHAIN_API_SOURCE']
 
-FIAT = read_file()['FIAT']
+PRICE_API_SOURCE = get_value('PRICE_API_SOURCE')
 
-BTC_UNITS = read_file()['BTC_UNITS']
+BLOCKCHAIN_API_SOURCE = get_value('BLOCKCHAIN_API_SOURCE')
 
-FONT = read_file()['FONT']
+FIAT = get_value('FIAT')
 
-SPEND_UNCONFIRMED_UTXOS = read_file()['SPEND_UNCONFIRMED_UTXOS']
+BTC_UNITS = get_value('BTC_UNITS')
 
-SPEND_UTXOS_INDIVIDUALLY = read_file()['SPEND_UTXOS_INDIVIDUALLY']
+FONT = get_value('FONT')
 
-MAX_LOG_FILES_STORED = read_file()['MAX_LOG_FILES_STORED']
+SPEND_UNCONFIRMED_UTXOS = get_value('SPEND_UNCONFIRMED_UTXOS')
 
-GUI_SHOW_FIAT_TX_HISTORY = read_file()['GUI_SHOW_FIAT_TX_HISTORY']
+SPEND_UTXOS_INDIVIDUALLY = get_value('SPEND_UTXOS_INDIVIDUALLY')
+
+MAX_LOG_FILES_STORED = get_value('MAX_LOG_FILES_STORED')
+
+GUI_SHOW_FIAT_TX_HISTORY = get_value('GUI_SHOW_FIAT_TX_HISTORY')
+
+USE_LOCALTIME = get_value('USE_LOCALTIME')
