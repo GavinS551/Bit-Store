@@ -330,7 +330,7 @@ class Wallet:
 
         return True
 
-    def load_transaction(self, json_data):
+    def import_transaction(self, json_data):
         """ returns a Transaction object """
         if not self._check_transaction_import_format(json_data):
             raise ValueError('Cannot import transaction: Invalid format')
@@ -357,10 +357,10 @@ class Wallet:
         with open(file_path, 'w') as f:
             f.write(txn_data)
 
-    def file_load_transaction(self, file_path):
+    def file_import_transaction(self, file_path):
         """ returns a transaction import from file """
         with open(file_path, 'r') as f:
-            return self.load_transaction(f.read())
+            return self.import_transaction(f.read())
 
     def clear_cached_api_data(self):
         api_keys = ['TXNS', 'ADDRESS_BALS', 'WALLET_BAL', 'ADDRESS_BALS', 'UNSPENT_OUTS', 'PRICE']

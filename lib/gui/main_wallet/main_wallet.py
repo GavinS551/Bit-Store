@@ -334,7 +334,7 @@ class MainWallet(ttk.Frame):
         note_label.grid(row=0, column=0, pady=(10, 0))
 
         master_xpub_label = ttk.Label(frame, text='Master XPUB:', font=self.root.tiny_font)
-        master_xpub_label.grid(row=0, column=0, pady=10, padx=10, sticky='e')
+        master_xpub_label.grid(row=0, column=0, pady=10, padx=10, sticky='w')
 
         master_xpub = tk.Text(frame, height=2, font=self.root.tiny_font)
         master_xpub.insert(tk.END, _mxpub)
@@ -343,7 +343,7 @@ class MainWallet(ttk.Frame):
         master_xpub.grid(row=0, column=1)
 
         account_xpub_label = ttk.Label(frame, text='Account XPUB:', font=self.root.tiny_font)
-        account_xpub_label.grid(row=1, column=0, pady=10, padx=10, sticky='e')
+        account_xpub_label.grid(row=1, column=0, pady=10, padx=10, sticky='w')
 
         account_xpub = tk.Text(frame, height=2, font=self.root.tiny_font)
         account_xpub.insert(tk.END, _axpub)
@@ -352,7 +352,7 @@ class MainWallet(ttk.Frame):
         account_xpub.grid(row=1, column=1)
 
         path_label = ttk.Label(frame, text='Derivation Path:', font=self.root.tiny_font)
-        path_label.grid(row=2, column=0, pady=5, padx=10, sticky='e')
+        path_label.grid(row=2, column=0, pady=5, padx=10, sticky='w')
 
         path = tk.Text(frame, height=1, font=self.root.tiny_font)
         path.insert(tk.END, _path)
@@ -361,7 +361,7 @@ class MainWallet(ttk.Frame):
         path.grid(row=2, column=1)
 
         gap_limit_label = ttk.Label(frame, text='Gap Limit:', font=self.root.tiny_font)
-        gap_limit_label.grid(row=3, column=0, pady=5, padx=10, sticky='e')
+        gap_limit_label.grid(row=3, column=0, pady=5, padx=10, sticky='w')
 
         gap_limit = tk.Text(frame, height=1, font=self.root.tiny_font)
         gap_limit.insert(tk.END, _gap_limit)

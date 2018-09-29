@@ -127,13 +127,16 @@ class SendDisplay(ttk.Frame):
         # send button is cls attribute as it will have to be accessed by subclasses such
         # as a public btc wallet implementation that cannot sign txns
         self.send_button = ttk.Button(button_frame, text='Send', command=self.on_send)
-        self.send_button.grid(row=4, column=0, pady=20, padx=10)
+        self.send_button.grid(row=0, column=0, pady=20, padx=10)
+
+        import_button = ttk.Button(button_frame, text='Import Txn', command=self.on_import)
+        import_button.grid(row=0, column=1, pady=20, padx=10)
 
         use_balance_button = ttk.Button(button_frame, text='Use Balance', command=self.on_use_balance)
-        use_balance_button.grid(row=4, column=1, pady=20, padx=10)
+        use_balance_button.grid(row=0, column=2, pady=20, padx=10)
 
         clear_button = ttk.Button(button_frame, text='Clear', command=self.on_clear)
-        clear_button.grid(row=4, column=2, pady=20, padx=10)
+        clear_button.grid(row=0, column=3, pady=20, padx=10)
 
         button_frame.grid(row=4, column=0, columnspan=3, sticky='w', padx=(20, 0))
 
@@ -150,7 +153,7 @@ class SendDisplay(ttk.Frame):
             tk.messagebox.showerror('Invalid Amount(s)', 'Amount(s) must be positive, non-zero, numbers')
 
         else:
-            self.sign_transaction_window()
+            self.send_transaction_window()
 
     def on_clear(self):
         self._make_transaction_thread_event.set()
@@ -195,19 +198,40 @@ class SendDisplay(ttk.Frame):
 
             wallet_units_remaining_balance = self.to_wallet_units(sat_remaining_balance, 'sat')
 
-            self.amount_btc_entry.delete(0, tk.END)
-
             # 1 sat/byte is lowest fee that can be used, i.e 1 * max_spend_size
             if sat_balance <= max_spend_size:
                 wallet_units_remaining_balance = 0
 
-            # entry validation won't accept a full string in entry for
-            # some reason, so it's entered char by char
-            # (will maybe fix at some point)
-            for i, c in enumerate(utils.float_to_str(wallet_units_remaining_balance)):
-                self.amount_btc_entry.insert(i, c)
-                # call the method that is bound to key releases on btc_entry
-                self.on_btc_amount_key_press(event=SimpleNamespace(widget=self.amount_btc_entry))
+            self.amount_btc_entry.delete(0, tk.END)
+            self.amount_btc_entry.insert(tk.END, utils.float_to_str(wallet_units_remaining_balance))
+
+            # call the method that is bound to key releases on btc_entry
+            self.on_btc_amount_key_press(event=SimpleNamespace(widget=self.amount_btc_entry))
+
+    def on_import(self):
+        file_path = filedialog.askopenfilename(title='Import Transaction',
+                                               initialdir=pathlib.Path.home(),
+                                               filetypes=[('Transaction Files', '*.txn')])
+
+        if not file_path:
+            return
+
+        try:
+            txn = self.main_wallet.root.btc_wallet.file_import_transaction(file_path)
+
+            btc_wallet = self.main_wallet.root.btc_wallet
+            if not txn.is_signed and btc_wallet.get_metadata(btc_wallet.name)['watch_only']:
+                messagebox.showerror('Error', 'Cannot import unsigned transaction in watch-only wallet')
+                return
+
+        except ValueError as ex:
+            messagebox.showerror('Error', str(ex))
+            return
+
+        self.transaction = txn
+        self._fill_entries_from_transaction()
+
+        self.send_transaction_window()
 
     def to_satoshis(self, amount):
         """ converts amount (in terms of self.main_wallet.display_units) into satoshis"""
@@ -271,33 +295,37 @@ class SendDisplay(ttk.Frame):
 
         return True
 
-    def _entry_btc_amount_validate(self, char, entry, before_change, force_satoshis=False):
+    def _entry_btc_amount_validate(self, entered, entry, before_change, force_satoshis=False):
         """ validates that anything entered in amount entries are valid numbers """
 
         units = self.main_wallet.display_units if not force_satoshis else 'sat'
         max_decimal = self.main_wallet.max_decimal_places if not force_satoshis else 0
 
-        if char in string.digits + '.' and not entry.count('.') > 1 and not entry == '.':
+        for char in entered:
+            if char in string.digits + '.' and not entry.count('.') > 1 and not entry == '.':
 
-            if entry.count('.') == 1 and units != 'sat':
-                if len(entry.split('.')[1]) <= max_decimal:
-                    return True
-                else:
+                if entry.count('.') == 1 and units != 'sat':
+                    if len(entry.split('.')[1]) <= max_decimal:
+                        continue
+                    else:
+                        return False
+
+                # satoshi units are not divisible
+                elif entry.count('.') == 1 and units == 'sat':
                     return False
 
-            # satoshi units are not divisible
-            elif entry.count('.') == 1 and units == 'sat':
-                return False
+                else:
+                    continue
+
+            # for deleting the whole, or part of, the entry
+            elif not entry or entry in before_change:
+                continue
 
             else:
-                return True
-
-        # for deleting the whole, or part of, the entry
-        elif not entry or entry in before_change:
-            return True
+                return False
 
         else:
-            return False
+            return True
 
     def _amount_btc_entry_to_fiat(self, event):
 
@@ -420,7 +448,26 @@ class SendDisplay(ttk.Frame):
     def on_fee_key_press(self):
         self._totals_set()
 
-    def sign_transaction_window(self):
+    def _fill_entries_from_transaction(self):
+        self.on_clear()
+
+        self.address_entry.delete(0, tk.END)
+        self.address_entry.insert(tk.END, list(self.transaction.outputs_amounts.keys())[0])
+
+        str_entry = utils.float_to_str(self.to_wallet_units(list(self.transaction.outputs_amounts.values())[0], 'sat'))
+        self.amount_btc_entry.delete(0, tk.END)
+        self.amount_btc_entry.insert(tk.END, str_entry)
+
+        self.fee_entry.delete(0, tk.END)
+        sat_byte = round(self.transaction.fee / self.transaction.estimated_size())
+        self.fee_entry.insert(tk.END, str(sat_byte))
+
+        self._amount_btc_entry_to_fiat(SimpleNamespace(widget=self.amount_btc_entry))
+        self._totals_set()
+
+    def send_transaction_window(self):
+
+        is_signed = self.transaction.is_signed
 
         # make sure that what the gui is adding up, and what the transaction
         # instance actually totals to, are equal.
@@ -448,7 +495,9 @@ class SendDisplay(ttk.Frame):
         @utils.threaded(daemon=True, name='GUI_SIGN_AND_BROADCAST_THREAD')
         def sign_and_broadcast(load_window, password):
 
-            self.btc_wallet.sign_transaction(self.transaction, password)
+            if not is_signed:
+                self.btc_wallet.sign_transaction(self.transaction, password)
+
             response_status = self.btc_wallet.broadcast_transaction(self.transaction)
 
             signed_txid = self.transaction.txid
@@ -490,15 +539,19 @@ class SendDisplay(ttk.Frame):
             button_frame_.grid()
 
         def on_send():
-            password = self.main_wallet.root.password_prompt(window)
+            if not is_signed:
+                password = self.main_wallet.root.password_prompt(window)
 
-            # if cancel was pressed
-            if password is None:
-                return
+                # if cancel was pressed
+                if password is None:
+                    return
 
-            if not self.btc_wallet.data_store.validate_password(password):
-                self.main_wallet.root.incorrect_password_prompt(window)
-                return
+                if not self.btc_wallet.data_store.validate_password(password):
+                    self.main_wallet.root.incorrect_password_prompt(window)
+                    return
+
+            else:
+                password = None
 
             window.destroy()
             info = tk.Toplevel(self)
@@ -557,10 +610,16 @@ class SendDisplay(ttk.Frame):
                                font=small)
         total_cost.grid(row=3, column=1, padx=20)
 
+        is_signed_label = ttk.Label(info_frame, text='IS SIGNED:', font=bold_small)
+        is_signed_label.grid(row=4, column=0, padx=20, pady=5, sticky='w')
+
+        is_signed = ttk.Label(info_frame, text=str(self.transaction.is_signed), font=small)
+        is_signed.grid(row=4, column=1, padx=20)
+
         # if there will be a dust change amount discarded, show a message
         if self.transaction.dust_change_amount > 0:
             dust_notify_label = ttk.Label(info_frame, text='NOTE:', font=bold_small)
-            dust_notify_label.grid(row=4, column=0, padx=20, pady=5, sticky='w')
+            dust_notify_label.grid(row=5, column=0, padx=20, pady=5, sticky='w')
 
             dust_amt = utils.float_to_str(self.transaction.dust_change_amount / self.main_wallet.unit_factor)
             dust_msg = ttk.Label(info_frame,
@@ -569,7 +628,7 @@ class SendDisplay(ttk.Frame):
                                       f'(the transaction fee needed to spend it would cost more than what the amount '
                                       f'is worth)',
                                  font=small, wraplength=400, justify=tk.CENTER)
-            dust_msg.grid(row=4, column=1, padx=20)
+            dust_msg.grid(row=5, column=1, padx=20)
 
         info_frame.grid(row=1)
 
