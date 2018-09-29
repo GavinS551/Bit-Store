@@ -257,7 +257,7 @@ class MainWallet(ttk.Frame):
         toplevel = self.root.get_toplevel(self)
         toplevel.grab_set()
 
-        frame = ttk.Frame(toplevel, padding=5)
+        frame = ttk.Frame(toplevel, padding=10)
 
         author_label = ttk.Label(frame, text='Author:', font=self.root.small_font + ('bold',))
         author_label.grid(row=0, column=0, padx=5, pady=5, sticky='w')
@@ -394,4 +394,4 @@ class WatchOnlySendDisplay(SendDisplay):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.send_button.configure(text='Export Txn', command=self.export_txn)
+        self.send_button.destroy()

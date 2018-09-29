@@ -129,14 +129,17 @@ class SendDisplay(ttk.Frame):
         self.send_button = ttk.Button(button_frame, text='Send', command=self.on_send)
         self.send_button.grid(row=0, column=0, pady=20, padx=10)
 
+        export_button = ttk.Button(button_frame, text='Export Txn', command=self.export_txn)
+        export_button.grid(row=0, column=1, pady=20, padx=10)
+
         import_button = ttk.Button(button_frame, text='Import Txn', command=self.on_import)
-        import_button.grid(row=0, column=1, pady=20, padx=10)
+        import_button.grid(row=0, column=2, pady=20, padx=10)
 
         use_balance_button = ttk.Button(button_frame, text='Use Balance', command=self.on_use_balance)
-        use_balance_button.grid(row=0, column=2, pady=20, padx=10)
+        use_balance_button.grid(row=0, column=3, pady=20, padx=10)
 
         clear_button = ttk.Button(button_frame, text='Clear', command=self.on_clear)
-        clear_button.grid(row=0, column=3, pady=20, padx=10)
+        clear_button.grid(row=0, column=4, pady=20, padx=10)
 
         button_frame.grid(row=4, column=0, columnspan=3, sticky='w', padx=(20, 0))
 
@@ -645,7 +648,7 @@ class SendDisplay(ttk.Frame):
         send_button.grid(row=0, column=0, padx=10, pady=10)
 
         if not is_signed:
-            sign_export_button = ttk.Button(button_frame, text='Sign and Export',
+            sign_export_button = ttk.Button(button_frame, text='Sign & Export',
                                             command=on_sign_export)
             sign_export_button.grid(row=0, column=1, padx=10, pady=10)
 
