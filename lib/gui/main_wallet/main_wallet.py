@@ -310,9 +310,12 @@ class MainWallet(ttk.Frame):
 
         mnemonic_label = ttk.Label(frame, text=mnemonic, font=('Courier New', 14, 'bold'),
                                    wrap=350, justify=tk.CENTER)
-        mnemonic_label.grid(row=2, column=0, pady=(10, 30), padx=20)
+        mnemonic_label.grid(row=2, column=0, pady=10, padx=20)
 
-        frame.grid(sticky='nsew')
+        frame.grid(row=0, column=0, sticky='nsew')
+
+        ok_button = ttk.Button(toplevel, text='OK', command=toplevel.destroy)
+        ok_button.grid(row=1, column=0, pady=(0, 10), columnspan=2)
 
     def _info_window(self):
         toplevel = self.root.get_toplevel(self, resizable=False)
@@ -366,7 +369,10 @@ class MainWallet(ttk.Frame):
         gap_limit.configure(inactiveselectbackground=gap_limit.cget("selectbackground"))
         gap_limit.grid(row=3, column=1)
 
-        frame.grid(sticky='nsew')
+        frame.grid(row=1, column=0, sticky='nsew')
+
+        ok_button = ttk.Button(toplevel, text='OK', command=toplevel.destroy)
+        ok_button.grid(row=2, column=0, pady=(0, 10), columnspan=2)
 
 
 class WatchOnlyMainWallet(MainWallet):
