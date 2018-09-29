@@ -217,10 +217,9 @@ class SendDisplay(ttk.Frame):
             return
 
         try:
-            txn = self.main_wallet.root.btc_wallet.file_import_transaction(file_path)
+            txn = self.btc_wallet.file_import_transaction(file_path)
 
-            btc_wallet = self.main_wallet.root.btc_wallet
-            if not txn.is_signed and btc_wallet.get_metadata(btc_wallet.name)['watch_only']:
+            if not txn.is_signed and self.btc_wallet.get_metadata(self.btc_wallet.name)['watch_only']:
                 messagebox.showerror('Error', 'Cannot import unsigned transaction in watch-only wallet')
                 return
 
@@ -567,6 +566,14 @@ class SendDisplay(ttk.Frame):
 
             sign_and_broadcast(info, password)
 
+        def on_sign_export():
+            password = self.main_wallet.root.password_prompt(window)
+            if not password:
+                return
+
+            self.btc_wallet.sign_transaction(self.transaction, password)
+            self.export_txn()
+
         def on_cancel():
             window.destroy()
 
@@ -613,8 +620,8 @@ class SendDisplay(ttk.Frame):
         is_signed_label = ttk.Label(info_frame, text='IS SIGNED:', font=bold_small)
         is_signed_label.grid(row=4, column=0, padx=20, pady=5, sticky='w')
 
-        is_signed = ttk.Label(info_frame, text=str(self.transaction.is_signed), font=small)
-        is_signed.grid(row=4, column=1, padx=20)
+        is_signed_ = ttk.Label(info_frame, text=str(is_signed), font=small)
+        is_signed_.grid(row=4, column=1, padx=20)
 
         # if there will be a dust change amount discarded, show a message
         if self.transaction.dust_change_amount > 0:
@@ -637,8 +644,13 @@ class SendDisplay(ttk.Frame):
         send_button = ttk.Button(button_frame, text='Send', command=on_send)
         send_button.grid(row=0, column=0, padx=10, pady=10)
 
+        if not is_signed:
+            sign_export_button = ttk.Button(button_frame, text='Sign and Export',
+                                            command=on_sign_export)
+            sign_export_button.grid(row=0, column=1, padx=10, pady=10)
+
         cancel_button = ttk.Button(button_frame, text='Cancel', command=on_cancel)
-        cancel_button.grid(row=0, column=1, padx=10, pady=10)
+        cancel_button.grid(row=0, column=2, padx=10, pady=10)
 
         button_frame.grid(row=2, column=0, padx=10, pady=10)
 
