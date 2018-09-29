@@ -222,7 +222,7 @@ class _Settings(tk.Toplevel):
         """
 
         # if no settings were changed
-        if all([v.get() == getattr(config, k) for k, v in self.config_vars.items()]):
+        if all([v.get() == config.get_value(k) for k, v in self.config_vars.items()]):
             return False
 
         else:
