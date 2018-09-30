@@ -185,7 +185,7 @@ class SendDisplay(ttk.Frame):
         else:
             balance = self.main_wallet.wallet_balance.get() if not config.get_value('SPEND_UNCONFIRMED_UTXOS') else \
                 self.main_wallet.wallet_balance.get() + \
-                self.main_wallet.wallet_balance.unconfirmed_wallet_balance.get()
+                self.main_wallet.unconfirmed_wallet_balance.get()
             sat_balance = self.to_satoshis(balance)
 
             fee_entry = int(self.fee_entry.get())  # sat/byte
@@ -230,10 +230,12 @@ class SendDisplay(ttk.Frame):
             messagebox.showerror('Error', str(ex))
             return
 
+        self.on_clear()
         self.transaction = txn
-        self._fill_entries_from_transaction()
 
-        self.send_transaction_window()
+        # ignore asserts that check what gui is displaying, and what self.transaction actually is,
+        # as the gui entries won't be filled correctly
+        self.send_transaction_window(ignore_asserts=True)
 
     def to_satoshis(self, amount):
         """ converts amount (in terms of self.main_wallet.display_units) into satoshis"""
@@ -424,7 +426,13 @@ class SendDisplay(ttk.Frame):
                     transaction.change_fee_sat_byte(fee_entry)
 
                     cached_txns[(amount, fee_entry)] = transaction
-                    self.transaction = transaction
+
+                    # to make sure that when the event is set, you can be sure that self.transaction
+                    # will not be overridden
+                    if not self._make_transaction_thread_event.is_set():
+                        self.transaction = transaction
+                    else:
+                        break
 
                     set_amounts_colour('black')
                     self.amount_over_balance = False
@@ -450,32 +458,16 @@ class SendDisplay(ttk.Frame):
     def on_fee_key_press(self):
         self._totals_set()
 
-    def _fill_entries_from_transaction(self):
-        self.on_clear()
-
-        self.address_entry.delete(0, tk.END)
-        self.address_entry.insert(tk.END, list(self.transaction.outputs_amounts.keys())[0])
-
-        str_entry = utils.float_to_str(self.to_wallet_units(list(self.transaction.outputs_amounts.values())[0], 'sat'))
-        self.amount_btc_entry.delete(0, tk.END)
-        self.amount_btc_entry.insert(tk.END, str_entry)
-
-        self.fee_entry.delete(0, tk.END)
-        sat_byte = round(self.transaction.fee / self.transaction.estimated_size())
-        self.fee_entry.insert(tk.END, str(sat_byte))
-
-        self._amount_btc_entry_to_fiat(SimpleNamespace(widget=self.amount_btc_entry))
-        self._totals_set()
-
-    def send_transaction_window(self):
+    def send_transaction_window(self, ignore_asserts=False):
 
         is_signed = self.transaction.is_signed
 
-        # make sure that what the gui is adding up, and what the transaction
-        # instance actually totals to, are equal.
-        tx_total = sum(self.transaction.outputs_amounts.values()) + self.transaction.fee
-        assert self.to_satoshis(float(self.total_cost_var.get())) == tx_total
-        assert self.to_satoshis(float(self.total_fee_var.get())) == self.transaction.fee
+        if not ignore_asserts:
+            # make sure that what the gui is adding up, and what the transaction
+            # instance actually totals to, are equal.
+            tx_total = sum(self.transaction.outputs_amounts.values()) + self.transaction.fee
+            assert self.to_satoshis(float(self.total_cost_var.get())) == tx_total
+            assert self.to_satoshis(float(self.total_fee_var.get())) == self.transaction.fee
 
         # warn user about a dust output
         if self.transaction.output_contains_dust:
@@ -575,7 +567,9 @@ class SendDisplay(ttk.Frame):
                 return
 
             self.btc_wallet.sign_transaction(self.transaction, password)
-            self.export_txn()
+            # ignore entry check as an imported unsigned txn can be imported without entries filled
+            self.export_txn(ignore_entry_check=True)
+            window.destroy()
 
         def on_cancel():
             window.destroy()
@@ -598,7 +592,9 @@ class SendDisplay(ttk.Frame):
                                  font=bold_small)
         amount_label.grid(row=1, column=0, padx=20, pady=5, sticky='w')
 
-        amount = ttk.Label(info_frame, text=f'{self.amount_btc_entry.get()} '
+        amt = utils.float_to_str(self.to_wallet_units(list(self.transaction.outputs_amounts.values())[0],
+                                                      'sat'))
+        amount = ttk.Label(info_frame, text=f'{amt} '
                                             f'{self.main_wallet.display_units}',
                            font=small)
         amount.grid(row=1, column=1, padx=20)
@@ -606,8 +602,9 @@ class SendDisplay(ttk.Frame):
         fee_label = ttk.Label(info_frame, text='FEE:', font=bold_small)
         fee_label.grid(row=2, column=0, padx=20, pady=5, sticky='w')
 
-        fee = ttk.Label(info_frame, text=f'{self.fee_entry.get()} sat/byte '
-                                         f'(total: {self.total_fee_var.get()} '
+        total_fee = utils.float_to_str(self.to_wallet_units(self.transaction.fee, "sat"))
+        fee = ttk.Label(info_frame, text=f'{self.transaction.fee_sat_byte} sat/byte '
+                                         f'(total: {total_fee} '
                                          f'{self.main_wallet.display_units})',
                         font=small)
         fee.grid(row=2, column=1, padx=20)
@@ -615,7 +612,9 @@ class SendDisplay(ttk.Frame):
         total_cost_label = ttk.Label(info_frame, text='TOTAL COST:', font=bold_small)
         total_cost_label.grid(row=3, column=0, padx=20, pady=5, sticky='w')
 
-        total_cost = ttk.Label(info_frame, text=f'{self.total_cost_var.get()} '
+        sat_total = self.transaction.fee + list(self.transaction.outputs_amounts.values())[0]
+        total = utils.float_to_str(self.to_wallet_units(sat_total, 'sat'))
+        total_cost = ttk.Label(info_frame, text=f'{total} '
                                                 f'{self.main_wallet.display_units}',
                                font=small)
         total_cost.grid(row=3, column=1, padx=20)
@@ -657,39 +656,42 @@ class SendDisplay(ttk.Frame):
 
         button_frame.grid(row=2, column=0, padx=10, pady=10)
 
-    def export_txn(self):
-        if not all((self.amount_btc_entry.get(), self.fee_entry.get(), self.address_entry.get())):
-            tk.messagebox.showerror('Invalid Entries', 'Please fill out all entries before sending')
-
-        elif self.amount_over_balance:
-            tk.messagebox.showerror('Insufficient Funds', 'Amount to send exceeds wallet balance')
-
-        elif float(self.amount_btc_entry.get()) <= 0 or \
-                float(self.amount_btc_entry.get()) <= 0 or \
-                int(self.fee_entry.get()) <= 0:
-            tk.messagebox.showerror('Invalid Amount(s)', 'Amount(s) must be positive, non-zero, numbers')
-
-        else:
-            default_name = 'signed.txn' if self.transaction.is_signed else 'unsigned.txn'
-
-            export_path = filedialog.asksaveasfilename(title='Export Transaction',
-                                                       initialdir=pathlib.Path.home(),
-                                                       initialfile=default_name,
-                                                       filetypes=[('Transaction Files', '*.txn')])
-
-            if not export_path:
+    def export_txn(self, ignore_entry_check=False):
+        if not ignore_entry_check:
+            if not all((self.amount_btc_entry.get(), self.fee_entry.get(), self.address_entry.get())):
+                tk.messagebox.showerror('Invalid Entries', 'Please fill out all entries before sending')
                 return
 
-            # append file extension if its not there
-            if not export_path.split('.')[-1] == 'txn':
-                export_path += '.txn'
+            elif self.amount_over_balance:
+                tk.messagebox.showerror('Insufficient Funds', 'Amount to send exceeds wallet balance')
+                return
 
-            try:
-                self.main_wallet.root.btc_wallet.file_export_transaction(file_path=export_path,
-                                                                         transaction=self.transaction)
-            except OSError as ex:
-                messagebox.showerror('Error', f'Unable to export transaction: {ex.__str__()}')
+            elif float(self.amount_btc_entry.get()) <= 0 or \
+                    float(self.amount_btc_entry.get()) <= 0 or \
+                    int(self.fee_entry.get()) <= 0:
+                tk.messagebox.showerror('Invalid Amount(s)', 'Amount(s) must be positive, non-zero, numbers')
+                return
 
-            else:
-                self.on_clear()
-                messagebox.showinfo('Transaction Exported', 'Transaction was successfully exported')
+        default_name = 'signed.txn' if self.transaction.is_signed else 'unsigned.txn'
+
+        export_path = filedialog.asksaveasfilename(title='Export Transaction',
+                                                   initialdir=pathlib.Path.home(),
+                                                   initialfile=default_name,
+                                                   filetypes=[('Transaction Files', '*.txn')])
+
+        if not export_path:
+            return
+
+        # append file extension if its not there
+        if not export_path.split('.')[-1] == 'txn':
+            export_path += '.txn'
+
+        try:
+            self.main_wallet.root.btc_wallet.file_export_transaction(file_path=export_path,
+                                                                     transaction=self.transaction)
+        except OSError as ex:
+            messagebox.showerror('Error', f'Unable to export transaction: {ex.__str__()}')
+
+        else:
+            self.on_clear()
+            messagebox.showinfo('Transaction Exported', 'Transaction was successfully exported')

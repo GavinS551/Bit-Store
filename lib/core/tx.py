@@ -196,6 +196,7 @@ class Transaction:
         self._use_full_address_utxos = use_full_address_utxos
 
         self.fee = fee
+        self.fee_sat_byte = 0  # when change_fee_sat_byte is used the value is stored here
         self.is_segwit = is_segwit
         self.is_signed = False
 
@@ -478,3 +479,5 @@ class Transaction:
             if sat_byte * self.estimated_size() != a_total_fee:
                 self.fee -= a_total_fee - b_total_fee
                 self.dust_change_amount += a_total_fee - b_total_fee
+
+        self.fee_sat_byte = sat_byte
