@@ -492,15 +492,20 @@ class SendDisplay(ttk.Frame):
             if not is_signed:
                 self.btc_wallet.sign_transaction(self.transaction, password)
 
-            response_status = self.btc_wallet.broadcast_transaction(self.transaction)
+            response_status, response_code = self.btc_wallet.broadcast_transaction(self.transaction)
 
             signed_txid = self.transaction.txid
 
             # if the broadcast failed
             if not response_status:
                 load_window.destroy()
+                if response_code is None:
+                    status_str = f'(Connection Error)'
+                else:
+                    status_str = f'(Status code: {response_code})'
+
                 tk.messagebox.showerror('Broadcast Error', 'Unable to broadcast transaction! '
-                                                           '(Please check your internet connection)')
+                                                           f'{status_str}')
                 return
 
             # stop txn making thread and clear inputs, after transaction has
@@ -551,7 +556,9 @@ class SendDisplay(ttk.Frame):
             info = tk.Toplevel(self)
             info.iconbitmap(self.main_wallet.root.ICON)
 
-            title_ = ttk.Label(info, text='Signing & Broadcasting transaction, please wait...',
+            title_str = 'Signing & Broadcasting transaction, please wait...' if not is_signed \
+                else 'Broadcasting transaction, please wait...'
+            title_ = ttk.Label(info, text=title_str,
                                font=bold_title)
             title_.grid(pady=20, padx=20)
 

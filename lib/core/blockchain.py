@@ -12,11 +12,11 @@ def broadcast_transaction(hex_transaction):
 
     try:
         request = requests.post(url=url, data={'tx_hex': hex_transaction}, timeout=10)
-        request.raise_for_status()
-    except requests.RequestException:
-        return False
 
-    return request.ok
+    except requests.RequestException:
+        return False, None
+
+    return request.ok, request.status_code
 
 
 def blockchain_api(addresses, refresh_rate, source, timeout=10):
