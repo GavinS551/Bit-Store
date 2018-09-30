@@ -56,6 +56,7 @@ def write_values(**kwargs):
     utils.atomic_file_write(data, CONFIG_FILE)
 
 
+@functools.lru_cache(maxsize=None)
 def get_value(key):
     try:
         return read_file()[key]
