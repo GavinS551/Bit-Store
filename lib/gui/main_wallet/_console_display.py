@@ -187,6 +187,14 @@ class GUIConsole(console.Console):
         except KeyError:
             print(f'Error: Cannot find config key \'{key}\'')
 
+    def do_listconfig(self):
+        """ Prints all config variables """
+        config_vars = [v for v in vars(config)
+                       if not callable(getattr(config, v)) and not v.startswith('__') and v.isupper()]
+        config_vars += [v for v in config.DEFAULT_CONFIG]
+        
+        print(config_vars)
+
     def do_exit(self):
         """ Exit program """
         self.root.destroy()
