@@ -385,7 +385,7 @@ class WatchOnlyMainWallet(MainWallet):
         send_idx = 1  # index of send_display in self.notebook
         self.notebook.forget(self.send_display)
         self.send_display = WatchOnlySendDisplay(self.notebook, self)
-        self.notebook.insert(send_idx, self.send_display, text='Send')
+        self.notebook.insert(send_idx, self.send_display, text='Send', underline=0)
 
         self.wallet_menu.entryconfig('Display Mnemonic', state=tk.DISABLED)
 
