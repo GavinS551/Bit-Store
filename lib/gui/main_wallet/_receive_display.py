@@ -50,7 +50,8 @@ class ReceiveDisplay(ttk.Frame):
         qr = qrcode.QRCode(box_size=5)
         qr.add_data(self.main_wallet.next_receiving_address.get())
 
-        tk_image = ImageTk.PhotoImage(qr.make_image(back_color='#F0F0F0'))
+        bg_colour = '#DCDAD5' if self.main_wallet.root.theme == 'clam' else '#F0F0F0'
+        tk_image = ImageTk.PhotoImage(qr.make_image(back_color=bg_colour))
         return tk_image
 
     def draw_qr_code(self):

@@ -57,8 +57,10 @@ class RootApplication(tk.Tk):
         self.iconbitmap(self.ICON)
         
         self.style = ttk.Style()
-        if platform.system() == 'Linux':
+        self.theme = self.style.theme_use()
+        if platform.system() != 'Windows':
             self.style.theme_use('clam')
+            self.theme = 'clam'
         self.set_style()
 
         self.master_frame = ttk.Frame(self, padding=20)
