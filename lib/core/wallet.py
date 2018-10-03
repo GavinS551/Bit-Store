@@ -493,16 +493,16 @@ class Wallet:
 class WatchOnlyWallet(Wallet):
 
     def sign_transaction(self, unsigned_txn, password):
-        raise NotImplementedError
+        raise WatchOnlyWalletError
 
     def get_address_wifkey_pairs(self, password):
-        raise NotImplementedError
+        raise WatchOnlyWalletError
 
     def get_mnemonic(self, password):
-        raise NotImplementedError
+        raise WatchOnlyWalletError
 
     def get_xpriv(self, password):
-        raise NotImplementedError
+        raise WatchOnlyWalletError
 
     def get_wif_keys(self, password, addresses):
-        raise NotImplementedError
+        raise WatchOnlyWalletError
