@@ -6,7 +6,9 @@ import functools
 import itertools
 from typing import Any
 
-from ...core import console, utils, blockchain, data, config
+from ...core import console, utils, blockchain, config
+from ...exceptions.data_exceptions import IncorrectPasswordError
+from ...exceptions.wallet_exceptions import WatchOnlyWalletError
 
 
 def catch_incorrect_password(func):
@@ -15,8 +17,19 @@ def catch_incorrect_password(func):
         try:
             func(*args, **kwargs)
 
-        except data.IncorrectPasswordError:
+        except IncorrectPasswordError:
             print('Error: Password Incorrect')
+
+    return decorator
+
+
+def watch_only_not_implemented(func):
+    @functools.wraps(func)
+    def decorator(*args, **kwargs):
+        try:
+            func(*args, **kwargs)
+        except WatchOnlyWalletError:
+            print('Error: This command is not implemented for watch-only wallets')
 
     return decorator
 
@@ -134,11 +147,13 @@ class GUIConsole(console.Console):
         else:
             print('Error: Unable to broadcast transaction')
 
+    @watch_only_not_implemented
     @catch_incorrect_password
     def do_mnemonic(self, password: str):
         """ Prints wallet mnemonic phrase """
         print(self.wallet.get_mnemonic(password))
 
+    @watch_only_not_implemented
     @catch_incorrect_password
     def do_xpriv(self, password: str):
         """ Prints BIP32 master extended private key """
