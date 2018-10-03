@@ -294,6 +294,10 @@ class MainWallet(ttk.Frame):
             self.root.incorrect_password_prompt(self)
             return
 
+        if mnemonic == '':
+            messagebox.showerror('Error', 'Wallet created from BIP32 extended key import.')
+            return
+
         toplevel = self.root.get_toplevel(self)
         toplevel.grab_set()
 
