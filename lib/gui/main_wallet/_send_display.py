@@ -222,7 +222,7 @@ class SendDisplay(ttk.Frame):
         try:
             txn = self.btc_wallet.file_import_transaction(file_path)
 
-            if not txn.is_signed and self.btc_wallet.get_metadata(self.btc_wallet.name)['watch_only']:
+            if not txn.is_signed and self.main_wallet.root.is_watch_only:
                 messagebox.showerror('Error', 'Cannot import unsigned transaction in watch-only wallet')
                 return
 
