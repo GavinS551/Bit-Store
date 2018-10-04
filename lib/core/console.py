@@ -205,9 +205,9 @@ class Console(metaclass=ConsoleArgErrorsMeta):
             raise RuntimeError(f'Cannot evaluate string. ({type(ex).__name__})')
 
         if expected_type is not None and not isinstance(string_eval, expected_type):
-            raise TypeError(f'Evaluated string doesn\'t match provided type. '
-                            f'(\'{expected_type.__name__}\' expected. Evaled type is '
-                            f'\'{type(string_eval).__name__}\')')
+            raise RuntimeError(f'Evaluated string doesn\'t match provided type. '
+                               f'(\'{expected_type.__name__}\' expected. Evaled type is '
+                               f'\'{type(string_eval).__name__}\')')
         else:
             return string_eval
 

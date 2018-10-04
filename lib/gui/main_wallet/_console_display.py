@@ -179,16 +179,14 @@ class GUIConsole(console.Console):
             expected_type = config.expected_type(key)
             val = self.string_eval(value, expected_type=expected_type)
 
-        # caught in expected_type assignment, rest of errors caught in val assignment
+        # caught in expected_type assignment
         except KeyError:
             print(f'Error: Invalid key \'{key}\'')
 
+        # caught in val assignment
         except RuntimeError:
             print(f'Error: Unable to convert "{value}" to expected type. '
                   f'Please ensure that "{value}" is a valid \'{expected_type.__name__}\' literal')
-
-        except TypeError:
-            print(f'Error: key "{key}" expects a value of type \'{expected_type.__name__}\'')
 
         else:
             config.write_values(**{key: val})
@@ -209,6 +207,28 @@ class GUIConsole(console.Console):
         config_vars += [v for v in config.DEFAULT_CONFIG]
         
         print(config_vars)
+
+    @catch_incorrect_password
+    def do_setgaplimit(self, gap_limit: int, password: str):
+
+        try:
+            gap_limit = self.string_eval(gap_limit, expected_type=int)
+
+        except RuntimeError:
+            print(f'Error: Unable to convert "{gap_limit}" to expected type. '
+                  f'Please ensure that "{gap_limit}" is a valid int literal')
+            return
+
+        print('Changing gap limit...')
+
+        try:
+            self.wallet.change_gap_limit(gap_limit, password)
+
+        except ValueError as ex:
+            print(f'Error: {str(ex)}')
+
+        else:
+            print(f'Gap limit successfully changed to {gap_limit}')
 
     def do_exit(self):
         """ Exit program """

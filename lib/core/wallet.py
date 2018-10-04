@@ -17,6 +17,9 @@ from ..exceptions.wallet_exceptions import *
 API_REFRESH_RATE = 5
 API_REFRESH_RATE_LOWER = 5
 
+GAP_LIMIT_MIN = 20
+GAP_LIMIT_MAX = 100
+
 
 def get_wallet(name, password):
     """ function will return wallet of correct type (normal or watch-only) """
@@ -363,7 +366,7 @@ class Wallet:
             return self.import_transaction(f.read())
 
     def clear_cached_api_data(self):
-        api_keys = ['TXNS', 'ADDRESS_BALS', 'WALLET_BAL', 'ADDRESS_BALS', 'UNSPENT_OUTS', 'PRICE']
+        api_keys = ['TXNS', 'ADDRESS_BALS', 'WALLET_BAL', 'UNSPENT_OUTS', 'PRICE']
         k_v = {k: None for k in api_keys}
 
         self.data_store.write_value(**k_v)
@@ -374,6 +377,32 @@ class Wallet:
             raise ValueError('Transaction must be signed')
 
         return blockchain.broadcast_transaction(signed_txn.hex_txn)
+
+    def change_gap_limit(self, new_gap_limit, password):
+        if new_gap_limit < GAP_LIMIT_MIN or new_gap_limit > GAP_LIMIT_MAX:
+            raise ValueError(f'Gap limit must be between {GAP_LIMIT_MIN} and {GAP_LIMIT_MAX}')
+
+        if not isinstance(new_gap_limit, int):
+            raise TypeError('Gap limit must be an int')
+
+        xpriv = self.get_xpriv(password)
+
+        hd_obj = hd.HDWallet(key=xpriv, path=self.path, segwit=self.is_segwit,
+                             gap_limit=new_gap_limit)
+        addresses = hd_obj.addresses()
+
+        new_address_data = {
+                'GAP_LIMIT': hd_obj.gap_limit,
+                'ADDRESSES_RECEIVING': addresses[0],
+                'ADDRESSES_CHANGE': addresses[1],
+                'ADDRESSES_USED': [],
+                'ADDRESS_WIF_KEYS': hd_obj.address_wifkey_pairs()
+        }
+
+        del hd_obj
+        self.data_store.write_value(**new_address_data)
+
+        self.set_used_addresses()
 
     @property
     def xpub(self):
