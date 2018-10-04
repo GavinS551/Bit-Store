@@ -1,3 +1,18 @@
+# Copyright (C) 2018  Gavin Shaughnessy
+#
+# Bit-Store is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 
@@ -268,7 +283,7 @@ class MainWallet(ttk.Frame):
         license_label = ttk.Label(frame, text='License:', font=self.root.small_font + ('bold',))
         license_label.grid(row=1, column=0, padx=5, pady=5, sticky='w')
 
-        license_ = ttk.Label(frame, text='MIT License', font=self.root.small_font)
+        license_ = ttk.Label(frame, text='GNU GPL v3', font=self.root.small_font)
         license_.grid(row=1, column=1)
 
         python_ver_label = ttk.Label(frame, text='Python Version:', font=self.root.small_font + ('bold',))
