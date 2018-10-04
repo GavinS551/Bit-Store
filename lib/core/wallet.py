@@ -18,7 +18,7 @@ API_REFRESH_RATE = 5
 API_REFRESH_RATE_LOWER = 5
 
 GAP_LIMIT_MIN = 20
-GAP_LIMIT_MAX = 100
+GAP_LIMIT_MAX = 50
 
 
 def get_wallet(name, password):
