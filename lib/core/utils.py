@@ -70,7 +70,7 @@ def validate_address(address, allow_testnet=False, allow_bech32=True):
             return True
 
     with suppress(ValueError, TypeError):
-        if allow_bech32 and bech32.bech32_decode(address) is not (None, None):
+        if allow_bech32 and bech32.bech32_decode(address) != (None, None):
             return True
 
     return False

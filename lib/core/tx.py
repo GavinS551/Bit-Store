@@ -255,8 +255,6 @@ class Transaction:
 
     @staticmethod
     def get_script_pubkey(address):
-        # P2PKH addresses have version byte 0x00 ('1' prefix when encoded)
-
         if address.startswith('bc') or address.startswith('tb'):
             if address.startswith('bc'):
                 return P2wpkhV0Script(P2wpkhAddress.from_string(address))
@@ -270,6 +268,7 @@ class Transaction:
         else:
             addr_bytes = base58.b58decode_check(address)
 
+            # P2PKH addresses have version byte 0x00 ('1' prefix when encoded)
             if addr_bytes[0] == 0x00:
                 return P2pkhScript(P2pkhAddress.from_string(address))
 
