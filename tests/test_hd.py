@@ -95,19 +95,5 @@ def test_wif_gen():
     assert segwit_wif_keys[1][0] == 'KxfceVhP6DCvnyz2aN3ZCn4JJBTFsp7UzzVVReNZP78e7vwePkGx'
 
 
-def test_gap_limit():
-    assert len(normal_addresses[0]) == GAP_LIMIT
-    assert len(normal_addresses[1]) == GAP_LIMIT
-
-    assert len(normal_wif_keys[0]) == GAP_LIMIT
-    assert len(normal_wif_keys[1]) == GAP_LIMIT
-
-    bip32_.set_gap_limit(2)
-
-    assert len(bip32_.addresses()[0]) == 2
-
-    bip32_.set_gap_limit(1)
-
-
 def test_address_wifkey_pairs():
     assert bip32_.address_wifkey_pairs() == dict(zip(normal_addresses[0] + normal_addresses[1], normal_wif_keys[0] + normal_wif_keys[1]))
