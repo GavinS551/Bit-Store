@@ -256,13 +256,13 @@ class HDWallet:
 
         self._address_queue.put((idx, r_address, c_address))
 
-    def _multi_processed_addresses(self):
+    def _multi_processed_addresses(self, start_idx=0):
         """ Returns a tuple of receiving and change addresses up to the limit specified"""
         receiving = []
         change = []
 
         pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
-        pool.map(self._gen_addresses, range(self.gap_limit))
+        pool.map(self._gen_addresses, range(start_idx, self.gap_limit))
 
         sorted_addresses = sorted(IterableQueue(self._address_queue), key=itemgetter(0))
         for a in sorted_addresses:
@@ -271,12 +271,12 @@ class HDWallet:
 
         return receiving, change
 
-    def _non_multi_processed_addresses(self):
+    def _non_multi_processed_addresses(self, start_idx=0):
         """ deriving from a public key does not currently work with multiprocessing"""
         receiving = []
         change = []
 
-        for i in range(self.gap_limit):
+        for i in range(start_idx, self.gap_limit):
             if self.is_segwit:
                 receiving.append(self._external_chain_ck.ChildKey(i).P2WPKHoP2SHAddress())
                 change.append(self._internal_chain_ck.ChildKey(i).P2WPKHoP2SHAddress())
@@ -294,13 +294,13 @@ class HDWallet:
 
         self._wif_key_queue.put((idx, r_keys, c_keys))
 
-    def _multi_processed_wif_keys(self):
+    def _multi_processed_wif_keys(self, start_idx=0):
         """ Returns a tuple of receiving and change WIF keys up to the limit specified """
         receiving = []
         change = []
 
         pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
-        pool.map(self._gen_wif_keys, range(self.gap_limit))
+        pool.map(self._gen_wif_keys, range(start_idx, self.gap_limit))
 
         sorted_keys = sorted(IterableQueue(self._wif_key_queue), key=itemgetter(0))
         for w in sorted_keys:
@@ -309,45 +309,37 @@ class HDWallet:
 
         return receiving, change
 
-    def _non_multi_processed_wif_keys(self):
+    def _non_multi_processed_wif_keys(self, start_idx=0):
         receiving = []
         change = []
 
-        for i in range(self.gap_limit):
+        for i in range(start_idx, self.gap_limit):
             receiving.append(self._external_chain_ck.ChildKey(i).WalletImportFormat())
             change.append(self._internal_chain_ck.ChildKey(i).WalletImportFormat())
 
         return receiving, change
 
-    def addresses(self):
+    def addresses(self, start_idx=0):
         if self.multi_processed:
-            return self._multi_processed_addresses()
+            return self._multi_processed_addresses(start_idx)
         else:
-            return self._non_multi_processed_addresses()
+            return self._non_multi_processed_addresses(start_idx)
 
-    def wif_keys(self):
+    def wif_keys(self, start_idx=0):
         if not self.is_private:
             return None
 
         if self.multi_processed:
-            return self._multi_processed_wif_keys()
+            return self._multi_processed_wif_keys(start_idx)
         else:
-            return self._non_multi_processed_wif_keys()
+            return self._non_multi_processed_wif_keys(start_idx)
 
-    def address_wifkey_pairs(self):
+    def address_wifkey_pairs(self, start_idx=0):
         """ Returns a dict with addresses mapped to their WIF keys """
         if not self.is_private:
             return None
 
-        addresses = self.addresses()
-        wif_keys = self.wif_keys()
+        addresses = self.addresses(start_idx)
+        wif_keys = self.wif_keys(start_idx)
 
         return dict(zip(addresses[0] + addresses[1], wif_keys[0] + wif_keys[1]))
-
-    def set_gap_limit(self, num):
-        if not isinstance(num, int):
-            raise TypeError('Gap limit must be an int')
-        elif num <= 0:
-            raise ValueError('Gap limit must be at least 1')
-        else:
-            self.gap_limit = num
