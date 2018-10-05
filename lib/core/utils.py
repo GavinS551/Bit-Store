@@ -25,6 +25,8 @@ from contextlib import suppress
 
 import base58
 
+from extern import bech32
+
 
 def atomic_file_write(data: str, file_path: str):
     """ atomically write data (string) to a file """
@@ -56,7 +58,7 @@ def threaded(func=None, daemon=False, name=None):
     return decorator
 
 
-def validate_address(address, allow_testnet=False):
+def validate_address(address, allow_testnet=False, allow_bech32=True):
     """ function that validates a btc address """
     possible_network_bytes = (0x00, 0x05)
 
@@ -65,6 +67,10 @@ def validate_address(address, allow_testnet=False):
 
     with suppress(ValueError, TypeError):
         if base58.b58decode_check(address)[0] in possible_network_bytes:
+            return True
+
+    with suppress(ValueError, TypeError):
+        if allow_bech32 and bech32.bech32_decode(address) is not (None, None):
             return True
 
     return False
