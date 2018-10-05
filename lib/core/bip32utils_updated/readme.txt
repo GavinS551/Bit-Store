@@ -1,1 +1,0 @@
-PyPI version of this module isn't as up to date as the newer prusnak/bip32utils fork on github, so it is stored here

@@ -24,7 +24,7 @@ from contextlib import suppress
 
 import bitstring
 import base58
-from .bip32utils_updated.BIP32Key import BIP32Key, BIP32_HARDEN
+from extern.bip32utils.BIP32Key import BIP32Key, BIP32_HARDEN
 
 from .utils import IterableQueue
 from ..exceptions.hd_exceptions import *

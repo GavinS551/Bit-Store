@@ -1,0 +1,1 @@
+This is the prusnak/bip32utils fork from github, not the original. (prusnak/bip32utils seems to be deleted now...)
