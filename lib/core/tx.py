@@ -16,11 +16,13 @@
 import base58
 import btcpy
 from btcpy.structs.transaction import MutableTransaction, MutableSegWitTransaction, TxIn, TxOut, Locktime, Sequence
-from btcpy.structs.script import P2pkhScript, P2shScript, Script, P2wpkhV0Script, ScriptSig
+from btcpy.structs.script import P2pkhScript, P2shScript, Script, P2wpkhV0Script, ScriptSig, P2wshV0Script
 from btcpy.structs.sig import P2pkhSolver, P2shSolver, P2wpkhV0Solver
 from btcpy.structs.crypto import PrivateKey
+from btcpy.structs.address import P2pkhAddress, P2wpkhAddress, P2shAddress, P2wshAddress
 
 from .structs import UTXOData
+from extern import bech32
 
 from ..exceptions.tx_exceptions import *
 
@@ -252,30 +254,31 @@ class Transaction:
         return self._txn.weight
 
     @staticmethod
-    def get_hash160(address):
-        """ hash160 of a btc address is the b58_check decoded bytes of the
-         address, minus the beginning network byte
-         """
-        return base58.b58decode_check(address)[1:]
-
-    @staticmethod
-    def get_output_script(address):
+    def get_script_pubkey(address):
         # P2PKH addresses have version byte 0x00 ('1' prefix when encoded)
-        addr_bytes = base58.b58decode_check(address)
-        if addr_bytes[0] == 0x00:
-            return P2pkhScript
 
-        # and P2SH addresses has version byte 0x05 ('3' prefix when encoded)
-        elif addr_bytes[0] == 0x05:
-            return P2shScript
+        if address.startswith('bc') or address.startswith('tb'):
+            if address.startswith('bc'):
+                return P2wpkhV0Script(P2wpkhAddress.from_string(address))
+
+            elif address.startswith('tb'):
+                return P2wshV0Script(P2wshAddress.from_string(address))
+
+            else:
+                raise ValueError('Couldn\'t generate a scriptPubKey for entered address')
 
         else:
-            raise ValueError('Couldn\'t generate a scriptPubKey for entered address')
+            addr_bytes = base58.b58decode_check(address)
 
-    @classmethod
-    def get_script_pubkey(cls, address):
-        script = cls.get_output_script(address)
-        return script(bytearray(cls.get_hash160(address)))
+            if addr_bytes[0] == 0x00:
+                return P2pkhScript(P2pkhAddress.from_string(address))
+
+            # and P2SH addresses has version byte 0x05 ('3' prefix when encoded)
+            elif addr_bytes[0] == 0x05:
+                return P2shScript(P2shAddress.from_string(address))
+
+            else:
+                raise ValueError('Couldn\'t generate a scriptPubKey for entered address')
 
     def _choose_utxos(self):
         output_amount = sum([v for v in self.outputs_amounts.values()]) + self.fee
