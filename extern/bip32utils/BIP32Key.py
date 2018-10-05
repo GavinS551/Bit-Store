@@ -306,7 +306,7 @@ class BIP32Key(object):
         pk = PublicKey(pk_bytes)
         pk_hash = pk.hash()
 
-        return P2wpkhAddress(pk_hash, 0, mainnet=not self.testnet)
+        return str(P2wpkhAddress(pk_hash, 0, mainnet=not self.testnet))
 
     def WalletImportFormat(self):
         "Returns private key encoded for wallet import"
