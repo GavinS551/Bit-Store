@@ -550,3 +550,26 @@ class WatchOnlyWallet(Wallet):
 
     def get_wif_keys(self, password, addresses):
         raise WatchOnlyWalletError
+
+    def change_gap_limit(self, new_gap_limit, password):
+        if new_gap_limit < GAP_LIMIT_MIN or new_gap_limit > GAP_LIMIT_MAX:
+            raise ValueError(f'Gap limit must be between {GAP_LIMIT_MIN} and {GAP_LIMIT_MAX}')
+
+        if not isinstance(new_gap_limit, int):
+            raise TypeError('Gap limit must be an int')
+
+        hd_obj = hd.HDWallet(key=self.xpub, path=self.path, segwit=self.is_segwit,
+                             gap_limit=new_gap_limit)
+        addresses = hd_obj.addresses()
+
+        new_address_data = {
+                'GAP_LIMIT': hd_obj.gap_limit,
+                'ADDRESSES_RECEIVING': addresses[0],
+                'ADDRESSES_CHANGE': addresses[1],
+                'ADDRESSES_USED': [],
+        }
+
+        del hd_obj
+        self.data_store.write_value(**new_address_data)
+
+        self.set_used_addresses()
