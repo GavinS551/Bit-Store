@@ -17,6 +17,7 @@ import os
 import hashlib
 import base64
 import json
+import copy
 
 import cryptography.fernet as fernet
 
@@ -147,6 +148,23 @@ class DataStore(Crypto):
         utils.atomic_file_write(data=self.encrypt(json.dumps(data)),
                                 file_path=self.file_path)
 
+    def _encrypt_dict_string_values(self, dict_):
+        """ goes through a dict and encrypts all string values, and all string values in nested dicts """
+
+        # work with copy of dict that will overwrite dict_, to prevent a half encrypted dict left
+        # after a possible max recursion depth exception
+        # (need deepcopy to copy dicts and not references to same dict)
+        copy_dict = copy.deepcopy(dict_)
+
+        for k, v in copy_dict.items():
+            if isinstance(v, str):
+                copy_dict.update({k: self.encrypt(v)})
+
+            elif isinstance(v, dict):
+                self._encrypt_dict_string_values(v)
+
+        dict_.update(copy_dict)
+
     def write_value(self, **kwargs):
         data = self._data
         for k, v in kwargs.items():
@@ -167,9 +185,10 @@ class DataStore(Crypto):
                     # if key is in sensitive data list, it will be encrypted twice
                     # to limit its exposure in ram, unencrypted
                     if k in self.sensitive_keys:
-                        # if value is a dict, encrypt all values
                         if isinstance(v, dict):
-                            data[k] = {x: self.encrypt(y) for x, y in v.items()}
+                            self._encrypt_dict_string_values(v)
+                            data.update({k: v})
+
                         elif isinstance(v, str):
                             data[k] = self.encrypt(v)
                         else:
@@ -190,7 +209,8 @@ class DataStore(Crypto):
             return self.decrypt(value)
 
         else:
-            return value
+            # return deepcopy for other types than immutable string (dicts mainly)
+            return copy.deepcopy(value)
 
     # for use outside this class, where the password isn't actually used
     # to decrypt the file, but still needs to be verified for security

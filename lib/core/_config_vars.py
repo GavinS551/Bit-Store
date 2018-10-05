@@ -80,7 +80,8 @@ STANDARD_DATA_FORMAT = {
     'WALLET_BAL': list,
     'UNSPENT_OUTS': list,
     'PASSWORD_HASH': str,
-    'ADDRESS_WIF_KEYS': dict
+    'ADDRESS_WIF_KEYS': dict,
+    'DEFAULT_ADDRESSES': dict
 }
 
 

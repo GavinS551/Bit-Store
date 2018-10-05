@@ -342,4 +342,5 @@ class HDWallet:
         addresses = self.addresses(start_idx)
         wif_keys = self.wif_keys(start_idx)
 
-        return dict(zip(addresses[0] + addresses[1], wif_keys[0] + wif_keys[1]))
+        return {'receiving': {k: v for k, v in zip(addresses[0], wif_keys[0])},
+                'change': {k: v for k, v in zip(addresses[1], wif_keys[1])}}

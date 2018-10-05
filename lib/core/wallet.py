@@ -178,7 +178,6 @@ class Wallet:
             d_store = data.DataStore(data_file_path, password, data_format=config.STANDARD_DATA_FORMAT,
                                      sensitive_keys=config.SENSITIVE_DATA)
 
-            # only gen addresses once, and not twice for receiving and change
             addresses = hd_wallet_obj.addresses()
 
             info = {
@@ -191,7 +190,8 @@ class Wallet:
                 'SEGWIT': hd_wallet_obj.is_segwit,
                 'ADDRESSES_RECEIVING': addresses[0],
                 'ADDRESSES_CHANGE': addresses[1],
-                'ADDRESS_WIF_KEYS': hd_wallet_obj.address_wifkey_pairs()
+                'ADDRESS_WIF_KEYS': hd_wallet_obj.address_wifkey_pairs(),
+                'DEFAULT_ADDRESSES': {'receiving': addresses[0], 'change': addresses[1]}
             }
 
             d_store.write_value(**info)
@@ -402,22 +402,72 @@ class Wallet:
 
         xpriv = self.get_xpriv(password)
 
-        hd_obj = hd.HDWallet(key=xpriv, path=self.path, segwit=self.is_segwit,
-                             gap_limit=new_gap_limit)
-        addresses = hd_obj.addresses()
+        if new_gap_limit >= self.gap_limit:
+
+            hd_obj = hd.HDWallet(key=xpriv, path=self.path, segwit=self.is_segwit,
+                                 gap_limit=new_gap_limit)
+
+            # only generate new addresses and wif keys
+            new_addresses = hd_obj.addresses(start_idx=self.gap_limit)
+            new_address_wif_keys = hd_obj.address_wifkey_pairs(start_idx=self.gap_limit)
+
+            r_addresses = self.default_addresses['receiving'] + new_addresses[0]
+            c_addresses = self.default_addresses['change'] + new_addresses[1]
+
+            cur_addr_wif_keys = self.get_address_wif_keys(password)
+            r_keys = cur_addr_wif_keys['receiving']
+            c_keys = cur_addr_wif_keys['change']
+
+            r_keys.update(new_address_wif_keys['receiving'])
+            c_keys.update(new_address_wif_keys['change'])
+
+            addr_wif_keys = cur_addr_wif_keys
+
+            del hd_obj
+
+        else:
+            r_addresses = self.default_addresses['receiving'][:new_gap_limit]
+            c_addresses = self.default_addresses['change'][:new_gap_limit]
+
+            cur_addr_wif_keys = self.get_address_wif_keys(password)
+            addr_wif_keys = {}
+
+            new_r_keys = dict(list(cur_addr_wif_keys['receiving'].items())[:new_gap_limit])
+            new_c_keys = dict(list(cur_addr_wif_keys['change'].items())[:new_gap_limit])
+
+            addr_wif_keys.update({'receiving': new_r_keys})
+            addr_wif_keys.update({'change': new_c_keys})
 
         new_address_data = {
-                'GAP_LIMIT': hd_obj.gap_limit,
-                'ADDRESSES_RECEIVING': addresses[0],
-                'ADDRESSES_CHANGE': addresses[1],
+                'GAP_LIMIT': new_gap_limit,
+                'ADDRESSES_RECEIVING': r_addresses,
+                'ADDRESSES_CHANGE': c_addresses,
                 'ADDRESSES_USED': [],
-                'ADDRESS_WIF_KEYS': hd_obj.address_wifkey_pairs()
+                'ADDRESS_WIF_KEYS': addr_wif_keys,
+                'DEFAULT_ADDRESSES': {'receiving': r_addresses, 'change': c_addresses}
         }
 
-        del hd_obj
         self.data_store.write_value(**new_address_data)
 
-        self.set_used_addresses()
+        self.clear_cached_api_data()
+
+    def address_type(self, address, default_type=True):
+        """ if default type is True, it will return what the address originally was (ignores used)"""
+
+        if address not in self.all_addresses:
+            raise ValueError('Address not in wallet')
+
+        if address in self.receiving_addresses:
+            return 'receiving'
+
+        elif address in self.change_addresses:
+            return 'change'
+
+        elif address in self.used_addresses and not default_type:
+            return 'used'
+
+        elif address in self.used_addresses and default_type:
+            return 'receiving' if address in self.default_addresses['receiving'] else 'change'
 
     @property
     def xpub(self):
@@ -434,6 +484,10 @@ class Wallet:
     @property
     def gap_limit(self):
         return self.data_store.get_value('GAP_LIMIT')
+
+    @property
+    def default_addresses(self):
+        return self.data_store.get_value('DEFAULT_ADDRESSES')
 
     @property
     def receiving_addresses(self):
@@ -518,6 +572,23 @@ class Wallet:
         else:
             raise data.IncorrectPasswordError
 
+    def get_address_wif_keys(self, password):
+        if self.data_store.validate_password(password):
+            addr_wif_keys = self.data_store.get_value('ADDRESS_WIF_KEYS')
+
+            r_dict = addr_wif_keys['receiving']
+            for k, v in r_dict.items():
+                r_dict.update({k: self.data_store.decrypt(v)})
+
+            c_dict = addr_wif_keys['change']
+            for K, V in c_dict.items():
+                c_dict.update({K: self.data_store.decrypt(V)})
+
+            return addr_wif_keys
+
+        else:
+            raise data.IncorrectPasswordError
+
     def get_wif_keys(self, password, addresses):
 
         if self.data_store.validate_password(password):
@@ -525,8 +596,10 @@ class Wallet:
             addr_wif_keys = self.data_store.get_value('ADDRESS_WIF_KEYS')
 
             for a in addresses:
+                addr_type = self.address_type(a)
+
                 # only decrypt the values that we need
-                wif_keys.append(self.data_store.decrypt(addr_wif_keys[a]))
+                wif_keys.append(self.data_store.decrypt(addr_wif_keys[addr_type][a]))
 
             return wif_keys
 
@@ -558,18 +631,31 @@ class WatchOnlyWallet(Wallet):
         if not isinstance(new_gap_limit, int):
             raise TypeError('Gap limit must be an int')
 
-        hd_obj = hd.HDWallet(key=self.xpub, path=self.path, segwit=self.is_segwit,
-                             gap_limit=new_gap_limit)
-        addresses = hd_obj.addresses()
+        if new_gap_limit >= self.gap_limit:
+
+            hd_obj = hd.HDWallet(key=self.account_xpub, path='m', segwit=self.is_segwit,
+                                 gap_limit=new_gap_limit)
+
+            # only generate new addresses
+            new_addresses = hd_obj.addresses(start_idx=self.gap_limit)
+
+            r_addresses = self.default_addresses['receiving'] + new_addresses[0]
+            c_addresses = self.default_addresses['change'] + new_addresses[1]
+
+            del hd_obj
+
+        else:
+            r_addresses = self.default_addresses['receiving'][:new_gap_limit]
+            c_addresses = self.default_addresses['change'][:new_gap_limit]
 
         new_address_data = {
-                'GAP_LIMIT': hd_obj.gap_limit,
-                'ADDRESSES_RECEIVING': addresses[0],
-                'ADDRESSES_CHANGE': addresses[1],
+                'GAP_LIMIT': new_gap_limit,
+                'ADDRESSES_RECEIVING': r_addresses,
+                'ADDRESSES_CHANGE': c_addresses,
                 'ADDRESSES_USED': [],
+                'DEFAULT_ADDRESSES': {'receiving': r_addresses, 'change': c_addresses}
         }
 
-        del hd_obj
         self.data_store.write_value(**new_address_data)
 
-        self.set_used_addresses()
+        self.clear_cached_api_data()
