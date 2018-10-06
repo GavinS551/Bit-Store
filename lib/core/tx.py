@@ -22,7 +22,6 @@ from btcpy.structs.crypto import PrivateKey
 from btcpy.structs.address import P2pkhAddress, P2wpkhAddress, P2shAddress, P2wshAddress
 
 from .structs import UTXOData
-from extern import bech32
 
 from ..exceptions.tx_exceptions import *
 
