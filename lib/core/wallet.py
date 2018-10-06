@@ -400,9 +400,8 @@ class Wallet:
         if not isinstance(new_gap_limit, int):
             raise TypeError('Gap limit must be an int')
 
-        xpriv = self.get_xpriv(password)
-
-        if new_gap_limit >= self.gap_limit:
+        if new_gap_limit > self.gap_limit:
+            xpriv = self.get_xpriv(password)
 
             hd_obj = hd.HDWallet(key=xpriv, path=self.path, segwit=self.is_segwit,
                                  gap_limit=new_gap_limit)
@@ -425,7 +424,7 @@ class Wallet:
 
             del hd_obj
 
-        else:
+        elif new_gap_limit < self.gap_limit:
             r_addresses = self.default_addresses['receiving'][:new_gap_limit]
             c_addresses = self.default_addresses['change'][:new_gap_limit]
 
@@ -437,6 +436,9 @@ class Wallet:
 
             addr_wif_keys.update({'receiving': new_r_keys})
             addr_wif_keys.update({'change': new_c_keys})
+
+        else:
+            return
 
         new_address_data = {
                 'GAP_LIMIT': new_gap_limit,
@@ -631,7 +633,7 @@ class WatchOnlyWallet(Wallet):
         if not isinstance(new_gap_limit, int):
             raise TypeError('Gap limit must be an int')
 
-        if new_gap_limit >= self.gap_limit:
+        if new_gap_limit > self.gap_limit:
 
             hd_obj = hd.HDWallet(key=self.account_xpub, path='m', segwit=self.is_segwit,
                                  gap_limit=new_gap_limit)
@@ -644,9 +646,12 @@ class WatchOnlyWallet(Wallet):
 
             del hd_obj
 
-        else:
+        elif new_gap_limit < self.gap_limit:
             r_addresses = self.default_addresses['receiving'][:new_gap_limit]
             c_addresses = self.default_addresses['change'][:new_gap_limit]
+
+        else:
+            return
 
         new_address_data = {
                 'GAP_LIMIT': new_gap_limit,
