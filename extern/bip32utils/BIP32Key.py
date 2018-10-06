@@ -294,6 +294,20 @@ class BIP32Key(object):
         prefix = b"\xc4" if self.testnet else b"\x05"
         return Base58.check_encode(prefix + address_bytes)
 
+    def P2WPKHAddress(self):
+        "Return P2WPKH segwit address"
+        pk_bytes = self.PublicKey()
+        assert len(pk_bytes) == 33 and (pk_bytes.startswith(b"\x02") or pk_bytes.startswith(b"\x03")), \
+            "Only compressed public keys are compatible with p2sh-p2wpkh addresses. " \
+            "See https://github.com/bitcoin/bips/blob/master/bip-0049.mediawiki."
+        from btcpy.structs.address import P2wpkhAddress
+        from btcpy.structs.crypto import PublicKey
+
+        pk = PublicKey(pk_bytes)
+        pk_hash = pk.hash()
+
+        return str(P2wpkhAddress(pk_hash, 0, mainnet=not self.testnet))
+
     def WalletImportFormat(self):
         "Returns private key encoded for wallet import"
         if self.public:

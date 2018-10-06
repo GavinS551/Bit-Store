@@ -84,8 +84,6 @@ def test_transaction():
     assert transaction.size == 142
     assert transaction.weight == 568
 
-    assert transaction.get_hash160('36GKcc8qfN3nYJvAveHYekgwnzdyn72and').hex() == '322cff52ece9716c1e4464bef9e8f2fea14b524d'
-
     transaction.change_fee(1135)
 
     assert transaction.fee == 1135
