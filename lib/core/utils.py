@@ -76,9 +76,9 @@ def validate_address(address, allow_testnet=False, allow_bech32=True):
     return False
 
 
-def validate_addresses(addresses):
+def validate_addresses(addresses, allow_testnet=False, allow_bech32=True):
     """ function that validates a list of btc addresses"""
-    return all(validate_address(a) for a in addresses)
+    return all(validate_address(a, allow_testnet, allow_bech32) for a in addresses)
 
 
 def float_to_str(float_, show_plus_sign=False):
