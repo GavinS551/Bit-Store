@@ -184,11 +184,11 @@ class MainWallet(ttk.Frame):
                 tk.messagebox.showerror('Incorrect Password', 'Old Password is incorrect, try again.')
                 incorrect = True
 
-            if not new_password_entry.get() == new_password_confirm_entry.get():
+            elif not new_password_entry.get() == new_password_confirm_entry.get():
                 tk.messagebox.showerror('Password Validation', 'New password entries do not match, try again.')
                 incorrect = True
 
-            if '' in (new_password_entry.get(), new_password_confirm_entry.get()):
+            elif '' in (new_password_entry.get(), new_password_confirm_entry.get()):
                 tk.messagebox.showerror('Blank Password', 'Password cannot be blank')
                 incorrect = True
 
