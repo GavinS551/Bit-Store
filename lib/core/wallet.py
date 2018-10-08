@@ -84,6 +84,9 @@ class _ApiDataUpdaterThread(threading.Thread):
 
         self.connection_timestamp = None
 
+        # blockchain api object
+        self.bd = None
+
     def run(self):
 
         def _update_api_data(data_keys):
@@ -98,25 +101,25 @@ class _ApiDataUpdaterThread(threading.Thread):
 
             addresses = self.wallet_instance.all_addresses
 
-            bd = blockchain.blockchain_api(addresses, self.refresh_rate,
-                                           source=config.get_value('BLOCKCHAIN_API_SOURCE'))
+            self.bd = blockchain.blockchain_api(addresses, self.refresh_rate,
+                                                source=config.get_value('BLOCKCHAIN_API_SOURCE'))
             price_data = price.BitcoinPrice(currency=config.get_value('FIAT'),
                                             source=config.get_value('PRICE_API_SOURCE'))
 
             try:
                 api_data = {
-                    'WALLET_BAL': bd.wallet_balance,
-                    'TXNS': bd.transactions,
-                    'ADDRESS_BALS': bd.address_balances,
+                    'WALLET_BAL': self.bd.wallet_balance,
+                    'TXNS': self.bd.transactions,
+                    'ADDRESS_BALS': self.bd.address_balances,
                     'PRICE': price_data.price,
-                    'UNSPENT_OUTS': bd.unspent_outputs
+                    'UNSPENT_OUTS': self.bd.unspent_outputs
                 }
                 self.connection_exception = None
                 self.connection_status = self.ApiConnectionStatus.good
 
                 self.connection_timestamp = time.time()
 
-            except (requests.RequestException, json.JSONDecodeError) as ex:
+            except blockchain.BlockchainConnectionError as ex:
 
                 self.connection_exception = ex
                 self.connection_status = self.ApiConnectionStatus.error

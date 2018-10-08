@@ -15,10 +15,20 @@
 
 import time
 import math
+import threading
+import asyncio
+import os
+import json
+import queue
 
 import requests
+from connectrum import client, svr_info
 
 from . import utils, config
+
+
+class BlockchainConnectionError(Exception):
+    pass
 
 
 # TODO: ADD MORE API SOURCES
@@ -36,15 +46,9 @@ def broadcast_transaction(hex_transaction):
 
 def blockchain_api(addresses, refresh_rate, source, timeout=10):
 
-    # input validation
-    if not isinstance(addresses, list):
-        raise TypeError('Address(es) must be in a list!')
-
-    if not utils.validate_addresses(addresses):
-        raise ValueError('Invalid Address entered')
-
     sources = {
-        'blockchain.info': (BlockchainInfo, 'https://blockchain.info/multiaddr?active=')
+        'blockchain.info': (BlockchainInfo, 'https://blockchain.info/multiaddr?active='),
+        'Electrum': (Electrum, None)
     }
 
     if source.lower() not in sources:
@@ -53,12 +57,23 @@ def blockchain_api(addresses, refresh_rate, source, timeout=10):
     source_cls = sources[source][0]
     source_url = sources[source][1]
 
+    if not isinstance(addresses, list):
+        raise TypeError('Address(es) must be in a list!')
+
+    if not utils.validate_addresses(addresses, allow_bech32=source_cls.bech32_support):
+        raise ValueError('Invalid Address entered')
+
     return source_cls(addresses, refresh_rate, source_url, timeout=timeout)
 
 
 class _BlockchainBaseClass:
     """ subclasses need to overwrite transactions property and make
-     sure it returns transactions in data format seen in doc-string of the property"""
+     sure it returns transactions in data format seen in doc-string of the property
+
+     Connection errors should be re-raised as BlockchainConnectionError
+     """
+
+    bech32_support = None
 
     def __init__(self, addresses, refresh_rate, url, timeout=10):
 
@@ -148,6 +163,7 @@ class _BlockchainBaseClass:
 
 
 class BlockchainInfo(_BlockchainBaseClass):
+    bech32_support = False
 
     @property
     def _blockchain_data(self):
@@ -160,10 +176,13 @@ class BlockchainInfo(_BlockchainBaseClass):
                 url += f'{address}|'
             url += '&n=100'  # show up to 100 (max) transactions
 
-            request = requests.get(url, timeout=self.timeout)
-            data = request.json()
+            try:
+                request = requests.get(url, timeout=self.timeout)
+                data = request.json()
+                request.raise_for_status()
 
-            request.raise_for_status()
+            except (requests.RequestException, json.JSONDecodeError) as ex:
+                raise BlockchainConnectionError from ex
 
             self.last_request_time = time.time()
             self.last_requested_data = data
@@ -248,3 +267,7 @@ class BlockchainInfo(_BlockchainBaseClass):
             transactions.append(transaction)
 
         return transactions
+
+
+class Electrum(_BlockchainBaseClass):
+    bech32_support = True
