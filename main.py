@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import traceback
 import multiprocessing
 
 from lib import logger
@@ -22,8 +21,6 @@ from lib.gui import gui_root
 
 
 if __name__ == '__main__':
-    # PyInstaller fix
-    multiprocessing.freeze_support()
 
     # making sure all program directories exist, and creating them otherwise.
     config.init()
@@ -32,11 +29,14 @@ if __name__ == '__main__':
     root_logger.info('Created root logger.')
 
     try:
+        # PyInstaller fix
+        multiprocessing.freeze_support()
+
         root_logger.info('Starting gui_root mainloop.')
         gui_root.main()
 
         root_logger.info('Exiting gui_root mainloop.')
 
     except BaseException:
-        root_logger.critical(traceback.format_exc())
+        root_logger.exception(msg='Unhandled Exception -')
         raise
