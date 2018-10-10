@@ -15,14 +15,9 @@
 
 import time
 import math
-import threading
-import asyncio
-import os
 import json
-import queue
 
 import requests
-from connectrum import client, svr_info
 
 from . import utils, config
 
