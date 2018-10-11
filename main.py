@@ -21,6 +21,8 @@ from lib.gui import gui_root
 
 
 if __name__ == '__main__':
+    # PyInstaller fix
+    multiprocessing.freeze_support()
 
     # making sure all program directories exist, and creating them otherwise.
     config.init()
@@ -29,9 +31,6 @@ if __name__ == '__main__':
     root_logger.info('Created root logger.')
 
     try:
-        # PyInstaller fix
-        multiprocessing.freeze_support()
-
         root_logger.info('Starting gui_root mainloop.')
         gui_root.main()
 
