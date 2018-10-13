@@ -32,6 +32,11 @@ class SendDisplay(ttk.Frame):
         ttk.Frame.__init__(self, master, padding=5)
         self.main_wallet = main_wallet
 
+        # fix for when these methods were moved away from this class
+        self.to_satoshis = self.main_wallet.to_satoshis
+        self.to_wallet_units = self.main_wallet.to_wallet_units
+        self.to_fiat = self.main_wallet.to_fiat
+
         # NB: Most tk Variables are defined as string vars, so floats can be
         # represented without scientific notation, using the utils function
         # "float_to_str"
@@ -251,30 +256,6 @@ class SendDisplay(ttk.Frame):
         # ignore asserts that check what gui is displaying, and what self.transaction actually is,
         # as the gui entries won't be filled correctly
         self.send_transaction_window(ignore_asserts=True)
-
-    def to_satoshis(self, amount):
-        """ converts amount (in terms of self.main_wallet.display_units) into satoshis"""
-        return int(round(amount * self.main_wallet.unit_factor))
-
-    def to_btc(self, amount):
-        """ converts different units into btc, (needed as price is in terms of btc) """
-        if self.main_wallet.display_units == 'BTC':
-            return amount
-        else:
-            btc = self.to_satoshis(amount) / config.UNIT_FACTORS['BTC']
-            return btc
-
-    def to_wallet_units(self, amount, units):
-        if units not in config.POSSIBLE_BTC_UNITS:
-            raise ValueError(f'Invalid btc unit: {units}')
-
-        return round((config.UNIT_FACTORS[units] * amount) / self.main_wallet.unit_factor,
-                     self.main_wallet.max_decimal_places)
-
-    def to_fiat(self, amount):
-        """ converts amount (display units) into fiat value """
-        fiat_amount = round(float(self.main_wallet.price.get()) * self.to_btc(amount), 2)
-        return fiat_amount
 
     def hide_fee_labels(self):
         self.fee0.grid_remove()

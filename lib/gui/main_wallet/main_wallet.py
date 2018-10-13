@@ -93,6 +93,36 @@ class MainWallet(ttk.Frame):
         self._draw_api_status()
         self._refresh_data()
 
+    def to_satoshis(self, amount):
+        """ converts amount (in terms of self.display_units) into satoshis"""
+        return int(round(amount * self.unit_factor))
+
+    def to_btc(self, amount):
+        """ converts different units into btc, (needed as price is in terms of btc) """
+        if self.display_units == 'BTC':
+            return amount
+        else:
+            btc = self.to_satoshis(amount) / config.UNIT_FACTORS['BTC']
+            return btc
+
+    def to_wallet_units(self, amount, units):
+        if units not in config.POSSIBLE_BTC_UNITS:
+            raise ValueError(f'Invalid btc unit: {units}')
+
+        return round((config.UNIT_FACTORS[units] * amount) / self.unit_factor,
+                     self.max_decimal_places)
+
+    def to_fiat(self, amount):
+        """ converts amount (display units) into fiat value """
+        fiat_amount = round(float(self.price.get()) * self.to_btc(amount), 2)
+        return fiat_amount
+
+    def display_txn(self, txn):
+        """ txn must be a structs.TransactionData object. Info will be displayed about it
+        in top level window
+        """
+        TransactionView(self, txn)
+
     def _draw_menu_bar(self):
         self.menu_bar = tk.Menu(self.root)
 
@@ -353,45 +383,193 @@ class MainWallet(ttk.Frame):
         note_label.grid(row=0, column=0, pady=(10, 0))
 
         master_xpub_label = ttk.Label(frame, text='Master XPUB:', font=self.root.tiny_font)
-        master_xpub_label.grid(row=0, column=0, pady=10, padx=10, sticky='w')
+        master_xpub_label.grid(row=0, column=0, padx=10, sticky='w')
 
         master_xpub = tk.Text(frame, height=2, font=self.root.tiny_font)
         master_xpub.insert(tk.END, _mxpub)
         master_xpub['state'] = tk.DISABLED
-        master_xpub.configure(inactiveselectbackground=master_xpub.cget("selectbackground"))
-        master_xpub.grid(row=0, column=1)
+        master_xpub.grid(row=0, column=1, pady=5)
 
         account_xpub_label = ttk.Label(frame, text='Account XPUB:', font=self.root.tiny_font)
-        account_xpub_label.grid(row=1, column=0, pady=10, padx=10, sticky='w')
+        account_xpub_label.grid(row=1, column=0, padx=10, sticky='w')
 
         account_xpub = tk.Text(frame, height=2, font=self.root.tiny_font)
         account_xpub.insert(tk.END, _axpub)
         account_xpub['state'] = tk.DISABLED
-        account_xpub.configure(inactiveselectbackground=account_xpub.cget("selectbackground"))
-        account_xpub.grid(row=1, column=1)
+        account_xpub.grid(row=1, column=1, pady=5)
 
         path_label = ttk.Label(frame, text='Derivation Path:', font=self.root.tiny_font)
-        path_label.grid(row=2, column=0, pady=5, padx=10, sticky='w')
+        path_label.grid(row=2, column=0, padx=10, sticky='w')
 
         path = tk.Text(frame, height=1, font=self.root.tiny_font)
         path.insert(tk.END, _path)
         path['state'] = tk.DISABLED
-        path.configure(inactiveselectbackground=path.cget("selectbackground"))
-        path.grid(row=2, column=1)
+        path.grid(row=2, column=1, pady=5)
 
         gap_limit_label = ttk.Label(frame, text='Gap Limit:', font=self.root.tiny_font)
-        gap_limit_label.grid(row=3, column=0, pady=5, padx=10, sticky='w')
+        gap_limit_label.grid(row=3, column=0, padx=10, sticky='w')
 
         gap_limit = tk.Text(frame, height=1, font=self.root.tiny_font)
         gap_limit.insert(tk.END, _gap_limit)
         gap_limit['state'] = tk.DISABLED
-        gap_limit.configure(inactiveselectbackground=gap_limit.cget("selectbackground"))
-        gap_limit.grid(row=3, column=1)
+        gap_limit.grid(row=3, column=1, pady=5)
 
         frame.grid(row=1, column=0, sticky='nsew')
 
         ok_button = ttk.Button(toplevel, text='OK', command=toplevel.destroy)
         ok_button.grid(row=2, column=0, pady=(0, 10), columnspan=2)
+
+
+class TransactionView:
+
+    def __init__(self, main_wallet,  txn_data):
+        self.root = main_wallet.root
+        bold_font = self.root.tiny_font + ('bold',)
+        normal_font = self.root.tiny_font
+        self.main_wallet = main_wallet
+
+        self.toplevel = self.root.get_toplevel(main_wallet, resizable=True)
+        self.frame = ttk.Frame(self.toplevel, padding=10)
+
+        # structs.TransactionData object
+        self.txn_data = txn_data
+
+        self.txid_label = ttk.Label(self.frame, text='TXID:', font=bold_font)
+        self.txid_label.grid(row=0, column=0, pady=5, padx=5, sticky='w')
+
+        self.txid = tk.Text(self.frame, height=1, font=normal_font)
+        self.txid.insert(tk.END, self.txn_data.txid)
+        self.txid['state'] = tk.DISABLED
+        self.txid.grid(row=0, column=1)
+
+        self.date_label = ttk.Label(self.frame, text='Date:', font=bold_font)
+        self.date_label.grid(row=1, column=0, pady=5, padx=5, sticky='w')
+
+        self.date = tk.Text(self.frame, height=1, font=normal_font)
+        self.date.insert(tk.END, self.txn_data.date)
+        self.date['state'] = tk.DISABLED
+        self.date.grid(row=1, column=1)
+
+        self.block_height_label = ttk.Label(self.frame, text='Block Height:', font=bold_font)
+        self.block_height_label.grid(row=2, column=0, pady=5, padx=5, sticky='w')
+
+        self.block_height = tk.Text(self.frame, height=1, font=normal_font)
+        self.block_height.insert(tk.END, str(self.txn_data.block_height))
+        self.block_height['state'] = tk.DISABLED
+        self.block_height.grid(row=2, column=1)
+
+        self.confirmations_label = ttk.Label(self.frame, text='Confirmations:', font=bold_font)
+        self.confirmations_label.grid(row=3, column=0, pady=5, padx=5, sticky='w')
+
+        self.confirmations = tk.Text(self.frame, height=1, font=normal_font)
+        self.confirmations.insert(tk.END, str(self.txn_data.confirmations))
+        self.confirmations['state'] = tk.DISABLED
+        self.confirmations.grid(row=3, column=1)
+
+        self.fee_label = ttk.Label(self.frame, text='Fee (total):', font=bold_font)
+        self.fee_label.grid(row=4, column=0, pady=5, padx=5, sticky='w')
+
+        self.fee = tk.Text(self.frame, height=1, font=normal_font)
+        wallet_unit_fee = utils.float_to_str(main_wallet.to_wallet_units(txn_data.fee, "sat"))
+        fee_str = f'{wallet_unit_fee} {main_wallet.display_units}'
+        self.fee.insert(tk.END, fee_str)
+        self.fee['state'] = tk.DISABLED
+        self.fee.grid(row=4, column=1)
+
+        self.sat_byte_label = ttk.Label(self.frame, text='Fee (sat/byte):', font=bold_font)
+        self.sat_byte_label.grid(row=5, column=0, pady=5, padx=5, sticky='w')
+
+        self.sat_byte = tk.Text(self.frame, height=1, font=normal_font)
+        _sat_byte = round(self.txn_data.fee / self.txn_data.vsize, 2)
+        self.sat_byte.insert(tk.END, _sat_byte)
+        self.sat_byte['state'] = tk.DISABLED
+        self.sat_byte.grid(row=5, column=1)
+
+        self.size_label = ttk.Label(self.frame, text='(Virtual) Size:', font=bold_font)
+        self.size_label.grid(row=6, column=0, pady=5, padx=5, sticky='w')
+
+        self.size = tk.Text(self.frame, height=1, font=normal_font)
+        self.size.insert(tk.END, str(self.txn_data.vsize))
+        self.size['state'] = tk.DISABLED
+        self.size.grid(row=6, column=1)
+
+        self.wallet_change_label = ttk.Label(self.frame, text='Wallet Change:', font=bold_font)
+        self.wallet_change_label.grid(row=7, column=0, pady=5, padx=5, sticky='w')
+
+        self.wallet_change = tk.Text(self.frame, height=1, font=normal_font)
+        _wallet_change = main_wallet.to_wallet_units(self.txn_data.wallet_amount, 'sat')
+        str_wallet_change = utils.float_to_str(_wallet_change, show_plus_sign=True)
+        self.wallet_change.insert(tk.END, f'{str_wallet_change} {main_wallet.display_units}')
+        self.wallet_change['state'] = tk.DISABLED
+        self.wallet_change.grid(row=7, column=1)
+
+        self.input_label = ttk.Label(self.frame, text='Inputs:', font=bold_font)
+        self.input_label.grid(row=8, column=0, padx=5, sticky='w')
+
+        # addresses that are in the wallet will be highlighted in the fill_ methods
+        self.input_text = tk.Text(self.frame, height=5, font=normal_font)
+        self.fill_inputs()
+        self.input_text['state'] = tk.DISABLED
+        self.input_text.grid(row=8, column=1, pady=5)
+
+        self.output_label = ttk.Label(self.frame, text='Outputs:', font=bold_font)
+        self.output_label.grid(row=9, column=0, padx=5, sticky='w')
+
+        self.output_text = tk.Text(self.frame, height=5, font=normal_font)
+        self.fill_outputs()
+        self.output_text['state'] = tk.DISABLED
+        self.output_text.grid(row=9, column=1, pady=5)
+
+        self.frame.grid(sticky='nsew')
+
+        self.ok_button = ttk.Button(self.toplevel, text='OK', command=self.toplevel.destroy)
+        self.ok_button.grid(pady=(0, 10))
+
+    def is_wallet_address(self, address):
+        return address in self.root.btc_wallet.all_addresses
+
+    @staticmethod
+    def highlight_strings(text, str_list, colour):
+        # highlights all occurrences of the strings in str_list
+        for s in str_list:
+            # use while True to highlight all occurrences of the string
+            start = '1.0'
+            while True:
+                start_pos = text.search(s, start, stopindex=tk.END)
+
+                if not start_pos:
+                    break
+
+                # adding indexes in Text widget...
+                end_pos = '{}+{}c'.format(start_pos, len(s))
+
+                text.tag_add('highlight', start_pos, end_pos)
+                text.tag_config('highlight', background=colour)
+
+                # start again omitting first char of string so it will find next address
+                start = end_pos
+
+    def fill_inputs(self):
+        wallet_addrs = []
+        for i in self.txn_data.inputs:
+            value = utils.float_to_str(self.main_wallet.to_wallet_units(i['value'], 'sat'))
+            self.input_text.insert(tk.END, f"{i['address']}:    {value} {self.main_wallet.display_units}\n")
+
+            if self.is_wallet_address(i['address']):
+                wallet_addrs.append(i['address'])
+
+        self.highlight_strings(self.input_text, wallet_addrs, colour='spring green')
+
+    def fill_outputs(self):
+        wallet_addrs = []
+        for o in self.txn_data.outputs:
+            value = utils.float_to_str(self.main_wallet.to_wallet_units(o['value'], 'sat'))
+            self.output_text.insert(tk.END, f"{o['address']}:    {value} {self.main_wallet.display_units}\n")
+
+            if self.is_wallet_address(o['address']):
+                wallet_addrs.append(o['address'])
+
+        self.highlight_strings(self.output_text, wallet_addrs, colour='spring green')
 
 
 class WatchOnlyMainWallet(MainWallet):

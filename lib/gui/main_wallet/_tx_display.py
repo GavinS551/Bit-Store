@@ -14,7 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 
 from ...core import config, structs, utils
 
@@ -25,9 +25,10 @@ class TransactionDisplay(ttk.Frame):
         ttk.Frame.__init__(self, master)
         self.main_wallet = main_wallet
 
-        self.tree_view = ttk.Treeview(self, columns=('Date', 'Amount', 'Fiat Amount', 'Balance', 'Fiat Balance')) \
+        self.tree_view = ttk.Treeview(self, columns=('Date', 'Amount', 'Fiat Amount', 'Balance', 'Fiat Balance'),
+                                      selectmode='browse') \
             if config.get_value('GUI_SHOW_FIAT_TX_HISTORY') \
-            else ttk.Treeview(self, columns=('Date', 'Amount', 'Balance'))
+            else ttk.Treeview(self, columns=('Date', 'Amount', 'Balance'), selectmode='browse')
 
         # these headings and columns are always the same order/dimensions
         self.tree_view.heading('#0', text='Confirmations')
@@ -63,6 +64,8 @@ class TransactionDisplay(ttk.Frame):
                 return "break"
         self.tree_view.bind('<Button-1>', handle_click)
 
+        self.tree_view.bind('<Double-1>', self.on_double_click)
+
         self.scrollbar = ttk.Scrollbar(self, command=self.tree_view.yview)
         self.tree_view.configure(yscrollcommand=self.scrollbar.set)
         self.scrollbar.grid(row=0, column=1, sticky='ns')
@@ -70,18 +73,19 @@ class TransactionDisplay(ttk.Frame):
         self._cached_display_data = None
         self._refresh_transactions()
 
-    def _insert_row(self, *args):
+    def _insert_row(self, *args, tags=None):
         if config.get_value('GUI_SHOW_FIAT_TX_HISTORY'):
-            self.tree_view.insert('', tk.END, text=args[0], values=(args[1], args[2], args[3], args[4], args[5]))
+            self.tree_view.insert('', tk.END, text=args[0], values=(args[1], args[2], args[3], args[4], args[5]),
+                                  tags=tags)
         else:
-            self.tree_view.insert('', tk.END, text=args[0], values=(args[1], args[2], args[3]))
+            self.tree_view.insert('', tk.END, text=args[0], values=(args[1], args[2], args[3]), tags=tags)
 
-    def _populate_tree(self, *args):
+    def _populate_tree(self, tx_data, tags):
         # delete all rows in the tree
         self.tree_view.delete(*self.tree_view.get_children())
 
-        for arg in args:
-            self._insert_row(*arg)
+        for tx, tag in zip(tx_data, tags):
+            self._insert_row(*tx, tags=[tag])
 
     def _refresh_transactions(self):
 
@@ -106,10 +110,32 @@ class TransactionDisplay(ttk.Frame):
             display_data = [[t.confirmations, t.date, f'{f2s(t.wallet_amount / f, show_plus_sign=True)}',
                              f'{f2s(transactions.balances[t] / f)}'] for t in sorted_txns]
 
+        # tags containing txid corresponding to txn args in display_data
+        tags = [t.txid for t in sorted_txns]
+
         # only refresh tree_view if data has changed
         if not self._cached_display_data == display_data:
-            self._populate_tree(*display_data)
+            self._populate_tree(display_data, tags)
 
         self._cached_display_data = display_data
 
         self.main_wallet.root.after(self.main_wallet.refresh_data_rate, self._refresh_transactions)
+
+    def on_double_click(self, event):
+
+        # in the event that the treeview is double clicked
+        # but nothing is selected (i.e the top bar is double clicked)
+        try:
+            sel = event.widget.selection()[0]
+        except IndexError:
+            return
+
+        item = self.tree_view.item(sel)
+        txid = item['tags'][0]
+        txn = structs.Transactions.from_list(self.main_wallet.root.btc_wallet.transactions).find_txn_by_id(txid)
+
+        if txn is None:
+            messagebox.showerror('Error', 'Transaction not found!')
+            return
+
+        self.main_wallet.display_txn(txn)

@@ -34,7 +34,6 @@ class ReceiveDisplay(ttk.Frame):
 
         self.address_text = tk.Text(self, height=1, width=40, font=self.main_wallet.root.small_font,
                                     state=tk.DISABLED)
-        self.address_text.configure(inactiveselectbackground=self.address_text.cget("selectbackground"))
         self.address_text.grid(row=1, column=1, padx=20)
 
         self.qr = None

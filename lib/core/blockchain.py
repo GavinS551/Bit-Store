@@ -219,6 +219,7 @@ class BlockchainInfo(_BlockchainBaseClass):
                 transaction['confirmations'] = 0
 
             transaction['fee'] = tx['fee']
+            # vsize should be the same as size for legacy txns
             transaction['vsize'] = math.ceil(tx['weight'] / 4)  # bitcoin core recommends rounding up
 
             ins = []
