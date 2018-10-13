@@ -118,8 +118,8 @@ class _ApiDataUpdaterThread(threading.Thread):
                 self.connection_status = self.ApiConnectionStatus.good
 
                 self.connection_timestamp = time.time()
-
-            except blockchain.BlockchainConnectionError as ex:
+            # TODO IMPLEMENT STANDARD ERROR FOR PRICE TOO. (like BlockchainConnectionError's abstracted exception)
+            except (blockchain.BlockchainConnectionError, requests.RequestException) as ex:
 
                 self.connection_exception = ex
                 self.connection_status = self.ApiConnectionStatus.error
