@@ -42,7 +42,6 @@ class UTXOData(NamedTuple):
 
 class TransactionData(NamedTuple):
     """ NamedTuple for handling transactions in standard format """
-
     txid: str
     date: str
     block_height: int
@@ -118,3 +117,10 @@ class Transactions:
                     addresses.add(o['address'])
 
         return addresses
+
+    def find_txn_by_id(self, txid):
+        for t in self._transactions:
+            if t.txid == txid:
+                return t
+        else:
+            return None
