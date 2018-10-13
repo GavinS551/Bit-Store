@@ -279,9 +279,20 @@ class Wallet:
         if not all(j > 0 for j in outs_amounts.values()) and fee > 0:
             raise ValueError('Outputs must be > 0')
 
+        change_address = self.change_addresses[0]
+
+        # ensure that the change_address chosen is unused
+        # (is possible if transactions are made in quick succession maybe?
+        # it happened during my testing anyway, so here this is.)
+
+        # if there are transactions associated with the change address
+        if structs.Transactions.from_list(self.transactions).find_address_txns(change_address):
+            self.set_used_addresses()
+            change_address = self.change_addresses[0]
+
         txn = tx.Transaction(utxo_data=self.unspent_outputs,
                              outputs_amounts=outs_amounts,
-                             change_address=self.change_addresses[0],
+                             change_address=change_address,
                              fee=fee,
                              is_segwit=self.is_segwit,
                              locktime=locktime,
