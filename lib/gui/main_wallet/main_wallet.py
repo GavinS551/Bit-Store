@@ -428,7 +428,7 @@ class TransactionView:
         normal_font = self.root.tiny_font
         self.main_wallet = main_wallet
 
-        self.toplevel = self.root.get_toplevel(main_wallet, resizable=True)
+        self.toplevel = self.root.get_toplevel(main_wallet)
         self.frame = ttk.Frame(self.toplevel, padding=10)
 
         # structs.TransactionData object
@@ -553,7 +553,7 @@ class TransactionView:
         wallet_addrs = []
         for i in self.txn_data.inputs:
             value = utils.float_to_str(self.main_wallet.to_wallet_units(i['value'], 'sat'))
-            self.input_text.insert(tk.END, f"{i['address']}:    {value} {self.main_wallet.display_units}\n")
+            self.input_text.insert(tk.END, f"{i['address']}    {value} {self.main_wallet.display_units}\n")
 
             if self.is_wallet_address(i['address']):
                 wallet_addrs.append(i['address'])
@@ -564,7 +564,7 @@ class TransactionView:
         wallet_addrs = []
         for o in self.txn_data.outputs:
             value = utils.float_to_str(self.main_wallet.to_wallet_units(o['value'], 'sat'))
-            self.output_text.insert(tk.END, f"{o['address']}:    {value} {self.main_wallet.display_units}\n")
+            self.output_text.insert(tk.END, f"{o['address']}    {value} {self.main_wallet.display_units}\n")
 
             if self.is_wallet_address(o['address']):
                 wallet_addrs.append(o['address'])
