@@ -225,6 +225,8 @@ class Transaction:
 
         self._choose_utxos()
 
+        assert self.change_address not in self.input_addresses
+
         self._txn = self._get_unsigned_txn()
 
         self._remove_dust_change()
