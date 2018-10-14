@@ -263,6 +263,7 @@ class HDWallet:
 
         pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
         pool.map(self._gen_addresses, range(start_idx, self.gap_limit))
+        pool.close()
 
         sorted_addresses = sorted(IterableQueue(self._address_queue), key=itemgetter(0))
         for a in sorted_addresses:
@@ -301,6 +302,7 @@ class HDWallet:
 
         pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
         pool.map(self._gen_wif_keys, range(start_idx, self.gap_limit))
+        pool.close()
 
         sorted_keys = sorted(IterableQueue(self._wif_key_queue), key=itemgetter(0))
         for w in sorted_keys:
