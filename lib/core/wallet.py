@@ -640,6 +640,9 @@ class WatchOnlyWallet(Wallet):
     def get_wif_keys(self, password, addresses):
         raise WatchOnlyWalletError
 
+    def get_address_wif_keys(self, password):
+        raise WatchOnlyWalletError
+
     def change_gap_limit(self, new_gap_limit, password):
         if new_gap_limit < GAP_LIMIT_MIN or new_gap_limit > GAP_LIMIT_MAX:
             raise ValueError(f'Gap limit must be between {GAP_LIMIT_MIN} and {GAP_LIMIT_MAX}')
