@@ -23,6 +23,9 @@ import platform
 import pathlib
 
 
+VERSION = '1.0'
+
+
 if platform.system() == 'Windows':
     DATA_DIR = os.path.join(os.environ['APPDATA'], 'Bit-Store')
 else:

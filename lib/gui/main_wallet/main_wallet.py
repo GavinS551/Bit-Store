@@ -319,11 +319,18 @@ class MainWallet(ttk.Frame):
         python_ver_label = ttk.Label(frame, text='Python Version:', font=self.root.small_font + ('bold',))
         python_ver_label.grid(row=2, column=0, padx=5, pady=5, sticky='w')
 
-        python_ver = ttk.Label(frame, text='.'.join(str(sys.version_info[i]) for i in range(3)))
+        python_ver = ttk.Label(frame, text='.'.join(str(sys.version_info[i]) for i in range(3)),
+                               font=self.root.small_font)
         python_ver.grid(row=2, column=1)
 
+        bitstore_ver_label = ttk.Label(frame, text='Bit-Store Version:', font=self.root.small_font + ('bold',))
+        bitstore_ver_label.grid(row=3, column=0, padx=5, pady=5, sticky='w')
+
+        bitstore_ver = ttk.Label(frame, text=config.VERSION, font=self.root.small_font)
+        bitstore_ver.grid(row=3, column=1)
+
         ok_button = ttk.Button(frame, text='OK', command=toplevel.destroy)
-        ok_button.grid(row=3, column=0, pady=(10, 0), columnspan=2)
+        ok_button.grid(row=4, column=0, pady=(10, 0), columnspan=2)
 
         frame.grid(sticky='nsew')
 

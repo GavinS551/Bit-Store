@@ -223,6 +223,10 @@ class GUIConsole(console.Console):
         
         print(config_vars)
 
+    def do_version(self):
+        """ Prints Bit-Store version """
+        print(config.VERSION)
+
     @catch_incorrect_password
     def do_setgaplimit(self, gap_limit: int, password: str):
 
