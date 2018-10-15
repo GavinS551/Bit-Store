@@ -1,0 +1,9 @@
+An Inno Setup script file that compiles the program into a Windows installer.
+
+How to use it:
+
+- Download the Inno Setup Compiler
+- Package the program in build.py with the ONE_FILE variable set to false
+- A Bit-Store.exe folder should've been created in the bin dir.
+- Compile the script in Inno Setup.
+- You're done! The installer will be in the created ./Output dir.

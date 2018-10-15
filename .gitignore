@@ -5,6 +5,8 @@ __pycache__
 .vscode
 .pytest_cache
 build
+Output
+Bit-Store.exe
 dist
 *.spec
 *.pyi

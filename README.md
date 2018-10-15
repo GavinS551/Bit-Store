@@ -26,13 +26,13 @@ Then the program can be started by running the main.py file in the root of the d
 python main.py
 ```
 
-or alternatively, you can build a standalone executable yourself by typing:
+or alternatively, you can build an executable yourself by typing:
 
 ```
 python build.py
 ```
 
-and the packaged executable will be in the created "dist" directory, and can be moved elsewhere.
+and the packaged executable will be in the created "bin" directory, and can be moved elsewhere.
 
 ## Running Tests
 
