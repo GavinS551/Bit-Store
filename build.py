@@ -18,7 +18,7 @@ import platform
 import sys
 
 
-ONE_FILE = False
+ONE_FILE = True
 DIST_PATH = './bin'
 WORK_PATH = './bin/build'
 
