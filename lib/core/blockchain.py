@@ -79,6 +79,9 @@ class _BlockchainBaseClass:
 
         self.refresh_rate = refresh_rate
 
+        self.last_transactions = None
+        self.blockchain_data_updated = True
+
     @property
     def transactions(self):
         """ format: [ {
@@ -196,6 +199,7 @@ class BlockchainInfo(_BlockchainBaseClass):
 
             self.last_request_time = time.time()
             self.last_requested_data = data
+            self.blockchain_data_updated = True
 
             return data
 
@@ -207,6 +211,9 @@ class BlockchainInfo(_BlockchainBaseClass):
     @property
     def transactions(self):
         """ returns all txns associated with the entered addresses in standard format"""
+        if not self.blockchain_data_updated and self.last_transactions is not None:
+            return self.last_transactions
+
         data = self._blockchain_data
         transactions = []
 
@@ -267,6 +274,7 @@ class BlockchainInfo(_BlockchainBaseClass):
 
             transactions.append(transaction)
 
+        self.last_transactions = transactions
         return transactions
 
 
@@ -287,7 +295,7 @@ class BlockExplorer(_BlockchainBaseClass):
                 else:
                     url += address
 
-            url += '/txs'
+            url += '/txs?from=0&to=50'
 
             try:
                 request = requests.get(url, timeout=self.timeout)
@@ -297,18 +305,28 @@ class BlockExplorer(_BlockchainBaseClass):
             except (requests.RequestException, json.JSONDecodeError) as ex:
                 raise BlockchainConnectionError from ex
 
+            if data['totalItems'] > 50:
+                raise RuntimeError('Error: More than 50 transactions detected in this wallet. '
+                                   'Support for >50 txns is not yet implemented for the '
+                                   'blockexplorer.com API. Please use another API source.')
+
             self.last_request_time = time.time()
             self.last_requested_data = data
+            self.blockchain_data_updated = True
 
             return data
 
         else:
             # if self.refresh_rate seconds haven't passed since last api call,
             # the last data received will be returned
+            self.blockchain_data_updated = False
             return self.last_requested_data
 
     @property
     def transactions(self):
+        if not self.blockchain_data_updated and self.last_transactions is not None:
+            return self.last_transactions
+
         data = self._blockchain_data
         transactions = []
 
@@ -316,11 +334,11 @@ class BlockExplorer(_BlockchainBaseClass):
         btc_to_sat = lambda x: int(x * 1e8)
 
         for tx in data['items']:
-            transaction = {}
+            transaction = dict()
 
             transaction['txid'] = tx['txid']
 
-            transaction['data'] = utils.datetime_str_from_timestamp(tx['time'],
+            transaction['date'] = utils.datetime_str_from_timestamp(tx['time'],
                                                                     config.DATETIME_FORMAT,
                                                                     utc=not config.get_value('USE_LOCALTIME'))
 
@@ -339,10 +357,14 @@ class BlockExplorer(_BlockchainBaseClass):
 
             ins = []
             for input_ in tx['vin']:
-                i = {}
+                i = dict()
 
                 i['value'] = input_['valueSat']
-                i['address'] = input_['addr']
+                # addr will be None if it is a bech32 address
+                if input_['addr'] is not None:
+                    i['address'] = input_['addr']
+                else:
+                    i['address'] = 'blockexplorer.com: unparsable address'
                 i['n'] = input_['n']
 
                 ins.append(i)
@@ -351,10 +373,15 @@ class BlockExplorer(_BlockchainBaseClass):
 
             outs = []
             for output in tx['vout']:
-                o = {}
+                o = dict()
 
                 o['value'] = btc_to_sat(float(output['value']))
-                o['address'] = output['scriptPubKey']['addresses'][0]
+                # addresses wont be a key if they are bech32 addresses
+                try:
+                    o['address'] = output['scriptPubKey']['addresses'][0]
+                except KeyError:
+                    o['address'] = 'blockexplorer.com: unparsable address'
+
                 o['n'] = output['n']
                 o['spent'] = not all([s is None for s in (output['spentTxId'],
                                                           output['spentIndex'],
@@ -369,4 +396,5 @@ class BlockExplorer(_BlockchainBaseClass):
 
             transactions.append(transaction)
 
+        self.last_transactions = transactions
         return transactions
