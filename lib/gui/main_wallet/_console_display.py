@@ -249,6 +249,30 @@ class GUIConsole(console.Console):
         else:
             print(f'Gap limit successfully changed to {gap_limit}')
 
+    def _wallet_properties(self):
+        """ gets all properties in wallet instance, ignoring ones that start with
+        an underscore, as they should be considered implementation details,
+        not part of public interface
+        """
+        return [p for p in dir(self.root.btc_wallet.__class__)
+                if isinstance(getattr(self.root.btc_wallet.__class__, p), property)
+                and not p.startswith('_')]
+
+    def do_getwalletdata(self, name: str):
+        """ Prints the value of the wallet property <name> """
+        if name not in self._wallet_properties():
+            print(f'Error: {name} is not a valid wallet property. Type "help getwalletdata" '
+                  f'to see a list of wallet properties')
+            return
+
+        val = getattr(self.root.btc_wallet, name)
+        print(val)
+
+    def help_getwalletdata(self):
+        print('Prints the value of the wallet property <name>.')
+        print('Wallet properties:\n')
+        print(self._wallet_properties())
+
     def do_exit(self):
         """ Exit program """
         self.root.destroy()

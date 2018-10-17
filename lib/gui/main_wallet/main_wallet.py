@@ -492,7 +492,7 @@ class TransactionView:
         self.sat_byte['state'] = tk.DISABLED
         self.sat_byte.grid(row=5, column=1)
 
-        self.size_label = ttk.Label(self.frame, text='(Virtual) Size:', font=bold_font)
+        self.size_label = ttk.Label(self.frame, text='Size (bytes):', font=bold_font)
         self.size_label.grid(row=6, column=0, pady=5, padx=5, sticky='w')
 
         self.size = tk.Text(self.frame, height=1, font=normal_font)
