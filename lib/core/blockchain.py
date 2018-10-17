@@ -42,15 +42,14 @@ def broadcast_transaction(hex_transaction):
 def blockchain_api(addresses, refresh_rate, source, timeout=10):
 
     sources = {
-        'blockchain.info': (BlockchainInfo, 'https://blockchain.info/multiaddr?active='),
-        'Electrum': (Electrum, None)
+        'blockchain.info': BlockchainInfo,
+        'blockexplorer.com': BlockExplorer
     }
 
     if source.lower() not in sources:
         raise NotImplementedError(f'{source} is an invalid source')
 
-    source_cls = sources[source][0]
-    source_url = sources[source][1]
+    source_cls = sources[source]
 
     if not isinstance(addresses, list):
         raise TypeError('Address(es) must be in a list!')
@@ -58,7 +57,7 @@ def blockchain_api(addresses, refresh_rate, source, timeout=10):
     if not utils.validate_addresses(addresses, allow_bech32=source_cls.bech32_support):
         raise ValueError('Invalid Address entered')
 
-    return source_cls(addresses, refresh_rate, source_url, timeout=timeout)
+    return source_cls(addresses, refresh_rate, timeout=timeout)
 
 
 class _BlockchainBaseClass:
@@ -70,10 +69,9 @@ class _BlockchainBaseClass:
 
     bech32_support = None
 
-    def __init__(self, addresses, refresh_rate, url, timeout=10):
+    def __init__(self, addresses, refresh_rate, timeout=10):
 
         self.addresses = addresses
-        self.url = url
         self.timeout = timeout
 
         self.last_request_time = 0
@@ -156,6 +154,23 @@ class _BlockchainBaseClass:
 
         return [balance, unconfirmed_balance]
 
+    def txn_wallet_amount(self, transaction):
+        """ finding the wallet_amount, + or -, for the txn (wallet being all
+        addresses in self.addresses) i.e the overall change in wallet funds
+        after the txn.
+        """
+        # transaction in standard format shown in transactions property docstring
+        # (minus wallet_amount of course.)
+        amount = 0
+        for i in transaction['inputs']:
+            if i['address'] in self.addresses:
+                amount -= i['value']
+        for o in transaction['outputs']:
+            if o['address'] in self.addresses:
+                amount += o['value']
+
+        return amount
+
 
 class BlockchainInfo(_BlockchainBaseClass):
     bech32_support = False
@@ -165,7 +180,7 @@ class BlockchainInfo(_BlockchainBaseClass):
         # leaves self.refresh rate seconds between api requests
         if not time.time() - self.last_request_time < self.refresh_rate:
 
-            url = self.url
+            url = 'https://blockchain.info/multiaddr?active='
 
             for address in self.addresses:
                 url += f'{address}|'
@@ -248,22 +263,110 @@ class BlockchainInfo(_BlockchainBaseClass):
 
             transaction['outputs'] = outs
 
-            # finding the wallet_amount, + or -, for the txn (wallet being all addresses passed into class)
-            # i.e the overall change in wallet funds after the txn.
-            amount = 0
-            for i in ins:
-                if i['address'] in self.addresses:
-                    amount -= i['value']
-            for o in outs:
-                if o['address'] in self.addresses:
-                    amount += o['value']
-
-            transaction['wallet_amount'] = amount
+            transaction['wallet_amount'] = self.txn_wallet_amount(transaction)
 
             transactions.append(transaction)
 
         return transactions
 
 
-class Electrum(_BlockchainBaseClass):
-    bech32_support = True
+class BlockExplorer(_BlockchainBaseClass):
+    bech32_support = False
+
+    @property
+    def _blockchain_data(self):
+        # leaves self.refresh rate seconds between api requests
+        if not time.time() - self.last_request_time < self.refresh_rate:
+
+            url = 'https://blockexplorer.com/api/addrs/'
+
+            for address in self.addresses:
+                # for trailing comma
+                if address != self.addresses[-1]:
+                    url += f'{address},'
+                else:
+                    url += address
+
+            url += '/txs'
+
+            try:
+                request = requests.get(url, timeout=self.timeout)
+                data = request.json()
+                request.raise_for_status()
+
+            except (requests.RequestException, json.JSONDecodeError) as ex:
+                raise BlockchainConnectionError from ex
+
+            self.last_request_time = time.time()
+            self.last_requested_data = data
+
+            return data
+
+        else:
+            # if self.refresh_rate seconds haven't passed since last api call,
+            # the last data received will be returned
+            return self.last_requested_data
+
+    @property
+    def transactions(self):
+        data = self._blockchain_data
+        transactions = []
+
+        # some of blockexplorer's values are in BTC...
+        btc_to_sat = lambda x: int(x * 1e8)
+
+        for tx in data['items']:
+            transaction = {}
+
+            transaction['txid'] = tx['txid']
+
+            transaction['data'] = utils.datetime_str_from_timestamp(tx['time'],
+                                                                    config.DATETIME_FORMAT,
+                                                                    utc=not config.get_value('USE_LOCALTIME'))
+
+            # unconfirmed txns have block height of -1
+            if tx['blockheight'] < 0:
+                transaction['block_height'] = None
+            else:
+                transaction['block_height'] = tx['blockheight']
+
+            transaction['confirmations'] = tx['confirmations']
+
+            transaction['fee'] = btc_to_sat(tx['fees'])
+
+            # FIXME: this is only size, blockexplorer doesn't provide txn weight
+            transaction['vsize'] = tx['size']
+
+            ins = []
+            for input_ in tx['vin']:
+                i = {}
+
+                i['value'] = input_['valueSat']
+                i['address'] = input_['addr']
+                i['n'] = input_['n']
+
+                ins.append(i)
+
+            transaction['inputs'] = ins
+
+            outs = []
+            for output in tx['vout']:
+                o = {}
+
+                o['value'] = btc_to_sat(float(output['value']))
+                o['address'] = output['scriptPubKey']['addresses'][0]
+                o['n'] = output['n']
+                o['spent'] = not all([s is None for s in (output['spentTxId'],
+                                                          output['spentIndex'],
+                                                          output['spentHeight'])])
+                o['script'] = output['scriptPubKey']['hex']
+
+                outs.append(o)
+
+            transaction['outputs'] = outs
+
+            transaction['wallet_amount'] = self.txn_wallet_amount(transaction)
+
+            transactions.append(transaction)
+
+        return transactions

@@ -29,7 +29,7 @@ from . import blockchain, config, data, tx, price, hd, structs, utils
 from ..exceptions.wallet_exceptions import *
 
 
-API_REFRESH_RATE = 5
+API_REFRESH_RATE = 10
 API_REFRESH_RATE_LOWER = 5
 
 GAP_LIMIT_MIN = 20
@@ -120,7 +120,6 @@ class _ApiDataUpdaterThread(threading.Thread):
                 self.connection_timestamp = time.time()
             # TODO IMPLEMENT STANDARD ERROR FOR PRICE TOO. (like BlockchainConnectionError's abstracted exception)
             except (blockchain.BlockchainConnectionError, requests.RequestException) as ex:
-
                 self.connection_exception = ex
                 self.connection_status = self.ApiConnectionStatus.error
 
