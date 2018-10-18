@@ -155,6 +155,15 @@ class Console(metaclass=ConsoleArgErrorsMeta):
     def output(self):
         return self._output.getvalue()
 
+    def print(self, val):
+        self._output.write(str(val) + '\n')
+
+    @property
+    def commands(self):
+        """ list of possible commands """
+        return [m[len('do_'):] for m in dir(self)if m.startswith('do_')
+                and callable(getattr(self, m))]
+
     def clear_output(self):
         self._output.seek(0)
         self._output.truncate()
@@ -174,8 +183,7 @@ class Console(metaclass=ConsoleArgErrorsMeta):
                                          f"{list(inspect.signature(getattr(self, f'do_{method}')).parameters.keys())}> "
                                          f"{inspect.getdoc(getattr(self, f'do_{method}'))}")
 
-        do_methods = {m[len('do_'):] for m in dir(self) if callable(getattr(self, m))
-                      and m.startswith('do_')}
+        do_methods = set(self.commands)
         help_methods = {m[len('help_'):] for m in dir(self) if callable(getattr(self, m))
                         and m.startswith('help_')}
 
@@ -279,6 +287,20 @@ class Console(metaclass=ConsoleArgErrorsMeta):
             except Exception:
                 print(traceback.format_exc())
 
+    def command_complete(self, cmd_str):
+        """ returns a list of commands where <cmd_str> is the beginning
+        of those commands (for tab-completion implementation)
+        """
+        if not cmd_str:
+            return self.commands
+
+        matches = []
+        for cmd in self.commands:
+            if cmd_str == cmd[:len(cmd_str)]:
+                matches.append(cmd)
+
+        return matches
+
     # if a cmd_name is passed in, a specific self.help_function will be called
     def do_help(self, cmd=None, _default=None):
         """ Displays all possible commands. """
@@ -295,4 +317,4 @@ class Console(metaclass=ConsoleArgErrorsMeta):
         else:
             print('Possible Commands:')
             print('(Use "help <command>" for specific information)\n')
-            print('\n'.join([d[len('do_'):] for d in dir(self) if callable(getattr(self, d)) and d.startswith('do_')]))
+            print('\n'.join(self.commands))

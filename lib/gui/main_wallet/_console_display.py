@@ -316,6 +316,11 @@ class ConsoleDisplay(ttk.Frame):
         self._cmd_history = _CMDHistory(self.console.command_history)
         self.console_entry.bind('<Up>', lambda x: self._set_historic_command(x, previous=True))
         self.console_entry.bind('<Down>', lambda x: self._set_historic_command(x, previous=False))
+        # and tab button
+        self.console_entry.bind('<Tab>', self._tab_complete)
+
+        self._tab_no_complete = False
+        self._last_entry = ''
 
     @utils.threaded(daemon=True, name='GUI_CONSOLE_THREAD')
     def execute_command(self, event):
@@ -349,3 +354,33 @@ class ConsoleDisplay(ttk.Frame):
             event.widget.insert(tk.END, self._cmd_history.previous())
         else:
             event.widget.insert(tk.END, self._cmd_history.next())
+
+    def _tab_complete(self, event):
+        entry = event.widget.get()
+        if not entry:
+            return 'break'
+
+        matches = self.console.command_complete(entry)
+        if not matches:
+            return 'break'
+
+        if len(matches) == 1:
+            cmd = matches[0]
+            event.widget.delete(0, tk.END)
+            event.widget.insert(tk.END, cmd + ' ')
+            self._tab_no_complete = False
+            self._last_entry = cmd
+
+        elif not self._tab_no_complete:
+            self._last_entry = entry
+            self._tab_no_complete = True
+
+        elif self._tab_no_complete and self._last_entry == entry:
+            q_matches = [f'"{m}"' for m in matches]
+            s = f'Matches: {", ".join(q_matches)}'
+            self.console.print(s)
+
+        elif self._last_entry != entry:
+            self._last_entry = entry
+
+        return 'break'
