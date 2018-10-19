@@ -32,7 +32,7 @@ or alternatively, you can build an executable yourself by typing:
 python build.py
 ```
 
-and the packaged executable will be in the created "bin" directory, and can be moved elsewhere.
+and the packaged executable will be in the "bin" directory, and can be moved elsewhere.
 
 ## Running Tests
 
