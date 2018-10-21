@@ -60,6 +60,65 @@ def blockchain_api(addresses, refresh_rate, source, timeout=10):
     return source_cls(addresses, refresh_rate, timeout=timeout)
 
 
+class EstimateFee:
+    """ api interfaces should return a tuple of low, medium and high priority fees, in sat/byte.
+     they should also update cached api data every self._refresh_rate seconds.
+
+     raises BlockchainConnectionError if it cannot reach the specified source.
+    """
+
+    def __init__(self, source):
+        self.sources = {
+            'bitcoinfees.earn': self._bitcoinfees_earn
+        }
+
+        if source not in self.sources:
+            raise NotImplementedError(f'{source} is not an implemented source')
+
+        self.source_method = self.sources[source]
+
+        # unix timestamp of last api request, to maintain 60 second refresh
+        self._last_request = 0
+        self._cached_fee_info = None
+        self._refresh_rate = 60  # seconds
+
+        self.timeout = 10
+
+    @property
+    def low_priority(self):
+        return self.source_method()[0]
+
+    @property
+    def med_priority(self):
+        return self.source_method()[1]
+
+    @property
+    def high_priority(self):
+        return self.source_method()[2]
+
+    def _bitcoinfees_earn(self):
+        """ interface for bitcoinfees.earn api """
+        if time.time() - self._last_request > self._refresh_rate or self._cached_fee_info is None:
+            url = 'https://bitcoinfees.earn.com/api/v1/fees/recommended'
+
+            try:
+                request = requests.get(url, timeout=self.timeout)
+                data = request.json()
+
+            except (requests.RequestException, json.JSONDecodeError) as ex:
+                raise BlockchainConnectionError from ex
+
+            fee_info = (data['hourFee'], data['halfHourFee'], data['fastestFee'])
+
+            self._cached_fee_info = fee_info
+            self._last_request = time.time()
+
+            return fee_info
+
+        else:
+            return self._cached_fee_info
+
+
 class _BlockchainBaseClass:
     """ subclasses need to overwrite transactions property and make
      sure it returns transactions in data format seen in doc-string of the property
@@ -181,7 +240,7 @@ class BlockchainInfo(_BlockchainBaseClass):
     @property
     def _blockchain_data(self):
         # leaves self.refresh rate seconds between api requests
-        if not time.time() - self.last_request_time < self.refresh_rate:
+        if time.time() - self.last_request_time > self.refresh_rate:
 
             url = 'https://blockchain.info/multiaddr?active='
 
@@ -284,7 +343,7 @@ class BlockExplorer(_BlockchainBaseClass):
     @property
     def _blockchain_data(self):
         # leaves self.refresh rate seconds between api requests
-        if not time.time() - self.last_request_time < self.refresh_rate:
+        if time.time() - self.last_request_time > self.refresh_rate:
 
             url = 'https://blockexplorer.com/api/addrs/'
 

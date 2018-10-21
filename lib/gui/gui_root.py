@@ -190,6 +190,7 @@ class _Settings(tk.Toplevel):
         self.spend_utxos_individually = tk.BooleanVar(value=config.get_value('SPEND_UTXOS_INDIVIDUALLY'))
         self.blockchain_api = tk.StringVar(value=config.get_value('BLOCKCHAIN_API_SOURCE'))
         self.price_api = tk.StringVar(value=config.get_value('PRICE_API_SOURCE'))
+        self.fee_api = tk.StringVar(value=config.get_value('FEE_ESTIMATE_SOURCE'))
         self.fiat_unit = tk.StringVar(value=config.get_value('FIAT'))
         self.btc_units = tk.StringVar(value=config.get_value('BTC_UNITS'))
         self.show_fiat_history = tk.BooleanVar(value=config.get_value('GUI_SHOW_FIAT_TX_HISTORY'))
@@ -200,6 +201,7 @@ class _Settings(tk.Toplevel):
             'SPEND_UTXOS_INDIVIDUALLY': self.spend_utxos_individually,
             'BLOCKCHAIN_API_SOURCE': self.blockchain_api,
             'PRICE_API_SOURCE': self.price_api,
+            'FEE_ESTIMATE_SOURCE': self.fee_api,
             'FIAT': self.fiat_unit,
             'BTC_UNITS': self.btc_units,
             'GUI_SHOW_FIAT_TX_HISTORY': self.show_fiat_history
@@ -281,18 +283,23 @@ class _Settings(tk.Toplevel):
         blockchain_api_label = ttk.Label(frame, text='Blockchain API:', font=self.root.tiny_font)
         blockchain_api_label.grid(row=0, column=0, padx=padx, pady=10, sticky='w')
 
-        blockchain_api_options = ttk.Combobox(frame, textvariable=self.blockchain_api,
-                                              state='readonly', value=config.POSSIBLE_BLOCKCHAIN_API_SOURCES,
-                                              width=15)
+        blockchain_api_options = ttk.Combobox(frame, textvariable=self.blockchain_api, state='readonly',
+                                              value=config.POSSIBLE_BLOCKCHAIN_API_SOURCES, width=15)
         blockchain_api_options.grid(row=0, column=1, sticky='e')
 
         price_api_label = ttk.Label(frame, text='Price API:', font=self.root.tiny_font)
         price_api_label.grid(row=1, column=0, padx=padx, pady=10, sticky='w')
 
-        price_api_options = ttk.Combobox(frame, textvariable=self.price_api,
-                                         state='readonly', value=config.POSSIBLE_PRICE_API_SOURCES,
-                                         width=15)
+        price_api_options = ttk.Combobox(frame, textvariable=self.price_api, state='readonly',
+                                         value=config.POSSIBLE_PRICE_API_SOURCES, width=15)
         price_api_options.grid(row=1, column=1, sticky='e')
+
+        fee_api_label = ttk.Label(frame, text='Fee API:', font=self.root.tiny_font)
+        fee_api_label.grid(row=2, column=0, padx=padx, pady=10, sticky='w')
+
+        fee_api_options = ttk.Combobox(frame, textvariable=self.fee_api, state='readonly',
+                                       value=config.POSSIBLE_FEE_ESTIMATE_SOURCES, width=15)
+        fee_api_options.grid(row=2, column=1, sticky='e')
 
     def draw_gui_settings(self):
         frame = self.gui_settings

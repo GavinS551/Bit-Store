@@ -44,29 +44,22 @@ LOGGER_DIR = os.path.join(DATA_DIR, 'logs')
 DEFAULT_CONFIG = {
 
     'PRICE_API_SOURCE': 'coinmarketcap',
-
     'BLOCKCHAIN_API_SOURCE': 'blockchain.info',
-
+    'FEE_ESTIMATE_SOURCE': 'bitcoinfees.earn',
     'FIAT': 'USD',
-
     'BTC_UNITS': 'BTC',
-
     'FONT': 'verdana',
-
     'SPEND_UNCONFIRMED_UTXOS': False,
-
     'SPEND_UTXOS_INDIVIDUALLY': False,
-
     'MAX_LOG_FILES_STORED': 10,
-
     'GUI_SHOW_FIAT_TX_HISTORY': True,
-
     'USE_LOCALTIME': True
 
 }
 
 
 STANDARD_DATA_FORMAT = {
+
     'MNEMONIC': str,
     'XPRIV': str,
     'XPUB': str,
@@ -85,6 +78,7 @@ STANDARD_DATA_FORMAT = {
     'PASSWORD_HASH': str,
     'ADDRESS_WIF_KEYS': dict,
     'DEFAULT_ADDRESSES': dict
+
 }
 
 
@@ -131,6 +125,9 @@ POSSIBLE_BLOCKCHAIN_API_SOURCES = ['blockchain.info', 'blockexplorer.com']
 
 
 POSSIBLE_PRICE_API_SOURCES = ['coinmarketcap']
+
+
+POSSIBLE_FEE_ESTIMATE_SOURCES = ['bitcoinfees.earn']
 
 
 # standard format for datetime stings
