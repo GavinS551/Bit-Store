@@ -64,7 +64,7 @@ class DataStore(Crypto):
 
             return new_cls
 
-    def __init__(self, file_path, password, data_format=None, sensitive_keys=None):
+    def __init__(self, file_path, password, data_format, sensitive_keys=None):
         """
         :param file_path: path to data file
         :param password: password to encrypt data with
@@ -74,7 +74,10 @@ class DataStore(Crypto):
         super().__init__(password)
         self.file_path = file_path
 
-        self.data_format = data_format if data_format is not None else {}
+        if not data_format:
+            raise ValueError('Data format must be specified')
+
+        self.data_format = data_format
 
         # json serialised data_format to be dumped to new file
         # (types are instantiated in the template)
@@ -106,7 +109,7 @@ class DataStore(Crypto):
 
             except json.decoder.JSONDecodeError:
                 d.seek(0)
-                raise InvalidFileFormat(f'Invalid JSON: {self.decrypt(d.read())}')
+                raise InvalidFileFormat(f'Invalid JSON: wallet data file is invalid JSON')
 
         # data will be stored in memory and accessed from there after first read
         # but data will constantly be written to file as it updates
@@ -116,6 +119,12 @@ class DataStore(Crypto):
         # this class i.e Wallet class for sensitive information
         if not self.get_value('PASSWORD_HASH'):
             self.write_value(PASSWORD_HASH=hashlib.sha256(password.encode('utf-8')).hexdigest())
+
+        # if there are any new keys in the data format that aren't present in the file, create them
+        for k in self.data_format:
+            if k not in self._data:
+                self._data[k] = self.data_format[k]()
+        self._write_to_file(self._data)
 
     def change_password(self, new_password):
         # make new fernet key from password
