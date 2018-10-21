@@ -19,7 +19,7 @@ AppVersion={#MyAppVersion}
 DefaultDirName={pf}\{#MyAppName}
 DisableProgramGroupPage=yes
 LicenseFile={#License}
-OutputBaseFilename=Bit-Store-1.0-setup
+OutputBaseFilename=Bit-Store-setup
 Compression=lzma
 SolidCompression=yes
 
