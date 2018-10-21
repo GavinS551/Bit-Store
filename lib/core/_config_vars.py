@@ -23,7 +23,7 @@ import platform
 import pathlib
 
 
-VERSION = '1.0'
+VERSION = '1.1'
 
 
 if platform.system() == 'Windows':
