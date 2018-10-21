@@ -56,6 +56,7 @@ class MainWallet(ttk.Frame):
         self.price = tk.DoubleVar()
         self.fiat_wallet_balance = tk.DoubleVar()
         self.unconfirmed_fiat_wallet_balance = tk.DoubleVar()
+        self.estimated_fees = (tk.IntVar(), tk.IntVar(), tk.IntVar())  # low, medium, high priority
 
         self.next_receiving_address = tk.StringVar()
 
@@ -272,6 +273,10 @@ class MainWallet(ttk.Frame):
         self.price.set(self.root.btc_wallet.price)
         self.fiat_wallet_balance.set(self.root.btc_wallet.fiat_wallet_balance)
         self.unconfirmed_fiat_wallet_balance.set(self.root.btc_wallet.unconfirmed_fiat_wallet_balance)
+
+        # setting low, med, high priority fees
+        for i, var in enumerate(self.estimated_fees):
+            var.set(self.root.btc_wallet.estimated_fees[i])
 
         self.next_receiving_address.set(self.root.btc_wallet.receiving_addresses[0])
 

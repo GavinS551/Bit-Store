@@ -73,6 +73,7 @@ STANDARD_DATA_FORMAT = {
     'ADDRESS_BALS': dict,
     'TXNS': list,
     'PRICE': float,
+    'ESTIMATED_FEES': list,
     'WALLET_BAL': list,
     'UNSPENT_OUTS': list,
     'PASSWORD_HASH': str,

@@ -75,7 +75,7 @@ class EstimateFee:
         if source not in self.sources:
             raise NotImplementedError(f'{source} is not an implemented source')
 
-        self.source_method = self.sources[source]
+        self._source_method = self.sources[source]
 
         # unix timestamp of last api request, to maintain 60 second refresh
         self._last_request = 0
@@ -86,15 +86,19 @@ class EstimateFee:
 
     @property
     def low_priority(self):
-        return self.source_method()[0]
+        return self._source_method()[0]
 
     @property
     def med_priority(self):
-        return self.source_method()[1]
+        return self._source_method()[1]
 
     @property
     def high_priority(self):
-        return self.source_method()[2]
+        return self._source_method()[2]
+
+    @property
+    def all_priorities(self):
+        return self._source_method()
 
     def _bitcoinfees_earn(self):
         """ interface for bitcoinfees.earn api """

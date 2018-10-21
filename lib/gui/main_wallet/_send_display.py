@@ -26,7 +26,6 @@ from ...core.tx import InsufficientFundsError
 
 
 class SendDisplay(ttk.Frame):
-    """ beware of spaghetti code """
 
     def __init__(self, master, main_wallet):
         ttk.Frame.__init__(self, master, padding=5)
@@ -162,6 +161,36 @@ class SendDisplay(ttk.Frame):
         clear_button.grid(row=0, column=4, pady=20, padx=10)
 
         button_frame.grid(row=4, column=0, columnspan=3, sticky='w', padx=(20, 0))
+
+        # Estimated fees section
+        est_fees_frame = ttk.Frame(self)
+
+        est_fees_label = ttk.Label(est_fees_frame, text='Est. Fee (sat/byte):',
+                                   font=self.main_wallet.root.tiny_font + ('bold',))
+        est_fees_label.grid(row=0, column=0, padx=5, pady=(20, 5), sticky='w', columnspan=2)
+
+        low_fee_label = ttk.Label(est_fees_frame, text='Low Priority:', font=self.main_wallet.root.small_font)
+        low_fee_label.grid(row=1, column=0, padx=5, sticky='w')
+
+        low_fee = ttk.Label(est_fees_frame, textvariable=self.main_wallet.estimated_fees[0],
+                            font=self.main_wallet.root.tiny_font)
+        low_fee.grid(row=1, column=1, sticky='e')
+
+        med_fee_label = ttk.Label(est_fees_frame, text='Medium Priority:', font=self.main_wallet.root.small_font)
+        med_fee_label.grid(row=2, column=0, padx=5, sticky='w')
+
+        med_fee = ttk.Label(est_fees_frame, textvariable=self.main_wallet.estimated_fees[1],
+                            font=self.main_wallet.root.tiny_font)
+        med_fee.grid(row=2, column=1, sticky='e')
+
+        high_fee_label = ttk.Label(est_fees_frame, text='High Priority:', font=self.main_wallet.root.small_font)
+        high_fee_label.grid(row=3, column=0, padx=5, sticky='w')
+
+        high_fee = ttk.Label(est_fees_frame, textvariable=self.main_wallet.estimated_fees[2],
+                             font=self.main_wallet.root.tiny_font)
+        high_fee.grid(row=3, column=1, sticky='e')
+
+        est_fees_frame.grid(row=0, column=4, rowspan=4)
 
     def on_send(self):
         if not all((self.amount_btc_entry.get(), self.fee_entry.get(), self.address_entry.get())):

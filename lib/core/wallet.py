@@ -87,6 +87,8 @@ class _ApiDataUpdaterThread(threading.Thread):
         # blockchain api object
         self.bd = None
 
+        self.estimate_fees = blockchain.EstimateFee(source=config.get_value('FEE_ESTIMATE_SOURCE'))
+
     def run(self):
 
         def _update_api_data(data_keys):
@@ -112,7 +114,8 @@ class _ApiDataUpdaterThread(threading.Thread):
                     'TXNS': self.bd.transactions,
                     'ADDRESS_BALS': self.bd.address_balances,
                     'PRICE': price_data.price,
-                    'UNSPENT_OUTS': self.bd.unspent_outputs
+                    'UNSPENT_OUTS': self.bd.unspent_outputs,
+                    'ESTIMATED_FEES': list(self.estimate_fees.all_priorities)
                 }
                 self.connection_exception = None
                 self.connection_status = self.ApiConnectionStatus.good
@@ -568,6 +571,19 @@ class Wallet:
     @property
     def unspent_outputs(self):
         return self.data_store.get_value('UNSPENT_OUTS')
+
+    @property
+    def estimated_fees(self):
+        """ List of low, medium and high priority fees. """
+        fees = self.data_store.get_value('ESTIMATED_FEES')
+
+        # for compatibility with functions that expect three indexes, which won't be present
+        # before the first api request. It will be initialised in data_store as an empty list.
+        # (see wallet balance properties above for the same index problems)
+        if len(fees) < 3:
+            return -1, -1, -1
+        else:
+            return fees
 
     # attributes below require a password to return
 
