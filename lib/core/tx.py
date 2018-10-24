@@ -13,13 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import base58
 import btcpy
 from btcpy.structs.transaction import MutableTransaction, MutableSegWitTransaction, TxIn, TxOut, Locktime, Sequence
-from btcpy.structs.script import P2pkhScript, P2shScript, Script, P2wpkhV0Script, ScriptSig, P2wshV0Script
+from btcpy.structs.script import Script, P2wpkhV0Script, ScriptSig
 from btcpy.structs.sig import P2pkhSolver, P2shSolver, P2wpkhV0Solver
 from btcpy.structs.crypto import PrivateKey
-from btcpy.structs.address import P2pkhAddress, P2wpkhAddress, P2shAddress, P2wshAddress
+from btcpy.structs.address import Address
 
 from .structs import UTXOData
 
@@ -202,7 +201,7 @@ class Transaction:
 
         self.output_contains_dust = False
 
-        for k, v in self.outputs_amounts.items():
+        for _, v in self.outputs_amounts.items():
             if v <= DUST_THRESHOLD:
                 self.output_contains_dust = True
 
@@ -256,29 +255,11 @@ class Transaction:
 
     @staticmethod
     def get_script_pubkey(address):
-        if address.startswith('bc') or address.startswith('tb'):
-            if address.startswith('bc'):
-                return P2wpkhV0Script(P2wpkhAddress.from_string(address))
+        try:
+            return btcpy.structs.address.Address.from_string(address).to_script()
 
-            elif address.startswith('tb'):
-                return P2wshV0Script(P2wshAddress.from_string(address))
-
-            else:
-                raise ValueError('Couldn\'t generate a scriptPubKey for entered address')
-
-        else:
-            addr_bytes = base58.b58decode_check(address)
-
-            # P2PKH addresses have version byte 0x00 ('1' prefix when encoded)
-            if addr_bytes[0] == 0x00:
-                return P2pkhScript(P2pkhAddress.from_string(address))
-
-            # and P2SH addresses has version byte 0x05 ('3' prefix when encoded)
-            elif addr_bytes[0] == 0x05:
-                return P2shScript(P2shAddress.from_string(address))
-
-            else:
-                raise ValueError('Couldn\'t generate a scriptPubKey for entered address')
+        except btcpy.structs.address.InvalidAddress as ex:
+            raise ValueError('Couldn\'t generate a scriptPubKey for entered address') from ex
 
     def _choose_utxos(self):
         output_amount = sum([v for v in self.outputs_amounts.values()]) + self.fee
