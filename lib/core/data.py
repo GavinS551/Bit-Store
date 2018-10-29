@@ -69,7 +69,8 @@ class DataStore(Crypto):
         :param file_path: path to data file
         :param password: password to encrypt data with
         :param data_format: a dictionary of allowed keys and allowed value types
-        :param sensitive_keys: a list of data_format keys that should have their values double encrypted
+        :param sensitive_keys: a list of data_format keys that should have their values encrypted
+        as well as regular file encryption
         """
         super().__init__(password)
         self.file_path = file_path
