@@ -36,14 +36,18 @@ GAP_LIMIT_MIN = 20
 GAP_LIMIT_MAX = 50
 
 
-def get_wallet(name, password):
+def get_wallet(name, password, offline=False):
     """ function will return wallet of correct type (normal or watch-only) """
-    watch_only = Wallet.get_metadata(name)['watch_only']
+    try:
+        watch_only = Wallet.get_metadata(name)['watch_only']
 
-    if watch_only:
-        return WatchOnlyWallet(name, password)
-    else:
-        return Wallet(name, password)
+        if watch_only:
+            return WatchOnlyWallet(name, password, offline=offline)
+        else:
+            return Wallet(name, password, offline=offline)
+
+    except FileNotFoundError as ex:
+        raise WalletNotFoundError(str(ex)) from ex
 
 
 def is_wallet(name):
@@ -367,20 +371,24 @@ class Wallet:
     def import_transaction(self, json_data):
         """ returns a Transaction object """
         if not self._check_transaction_import_format(json_data):
-            raise ValueError('Cannot import transaction: Invalid format')
+            raise TransactionImportError('Cannot import transaction: Invalid format')
 
         txn_data = json.loads(json_data)
 
-        txn_bytes = binascii.unhexlify(txn_data['txn'])
+        try:
+            txn_bytes = binascii.unhexlify(txn_data['txn'])
+        except binascii.Error as ex:
+            raise TransactionImportError('Cannot import transaction: odd-length hex string') from ex
+
         txn_hash = hashlib.sha512(txn_bytes + self.account_xpub.encode('utf-8')).hexdigest()
 
         if not txn_data['hash'] == txn_hash:
-            raise ValueError('Cannot import transaction: Invalid hash')
+            raise TransactionImportError('Cannot import transaction: Invalid hash')
 
         txn = self.deserialize_transaction(txn_bytes)
 
         if txn is None:
-            raise ValueError('Cannot import transaction: deserialization failure')
+            raise TransactionImportError('Cannot import transaction: deserialization failure')
         else:
             return txn
 

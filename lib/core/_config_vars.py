@@ -83,7 +83,7 @@ STANDARD_DATA_FORMAT = {
 }
 
 
-# Sensitive data must be stored as a string or dict due to limitations in data.py's
+# Sensitive data must be stored as a string or dict (with string keys) due to limitations in data.py's
 # handling of sensitive data encryption
 SENSITIVE_DATA = [
     'MNEMONIC',

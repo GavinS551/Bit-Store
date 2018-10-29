@@ -20,3 +20,11 @@ class WalletAlreadyExistsError(Exception):
 
 class WatchOnlyWalletError(NotImplementedError):
     pass
+
+
+class TransactionImportError(Exception):
+    pass
+
+
+class WalletNotFoundError(FileNotFoundError):
+    pass
