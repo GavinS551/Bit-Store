@@ -108,7 +108,7 @@ class BIP32Key(object):
         key = BIP32Key(secret=secret, chain=chain, depth=depth, index=child, fpr=fpr, public=is_pubkey,
                        testnet=is_testnet)
         if not is_pubkey and public:
-            key = key.SetPublic()
+            key.SetPublic()
         return key
 
     # Normal class initializer
