@@ -18,6 +18,7 @@ from tkinter import ttk, messagebox
 
 from typing import NamedTuple, Union
 import string
+import traceback
 
 from ..core import config, wallet, hd, utils
 
@@ -46,6 +47,16 @@ class WalletCreation(ttk.Frame):
         self.mnemonic_passphrase_label = None
         self.back_button = None
         self.create_button = None
+        self.advanced_button = None
+
+        # set from self.advanced_window
+        # the keys MUST be valid HDWallet obj params
+        self.adv_settings = {
+            'gap_limit': 20,
+            'force_public': False,
+            'multi_processing': True,
+        }
+        self._adv_warning_shown = False
 
     def gui_draw(self):
         self.title = ttk.Label(self, text='Wallet Creation:', font=self.root.bold_title_font)
@@ -104,6 +115,9 @@ class WalletCreation(ttk.Frame):
         self.create_button = ttk.Button(self, text='Create', command=self.create_wallet)
         self.create_button.grid(row=7, column=1, sticky='w', padx=10, pady=20)
 
+        self.advanced_button = ttk.Button(self, text='Advanced', command=self.advanced_window)
+        self.advanced_button.grid(row=7, column=3, sticky='w', padx=10, pady=20)
+
     def _verify_password(self):
         return self.password_entry.get() == self.confirm_pass_entry.get()
 
@@ -142,9 +156,68 @@ class WalletCreation(ttk.Frame):
         if not hd.HDWallet.check_path(path):
             raise ValueError(f'Invalid path entered: ({path})')
 
+    def advanced_window(self):
+        gap_limit_var = tk.StringVar(value=str(self.adv_settings['gap_limit']))
+        force_watch_only_var = tk.BooleanVar(value=self.adv_settings['force_public'])
+        multi_processing_var = tk.BooleanVar(value=self.adv_settings['multi_processing'])
+
+        def on_save():
+
+            prev_settings = self.adv_settings.copy()
+
+            self.adv_settings['gap_limit'] = int(gap_limit_var.get())
+            self.adv_settings['force_public'] = force_watch_only_var.get()
+            self.adv_settings['multi_processing'] = multi_processing_var.get()
+
+            toplevel.destroy()
+
+            if self.adv_settings != prev_settings:
+                messagebox.showinfo('Saved', 'Advanced settings saved')
+
+        if not self._adv_warning_shown:
+            # warning to user that some options can break things
+            messagebox.showwarning('Advanced Options - Warning', 'Only change these settings '
+                                                                 'if you understand what you are doing. '
+                                                                 'Some advanced settings may not be stable '
+                                                                 'and could lead to loss of Bitcoin if you '
+                                                                 'use the resulting wallet.')
+            self._adv_warning_shown = True
+
+        toplevel = self.root.get_toplevel(self)
+        toplevel.grab_set()
+        frame = ttk.Frame(toplevel, padding=10)
+
+        gap_limit_label = ttk.Label(frame, text='Gap limit:', font=self.root.small_font)
+        gap_limit_label.grid(row=0, column=0, padx=10, pady=5, sticky='w')
+
+        gap_limit_entry = ttk.Entry(frame, textvariable=gap_limit_var, width=10)
+        gap_limit_entry.grid(row=0, column=1, padx=10, sticky='e')
+
+        force_watch_only_label = ttk.Label(frame, text='Force watch-only:', font=self.root.small_font)
+        force_watch_only_label.grid(row=1, column=0, padx=10, pady=5, sticky='w')
+
+        force_watch_only_check = ttk.Checkbutton(frame, variable=force_watch_only_var, offvalue=False,
+                                                 onvalue=True)
+        force_watch_only_check.grid(row=1, column=1, padx=10, sticky='e')
+
+        multi_processing_label = ttk.Label(frame, text='Multiprocessing:', font=self.root.small_font)
+        multi_processing_label.grid(row=2, column=0, padx=10, pady=5, sticky='w')
+
+        multi_processing_check = ttk.Checkbutton(frame, variable=multi_processing_var, offvalue=False,
+                                                 onvalue=True)
+        multi_processing_check.grid(row=2, column=1, padx=10, sticky='e')
+
+        frame.grid(row=0, column=0, sticky='nsew')
+
+        save_button = ttk.Button(toplevel, text='Save', command=on_save)
+        save_button.grid(row=1, column=0, padx=10, pady=(0, 10))
+
     # custom mnemonic and xkey params are meant for subclassing this class when
     # implementing wallet import feature
-    def create_wallet(self, mnemonic=None, xkey=None, passphrase=None, bypass_mnemonic_display=False):
+    def create_wallet(self, mnemonic=None, xkey=None, passphrase=None):
+        # getting any advanced settings that were set
+        hd_wallet_adv_data = self.adv_settings
+
         if mnemonic is None and xkey is None:
             mnemonic = hd.HDWallet.gen_mnemonic()
 
@@ -188,7 +261,7 @@ class WalletCreation(ttk.Frame):
                                     is_segwit, path, mnemonic, xkey)
 
             # thread is already started, see utils.threaded decorator
-            self._build_wallet_instance(wd, bypass_mnemonic_display=bypass_mnemonic_display)
+            self._build_wallet_instance(wd, hd_adv_data=hd_wallet_adv_data)
 
         except ValueError as ex:
             messagebox.showerror('Error', str(ex))
@@ -197,20 +270,25 @@ class WalletCreation(ttk.Frame):
             self.root.show_frame(self.__class__.__name__)
 
     @utils.threaded(name='GUI_MAKE_WALLET_THREAD')
-    def _build_wallet_instance(self, wallet_data, bypass_mnemonic_display=False):
-        try:
-            watch_only_wallet = False
+    def _build_wallet_instance(self, wallet_data, hd_adv_data=None):
+        if hd_adv_data is None:
+            hd_adv_data = {}
 
+        try:
             if wallet_data.xkey is None:
                 hd_ = hd.HDWallet.from_mnemonic(wallet_data.mnemonic,
                                                 wallet_data.path,
                                                 wallet_data.passphrase,
-                                                wallet_data.is_segwit)
+                                                wallet_data.is_segwit,
+                                                **hd_adv_data)
+                watch_only_wallet = not hd_.is_private
+                bypass_mnemonic_display = watch_only_wallet
 
             else:
                 hd_ = hd.HDWallet(wallet_data.xkey,
                                   wallet_data.path,
-                                  wallet_data.is_segwit)
+                                  wallet_data.is_segwit,
+                                  **hd_adv_data)
 
                 watch_only_wallet = not hd_.is_private
                 bypass_mnemonic_display = True
@@ -230,10 +308,10 @@ class WalletCreation(ttk.Frame):
             else:
                 self.root.show_frame('WalletCreationShowMnemonic', mnemonic=wallet_data.mnemonic)
 
-        except Exception as ex:
+        except Exception:
             # if an exception was raised, leave loading frame
             self.root.show_frame(self.__class__.__name__)
-            self.root.show_error('Error', str(ex))
+            self.root.show_error('Error', traceback.format_exc())
 
 
 class WalletCreationLoading(ttk.Frame):

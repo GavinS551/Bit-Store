@@ -130,8 +130,15 @@ class WalletImportPage2(ttk.Frame):
         back_button = ttk.Button(self, text='Back', command=self.on_back)
         back_button.grid(row=3, column=0, padx=10, pady=20, sticky='e')
 
-        create_button = ttk.Button(self, text='Create', command=self.on_create)
-        create_button.grid(row=3, column=1, padx=10, pady=10, sticky='w')
+        col_2_button_frame = ttk.Frame(self)
+
+        create_button = ttk.Button(col_2_button_frame, text='Create', command=self.on_create)
+        create_button.grid(row=0, column=0, padx=10, pady=10, sticky='w')
+
+        advanced_button = ttk.Button(col_2_button_frame, text='Advanced', command=self.wallet_import.advanced_window)
+        advanced_button.grid(row=0, column=1, padx=(110, 10), pady=10, sticky='e')
+
+        col_2_button_frame.grid(row=3, column=1, sticky='ew')
 
     def on_back(self):
         # remove the optional widgets, or labels that change due to different
@@ -149,6 +156,8 @@ class WalletImportPage2(ttk.Frame):
         self.root.show_frame('WalletImport')
 
     def on_create(self):
+        # getting advanced settings
+
         if self.import_type == 'mnemonic':
             mnemonic = self.entry.get(1.0, 'end-1c').strip()
             passphrase = self.passphrase_entry.get().strip()
@@ -157,7 +166,7 @@ class WalletImportPage2(ttk.Frame):
                 tk.messagebox.showerror('Error', 'Invalid Mnemonic Entered')
                 return
 
-            self.wallet_import.create_wallet(mnemonic=mnemonic, passphrase=passphrase, bypass_mnemonic_display=True)
+            self.wallet_import.create_wallet(mnemonic=mnemonic, passphrase=passphrase)
 
         else:
             xkey = self.entry.get(1.0, 'end-1c').strip()
@@ -179,4 +188,4 @@ class WalletImportPage2(ttk.Frame):
                 self.wallet_import.path_entry.delete(0, tk.END)
                 self.wallet_import.path_entry.insert(tk.END, 'm')
 
-            self.wallet_import.create_wallet(xkey=xkey, bypass_mnemonic_display=True)
+            self.wallet_import.create_wallet(xkey=xkey)

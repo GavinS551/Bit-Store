@@ -35,7 +35,8 @@ class HDWallet:
 
     @classmethod
     def from_mnemonic(cls, mnemonic, path, passphrase='',
-                      segwit=True, gap_limit=20, testnet=False, multi_processing=True):
+                      segwit=True, gap_limit=20, testnet=False, multi_processing=True,
+                      force_public=False):
         """ Generates a HDWallet class from a mnemonic """
 
         pbkdf2_hmac_iterations = 2048
@@ -48,9 +49,10 @@ class HDWallet:
                                    pbkdf2_hmac_iterations)
 
         return cls(BIP32Key.fromEntropy(seed, testnet=testnet).ExtendedKey(),
-                   path, segwit, mnemonic, gap_limit, multi_processing)
+                   path, segwit, mnemonic, gap_limit, multi_processing, force_public)
 
-    def __init__(self, key, path, segwit=True, mnemonic=None, gap_limit=20, multi_processing=True):
+    def __init__(self, key, path, segwit=True, mnemonic=None, gap_limit=20, multi_processing=True,
+                 force_public=False):
 
         if not self.check_path(path):
             raise InvalidPath(f'{path} is not a valid path')
@@ -61,7 +63,11 @@ class HDWallet:
         if not self.check_xkey(key):
             raise ValueError(f'Invalid Extended Key: ({key})')
 
-        self.is_private = False if key[1:4] == 'pub' else True
+        self.is_private = False if key[1:4] == 'pub' or force_public else True
+
+        # if force public is set we remove mnemonic
+        if mnemonic and not self.is_private:
+            mnemonic = None
 
         # apostrophes in a path denote a hardened key, which can only be derived from a private key
         if not self.is_private and "'" in path:
