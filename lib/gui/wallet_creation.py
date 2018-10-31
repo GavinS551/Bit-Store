@@ -18,7 +18,7 @@ from tkinter import ttk, messagebox
 
 from typing import NamedTuple, Union
 import string
-import traceback
+import queue
 
 from ..core import config, wallet, hd, utils
 
@@ -249,9 +249,6 @@ class WalletCreation(ttk.Frame):
             elif all(x is None for x in [mnemonic, xkey]):
                 raise ValueError('Either "mnemonic" or "xkey" arguments must have a value')
 
-            # show loading frame after all error checks are complete
-            self.root.show_frame('WalletCreationLoading')
-
             class WalletCreationData(NamedTuple):
 
                 name: str
@@ -276,11 +273,15 @@ class WalletCreation(ttk.Frame):
 
     @utils.threaded(name='GUI_MAKE_WALLET_THREAD')
     def _build_wallet_instance(self, wallet_data, hd_adv_data=None):
+        message_queue = queue.Queue()
+        self.root.show_frame('WalletCreationLoading', loading_messages_queue=message_queue)
+
         if hd_adv_data is None:
             hd_adv_data = {}
 
         try:
             if wallet_data.xkey is None:
+                message_queue.put('Deriving addresses from mnemonic...')
                 hd_ = hd.HDWallet.from_mnemonic(wallet_data.mnemonic,
                                                 wallet_data.path,
                                                 wallet_data.passphrase,
@@ -290,6 +291,7 @@ class WalletCreation(ttk.Frame):
                 bypass_mnemonic_display = watch_only_wallet
 
             else:
+                message_queue.put('Deriving addresses from xkey...')
                 hd_ = hd.HDWallet(wallet_data.xkey,
                                   wallet_data.path,
                                   wallet_data.is_segwit,
@@ -298,10 +300,14 @@ class WalletCreation(ttk.Frame):
                 watch_only_wallet = not hd_.is_private
                 bypass_mnemonic_display = True
 
+            message_queue.put('Addresses generated...')
+
+            message_queue.put('Creating new wallet...')
             if watch_only_wallet:
                 w = wallet.WatchOnlyWallet.new_wallet(wallet_data.name, wallet_data.password, hd_)
             else:
                 w = wallet.Wallet.new_wallet(wallet_data.name, wallet_data.password, hd_)
+            message_queue.put('Wallet created...')
 
             self.root.btc_wallet = w
 
@@ -328,7 +334,15 @@ class WalletCreationLoading(ttk.Frame):
         self.grid_rowconfigure(0, {'minsize': 50})
         self.grid_columnconfigure(0, {'minsize': 35})
 
+        # threading.Queue that will be updated with loading messages outside class
+        # set from show_frame method
+        self.loading_messages_queue = None
+
+        self.cur_message = tk.StringVar()
+
     def gui_draw(self):
+        self._set_latest_message()
+
         title = ttk.Label(self, text='Creating Wallet, Please Wait...',
                           font=self.root.bold_title_font)
         title.grid(row=1, column=1, sticky='n')
@@ -336,6 +350,20 @@ class WalletCreationLoading(ttk.Frame):
         loading_bar = ttk.Progressbar(self, orient=tk.HORIZONTAL, length=400, mode='indeterminate')
         loading_bar.grid(row=2, column=1, pady=40, padx=20)
         loading_bar.start()
+
+        message = ttk.Label(self, textvariable=self.cur_message, font=self.root.small_font)
+        message.grid(row=3, column=1)
+
+    def _set_latest_message(self):
+        while True:
+            try:
+                message = self.loading_messages_queue.get_nowait()
+                self.cur_message.set(message)
+
+            except queue.Empty:
+                break
+
+        self.root.after(100, self._set_latest_message)
 
 
 class WalletCreationShowMnemonic(ttk.Frame):
