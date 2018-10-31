@@ -161,6 +161,9 @@ class WalletCreation(ttk.Frame):
         force_watch_only_var = tk.BooleanVar(value=self.adv_settings['force_public'])
         multi_processing_var = tk.BooleanVar(value=self.adv_settings['multi_processing'])
 
+        def gap_limit_entry_validate(entry):
+            return entry.isdigit() or not entry
+
         def on_save():
 
             prev_settings = self.adv_settings.copy()
@@ -190,7 +193,9 @@ class WalletCreation(ttk.Frame):
         gap_limit_label = ttk.Label(frame, text='Gap limit:', font=self.root.small_font)
         gap_limit_label.grid(row=0, column=0, padx=10, pady=5, sticky='w')
 
-        gap_limit_entry = ttk.Entry(frame, textvariable=gap_limit_var, width=10)
+        gap_limit_validate = self.root.register(gap_limit_entry_validate)
+        gap_limit_entry = ttk.Entry(frame, textvariable=gap_limit_var, width=10, validate='key',
+                                    validatecommand=(gap_limit_validate, '%P'))
         gap_limit_entry.grid(row=0, column=1, padx=10, sticky='e')
 
         force_watch_only_label = ttk.Label(frame, text='Force watch-only:', font=self.root.small_font)
