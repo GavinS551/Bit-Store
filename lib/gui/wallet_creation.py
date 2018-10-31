@@ -311,7 +311,7 @@ class WalletCreation(ttk.Frame):
         except Exception:
             # if an exception was raised, leave loading frame
             self.root.show_frame(self.__class__.__name__)
-            self.root.show_error('Error', traceback.format_exc())
+            self.root.show_traceback()
 
 
 class WalletCreationLoading(ttk.Frame):

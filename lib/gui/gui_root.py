@@ -110,9 +110,16 @@ class RootApplication(tk.Tk):
         """ this will show an error window in the gui displaying any unhandled exception
          (overridden Tk method)
         """
-        message = ''.join(traceback.format_exception(exc_type,
-                                                     exc_value,
-                                                     exc_traceback))
+        self.show_traceback(exc_type, exc_value, exc_traceback)
+    
+    def show_traceback(self, exc_type=None, exc_value=None, exc_traceback=None):
+        """ If params are left as None, current traceback will be displayed """
+        if None in (exc_type, exc_value, exc_traceback):
+            message = traceback.format_exc()
+        else:
+            message = ''.join(traceback.format_exception(exc_type,
+                                                         exc_value,
+                                                         exc_traceback))
 
         error_window = tk.Toplevel(self)
         error_window.bell()
