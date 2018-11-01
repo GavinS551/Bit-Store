@@ -188,6 +188,11 @@ class RootApplication(tk.Tk):
 
 class _Settings(tk.Toplevel):
 
+    # config variables that have been changed, but may not yet be retrievable before restart.
+    # stored so settings window can display config variables that the user changed, but won't be
+    # used by the program until restart.
+    current_values = {k: config.get_value(k) for k in config.DEFAULT_CONFIG}
+
     def __init__(self, root):
         tk.Toplevel.__init__(self, root.master_frame)
         self.wm_title('Settings')
@@ -198,15 +203,15 @@ class _Settings(tk.Toplevel):
 
         self.root = root
 
-        # settings variables, set to current values
-        self.spend_unconfirmed_outs = tk.BooleanVar(value=config.get_value('SPEND_UNCONFIRMED_UTXOS'))
-        self.spend_utxos_individually = tk.BooleanVar(value=config.get_value('SPEND_UTXOS_INDIVIDUALLY'))
-        self.blockchain_api = tk.StringVar(value=config.get_value('BLOCKCHAIN_API_SOURCE'))
-        self.price_api = tk.StringVar(value=config.get_value('PRICE_API_SOURCE'))
-        self.fee_api = tk.StringVar(value=config.get_value('FEE_ESTIMATE_SOURCE'))
-        self.fiat_unit = tk.StringVar(value=config.get_value('FIAT'))
-        self.btc_units = tk.StringVar(value=config.get_value('BTC_UNITS'))
-        self.show_fiat_history = tk.BooleanVar(value=config.get_value('GUI_SHOW_FIAT_TX_HISTORY'))
+        # settings variables, will be set to current config values below
+        self.spend_unconfirmed_outs = tk.BooleanVar()
+        self.spend_utxos_individually = tk.BooleanVar()
+        self.blockchain_api = tk.StringVar()
+        self.price_api = tk.StringVar()
+        self.fee_api = tk.StringVar()
+        self.fiat_unit = tk.StringVar()
+        self.btc_units = tk.StringVar()
+        self.show_fiat_history = tk.BooleanVar()
 
         # config variable names as keys with their corresponding tk Variables
         self.config_vars = {
@@ -219,6 +224,10 @@ class _Settings(tk.Toplevel):
             'BTC_UNITS': self.btc_units,
             'GUI_SHOW_FIAT_TX_HISTORY': self.show_fiat_history
         }
+
+        # setting tkinter variables
+        for k, v in self.config_vars.items():
+            v.set(self.current_values[k])
 
         self.notebook = ttk.Notebook(self)
 
@@ -257,13 +266,17 @@ class _Settings(tk.Toplevel):
         """
 
         # if no settings were changed
-        if all([v.get() == config.get_value(k) for k, v in self.config_vars.items()]):
+        if all([v.get() == self.current_values[k] for k, v in self.config_vars.items()]):
             return False
 
         else:
             data = {}
             for k, v in self.config_vars.items():
                 data[k] = v.get()
+
+                # store changed variables in self.current_values so changes can
+                # be displayed before restart
+                self.current_values[k] = v.get()
 
             config.write_values(**data)
 
