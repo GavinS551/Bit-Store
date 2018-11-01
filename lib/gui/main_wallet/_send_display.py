@@ -18,6 +18,7 @@ from tkinter import ttk, messagebox, filedialog
 
 import string
 import pathlib
+import json
 from threading import Event
 from types import SimpleNamespace
 
@@ -279,6 +280,7 @@ class SendDisplay(ttk.Frame):
             return
 
         self.on_clear()
+
         self.transaction = txn
 
         # ignore asserts that check what gui is displaying, and what self.transaction actually is,
@@ -455,8 +457,6 @@ class SendDisplay(ttk.Frame):
                     # will not be overridden
                     if not self._make_transaction_thread_event.is_set():
                         self.transaction = transaction
-                    else:
-                        break
 
                     set_amounts_colour('black')
                     self.amount_over_balance = False
@@ -485,6 +485,8 @@ class SendDisplay(ttk.Frame):
     def send_transaction_window(self, ignore_asserts=False):
 
         is_signed = self.transaction.is_signed
+
+        json_tx_data = self.transaction.json_txn
 
         # if advanced txn settings were changed, this var will be a function
         # to undo those changes, that will be called in on_cancel
@@ -660,6 +662,20 @@ class SendDisplay(ttk.Frame):
             save_button = ttk.Button(toplevel, text='Save', command=on_save)
             save_button.grid(row=1, column=0, padx=10, pady=(0, 10))
 
+        def on_raw_txn():
+            toplevel = self.main_wallet.root.get_toplevel(window)
+            txn_text = tk.Text(toplevel, height=30, width=100, font=self.main_wallet.root.tiny_font)
+
+            txn_text.insert(tk.END, json_tx_data)
+            txn_text['state'] = tk.DISABLED
+
+            txn_text.grid(row=0, column=0, sticky='nsew')
+
+            scrollbar = ttk.Scrollbar(toplevel, command=txn_text.yview)
+            scrollbar.grid(row=0, column=1, sticky='ns')
+            
+            txn_text.config(yscrollcommand=scrollbar.set)
+
         title = ttk.Label(window, text='TRANSACTION CONFIRMATION',
                           font=self.main_wallet.root.bold_title_font)
         title.grid(row=0, column=0, pady=20, sticky='n')
@@ -744,6 +760,9 @@ class SendDisplay(ttk.Frame):
             # transaction can only be changed before getting signed
             advanced_button = ttk.Button(button_frame, text='Advanced', command=on_advanced)
             advanced_button.grid(row=0, column=3, padx=(40, 10), pady=10)
+
+        raw_txn_button = ttk.Button(button_frame, text='Raw Txn', command=on_raw_txn)
+        raw_txn_button.grid(row=0, column=4, padx=10, pady=10)
 
         button_frame.grid(row=2, column=0, padx=10, pady=10)
 

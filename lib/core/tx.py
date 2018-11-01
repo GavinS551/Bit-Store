@@ -13,6 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import json
+
 import btcpy
 from btcpy.structs.transaction import (MutableTransaction, MutableSegWitTransaction,
                                        TxIn, TxOut, Locktime, Sequence, Witness)
@@ -245,7 +247,7 @@ class Transaction:
     @property
     def json_txn(self):
         """ returns the standard raw json representation of the btc transaction. """
-        return self._txn.to_json()
+        return json.dumps(self._txn.to_json(), indent=4)
 
     # size and weight need to be properties as self._txn will mutate
     @property
