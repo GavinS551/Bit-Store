@@ -486,6 +486,10 @@ class SendDisplay(ttk.Frame):
 
         is_signed = self.transaction.is_signed
 
+        # if advanced txn settings were changed, this var will be a function
+        # to undo those changes, that will be called in on_cancel
+        advanced_settings_undo = None
+
         if not ignore_asserts:
             # make sure that what the gui is adding up, and what the transaction
             # instance actually totals to, are equal.
@@ -603,7 +607,58 @@ class SendDisplay(ttk.Frame):
             window.destroy()
 
         def on_cancel():
+            if callable(advanced_settings_undo):
+                advanced_settings_undo()
             window.destroy()
+
+        def on_advanced():
+            # catch when the window is closed and execute on_cancel,
+            # which undoes these changes before destroying window
+            window.protocol('WM_DELETE_WINDOW', on_cancel)
+
+            def on_save():
+                changed = False
+
+                # set new locktime if it isn't empty and is different than current locktime
+                if locktime_entry.get() and self.transaction.locktime != int(locktime_entry.get()):
+                    cur_locktime = self.transaction.locktime
+                    self.transaction.locktime = int(locktime_entry.get())
+                    self.transaction.remake_transaction()
+                    changed = True
+
+                if changed:
+                    messagebox.showinfo('Advanced Settings', 'Advanced transaction '
+                                                             'settings saved',
+                                        parent=toplevel)
+
+                def undo_settings():
+                    self.transaction.locktime = cur_locktime
+                    self.transaction.remake_transaction()
+
+                nonlocal advanced_settings_undo
+                advanced_settings_undo = undo_settings
+
+                toplevel.destroy()
+
+            toplevel = self.main_wallet.root.get_toplevel(window)
+            toplevel.grab_set()
+            frame = ttk.Frame(toplevel, padding=10)
+
+            locktime_label = ttk.Label(frame, text='Locktime:', font=small)
+            locktime_label.grid(row=0, column=0, sticky='w', padx=10, pady=5)
+
+            # function to validate locktime entry to only allow digits
+            _locktime_val = lambda entry: entry.isdigit() or not entry
+            locktime_val = self.main_wallet.root.register(_locktime_val)
+
+            locktime_entry = ttk.Entry(frame, width=10, validate='key',
+                                       validatecommand=(locktime_val, '%P'))
+            locktime_entry.grid(row=0, column=1, sticky='e', padx=10, pady=5)
+
+            frame.grid(row=0, column=0, sticky='nsew')
+
+            save_button = ttk.Button(toplevel, text='Save', command=on_save)
+            save_button.grid(row=1, column=0, padx=10, pady=(0, 10))
 
         title = ttk.Label(window, text='TRANSACTION CONFIRMATION',
                           font=self.main_wallet.root.bold_title_font)
@@ -665,8 +720,8 @@ class SendDisplay(ttk.Frame):
             dust_msg = ttk.Label(info_frame,
                                  text=f'{dust_amt} {self.main_wallet.display_units} will be added to the fee, '
                                       f'because if it was sent to a change address it would be un-spendable\n'
-                                      f'(the transaction fee needed to spend it would cost more than what the amount '
-                                      f'is worth)',
+                                      f'(the transaction fee needed to spend it would be worth more than the '
+                                      f'amount itself',
                                  font=small, wraplength=400, justify=tk.CENTER)
             dust_msg.grid(row=5, column=1, padx=20)
 
@@ -677,13 +732,18 @@ class SendDisplay(ttk.Frame):
         send_button = ttk.Button(button_frame, text='Send', command=on_send)
         send_button.grid(row=0, column=0, padx=10, pady=10)
 
+        cancel_button = ttk.Button(button_frame, text='Cancel', command=on_cancel)
+        cancel_button.grid(row=0, column=2, padx=10, pady=10)
+
+        # buttons that are exclusive for unsigned transactions
         if not is_signed:
             sign_export_button = ttk.Button(button_frame, text='Sign & Export',
                                             command=on_sign_export)
             sign_export_button.grid(row=0, column=1, padx=10, pady=10)
 
-        cancel_button = ttk.Button(button_frame, text='Cancel', command=on_cancel)
-        cancel_button.grid(row=0, column=2, padx=10, pady=10)
+            # transaction can only be changed before getting signed
+            advanced_button = ttk.Button(button_frame, text='Advanced', command=on_advanced)
+            advanced_button.grid(row=0, column=3, padx=(40, 10), pady=10)
 
         button_frame.grid(row=2, column=0, padx=10, pady=10)
 

@@ -168,9 +168,14 @@ class WalletCreation(ttk.Frame):
 
             prev_settings = self.adv_settings.copy()
 
-            self.adv_settings['gap_limit'] = int(gap_limit_var.get())
-            self.adv_settings['force_public'] = force_watch_only_var.get()
-            self.adv_settings['multi_processing'] = multi_processing_var.get()
+            if gap_limit_var.get():
+                self.adv_settings['gap_limit'] = int(gap_limit_var.get())
+
+            if force_watch_only_var.get():
+                self.adv_settings['force_public'] = force_watch_only_var.get()
+
+            if multi_processing_var.get():
+                self.adv_settings['multi_processing'] = multi_processing_var.get()
 
             toplevel.destroy()
 
@@ -219,7 +224,8 @@ class WalletCreation(ttk.Frame):
 
     # custom mnemonic and xkey params are meant for subclassing this class when
     # implementing wallet import feature
-    def create_wallet(self, mnemonic=None, xkey=None, passphrase=None):
+    def create_wallet(self, mnemonic=None, xkey=None, passphrase=None,
+                      force_no_mnemonic_display=False):
         # getting any advanced settings that were set
         hd_wallet_adv_data = self.adv_settings
 
@@ -263,7 +269,8 @@ class WalletCreation(ttk.Frame):
                                     is_segwit, path, mnemonic, xkey)
 
             # thread is already started, see utils.threaded decorator
-            self._build_wallet_instance(wd, hd_adv_data=hd_wallet_adv_data)
+            self._build_wallet_instance(wd, hd_adv_data=hd_wallet_adv_data,
+                                        force_no_mnemonic_display=force_no_mnemonic_display)
 
         except ValueError as ex:
             messagebox.showerror('Error', str(ex))
@@ -272,7 +279,8 @@ class WalletCreation(ttk.Frame):
             self.root.show_frame(self.__class__.__name__)
 
     @utils.threaded(name='GUI_MAKE_WALLET_THREAD')
-    def _build_wallet_instance(self, wallet_data, hd_adv_data=None):
+    def _build_wallet_instance(self, wallet_data, hd_adv_data=None,
+                               force_no_mnemonic_display=False):
         message_queue = queue.Queue()
         self.root.show_frame('WalletCreationLoading', loading_messages_queue=message_queue)
 
@@ -311,7 +319,7 @@ class WalletCreation(ttk.Frame):
 
             self.root.btc_wallet = w
 
-            if bypass_mnemonic_display:
+            if bypass_mnemonic_display or force_no_mnemonic_display:
                 if watch_only_wallet:
                     self.root.show_frame('WatchOnlyMainWallet')
                 else:

@@ -162,11 +162,12 @@ class WalletImportPage2(ttk.Frame):
             mnemonic = self.entry.get(1.0, 'end-1c').strip()
             passphrase = self.passphrase_entry.get().strip()
 
-            if not hd.HDWallet.check_mnemonic(mnemonic):
+            if not hd.HDWallet.check_mnemonic(mnemonic.lower()):
                 tk.messagebox.showerror('Error', 'Invalid Mnemonic Entered')
                 return
 
-            self.wallet_import.create_wallet(mnemonic=mnemonic, passphrase=passphrase)
+            self.wallet_import.create_wallet(mnemonic=mnemonic, passphrase=passphrase,
+                                             force_no_mnemonic_display=True)
 
         else:
             xkey = self.entry.get(1.0, 'end-1c').strip()

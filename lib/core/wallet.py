@@ -274,7 +274,7 @@ class Wallet:
 
     # fee will be modified later using transactions change_fee method, as the
     # size of the transaction is currently unknown
-    def make_unsigned_transaction(self, outs_amounts, fee=0, locktime=0):
+    def make_unsigned_transaction(self, outs_amounts, fee=0):
 
         if not utils.validate_addresses(a for a in outs_amounts):
             raise ValueError('Invalid address(es) entered')
@@ -301,7 +301,6 @@ class Wallet:
                              change_address=change_address,
                              fee=fee,
                              is_segwit=self.is_segwit,
-                             locktime=locktime,
                              use_unconfirmed_utxos=config.get_value('SPEND_UNCONFIRMED_UTXOS'),
                              use_full_address_utxos=not config.get_value('SPEND_UTXOS_INDIVIDUALLY'))
 
