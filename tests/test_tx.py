@@ -35,7 +35,6 @@ def test_utxo_chooser():
     chooser_unconfirmed_expected = [['hash3', 0, '3NcRENt1SwsbZBdZd1sLMXgtXXVBXFA4aA', 'script', 876, 1], ['hash2', 0, '369mnsgVivq1Dq2aep1RsSx4fz39kEzVMi', 'script', 4, 45], ['hash0', 0, '369mnsgVivq1Dq2aep1RsSx4fz39kEzVMi', 'script', 1, 0], ['hash5', 0, '39HzCLXazJrsuVeBkRFUnSHbvxUzohjECT', 'script', 346343, 0]]
     chooser_use_full_addresses_expected = [['hash3', 0, '3NcRENt1SwsbZBdZd1sLMXgtXXVBXFA4aA', 'script', 876, 1], ['hash5', 0, '39HzCLXazJrsuVeBkRFUnSHbvxUzohjECT', 'script', 346343, 0]]
 
-
     chooser_default = _UTXOChooser(TEST_UTXO_CHOOSER_UTXOS, 100000)
     chooser_unconfirmed = _UTXOChooser(TEST_UTXO_CHOOSER_UTXOS, 100000, use_unconfirmed=True)
     chooser_use_full_addresses = _UTXOChooser(TEST_UTXO_CHOOSER_UTXOS, 100000, use_full_address_utxos=True, use_unconfirmed=True)
@@ -75,14 +74,14 @@ def test_transaction():
     transaction = Transaction(transaction_test_utxos, output_amounts,
                               '36GKcc8qfN3nYJvAveHYekgwnzdyn72and', 2142, True)
 
-    s_txn = "SegWitTransaction(version=1, ins=[TxIn(txid=155125, txout=0, script_sig=, sequence=4294967295, witness=None), TxIn(txid=199346, txout=0, script_sig=, sequence=4294967295, witness=None), TxIn(txid=105306, txout=0, script_sig=, sequence=4294967295, witness=None)], outs=[TxOut(value=102, n=0, scriptPubKey='OP_HASH160 35bdc692c8ff698a482a5bec793ab28bd475dd8c OP_EQUAL'), TxOut(value=21533, n=1, scriptPubKey='OP_HASH160 7671ff0719b289944ce871df51b6d5fe4ab02a7f OP_EQUAL'), TxOut(value=36297, n=2, scriptPubKey='OP_HASH160 322cff52ece9716c1e4464bef9e8f2fea14b524d OP_EQUAL')], locktime=Locktime(0))"
+    s_txn = "SegWitTransaction(version=1, ins=[TxIn(txid=155125, txout=0, script_sig=, sequence=4294967295, witness=Witness([\"\"])), TxIn(txid=199346, txout=0, script_sig=, sequence=4294967295, witness=Witness([\"\"])), TxIn(txid=105306, txout=0, script_sig=, sequence=4294967295, witness=Witness([\"\"]))], outs=[TxOut(value=102, n=0, scriptPubKey='OP_HASH160 35bdc692c8ff698a482a5bec793ab28bd475dd8c OP_EQUAL'), TxOut(value=21533, n=1, scriptPubKey='OP_HASH160 7671ff0719b289944ce871df51b6d5fe4ab02a7f OP_EQUAL'), TxOut(value=36297, n=2, scriptPubKey='OP_HASH160 322cff52ece9716c1e4464bef9e8f2fea14b524d OP_EQUAL')], locktime=Locktime(0))"
     assert str(transaction._txn) == s_txn
     assert transaction.fee == 2142
     assert transaction.input_addresses == ['3EgW5UCtPhR5N7efdC2DXspDxZRGxJiT77', '3DuK9rcspGTNofSkekk4Zbx1XHMqjS5E7N', '38CsFpFDNqV9t7wBUTgLoLpFzswNTkHKck']
     assert transaction._change_amount == 36297
     assert transaction._specific_utxo_data == [['155125', 0, '3EgW5UCtPhR5N7efdC2DXspDxZRGxJiT77', 'a9147671ff0719b289944ce871df51b6d5fe4ab02a7f87', 1024, 2], ['199346', 0, '3DuK9rcspGTNofSkekk4Zbx1XHMqjS5E7N', 'a9147671ff0719b289944ce871df51b6d5fe4ab02a7f87', 1, 1], ['105306', 0, '38CsFpFDNqV9t7wBUTgLoLpFzswNTkHKck', 'a9147671ff0719b289944ce871df51b6d5fe4ab02a7f87', 59049, 3]]
-    assert transaction.size == 142
-    assert transaction.weight == 568
+    assert transaction.size == 144
+    assert transaction.weight == 576
 
     transaction.change_fee(1135)
 
@@ -91,8 +90,8 @@ def test_transaction():
     assert transaction._change_amount == 37304
     assert transaction._specific_utxo_data == [['155125', 0, '3EgW5UCtPhR5N7efdC2DXspDxZRGxJiT77', 'a9147671ff0719b289944ce871df51b6d5fe4ab02a7f87', 1024, 2], ['199346', 0, '3DuK9rcspGTNofSkekk4Zbx1XHMqjS5E7N', 'a9147671ff0719b289944ce871df51b6d5fe4ab02a7f87', 1, 1], ['105306', 0, '38CsFpFDNqV9t7wBUTgLoLpFzswNTkHKck', 'a9147671ff0719b289944ce871df51b6d5fe4ab02a7f87', 59049, 3]]
 
-    assert transaction.size == 142
-    assert transaction.weight == 568
+    assert transaction.size == 144
+    assert transaction.weight == 576
 
     private_keys = ['L2vZ3TXfw5FTE7raJYTp3CBcwChY6bV5nbnnGifHFv6GoGRfdNhf',
                     'L4uGnXg2RfTN8MRBvpi9eHesUM4MaTpMs3bu4CB1tNPhmL2Adxfe',
