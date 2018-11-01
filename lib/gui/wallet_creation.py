@@ -195,7 +195,7 @@ class WalletCreation(ttk.Frame):
         toplevel.grab_set()
         frame = ttk.Frame(toplevel, padding=10)
 
-        gap_limit_label = ttk.Label(frame, text='Gap limit:', font=self.root.small_font)
+        gap_limit_label = ttk.Label(frame, text='Gap limit:', font=self.root.small_font + ('bold',))
         gap_limit_label.grid(row=0, column=0, padx=10, pady=5, sticky='w')
 
         gap_limit_validate = self.root.register(gap_limit_entry_validate)
@@ -203,14 +203,14 @@ class WalletCreation(ttk.Frame):
                                     validatecommand=(gap_limit_validate, '%P'))
         gap_limit_entry.grid(row=0, column=1, padx=10, sticky='e')
 
-        force_watch_only_label = ttk.Label(frame, text='Force watch-only:', font=self.root.small_font)
+        force_watch_only_label = ttk.Label(frame, text='Force watch-only:', font=self.root.small_font + ('bold',))
         force_watch_only_label.grid(row=1, column=0, padx=10, pady=5, sticky='w')
 
         force_watch_only_check = ttk.Checkbutton(frame, variable=force_watch_only_var, offvalue=False,
                                                  onvalue=True)
         force_watch_only_check.grid(row=1, column=1, padx=10, sticky='e')
 
-        multi_processing_label = ttk.Label(frame, text='Multiprocessing:', font=self.root.small_font)
+        multi_processing_label = ttk.Label(frame, text='Multiprocessing:', font=self.root.small_font + ('bold',))
         multi_processing_label.grid(row=2, column=0, padx=10, pady=5, sticky='w')
 
         multi_processing_check = ttk.Checkbutton(frame, variable=multi_processing_var, offvalue=False,

@@ -204,9 +204,7 @@ class MainWallet(ttk.Frame):
     def _change_password_window(self):
         data_store = self.root.btc_wallet.data_store
 
-        change_pass_window = tk.Toplevel(self)
-        change_pass_window.iconbitmap(self.root.ICON)
-        change_pass_window.resizable(False, False)
+        change_pass_window = self.root.get_toplevel(self)
         change_pass_window.grab_set()
 
         def on_ok():
@@ -238,34 +236,41 @@ class MainWallet(ttk.Frame):
 
         change_pass_frame = ttk.Frame(change_pass_window, padding=10)
 
+        title_label = ttk.Label(change_pass_frame, text='Change Password:', font=self.root.small_font + ('bold',))
+        title_label.grid(row=0, column=0, pady=(0, 10), padx=10, sticky='w')
+
         old_password_label = ttk.Label(change_pass_frame, text='Old Password:',
                                        font=self.root.small_font)
-        old_password_label.grid(row=0, column=0, pady=5, padx=10, sticky='w')
+        old_password_label.grid(row=1, column=0, pady=5, padx=10, sticky='w')
 
-        old_password_entry = ttk.Entry(change_pass_frame, show='*')
-        old_password_entry.grid(row=0, column=1)
+        old_password_entry = ttk.Entry(change_pass_frame, show='●')
+        old_password_entry.grid(row=1, column=1)
 
         new_password_label = ttk.Label(change_pass_frame, text='New Password:',
                                        font=self.root.small_font)
-        new_password_label.grid(row=1, column=0, pady=5, padx=10, sticky='w')
+        new_password_label.grid(row=2, column=0, pady=5, padx=10, sticky='w')
 
-        new_password_entry = ttk.Entry(change_pass_frame, show='*')
-        new_password_entry.grid(row=1, column=1)
+        new_password_entry = ttk.Entry(change_pass_frame, show='●')
+        new_password_entry.grid(row=2, column=1)
 
         new_password_confirm_label = ttk.Label(change_pass_frame, text='Confirm Password:',
                                                font=self.root.small_font)
-        new_password_confirm_label.grid(row=2, column=0, pady=5, padx=10, sticky='w')
+        new_password_confirm_label.grid(row=3, column=0, pady=5, padx=10, sticky='w')
 
-        new_password_confirm_entry = ttk.Entry(change_pass_frame, show='*')
-        new_password_confirm_entry.grid(row=2, column=1)
+        new_password_confirm_entry = ttk.Entry(change_pass_frame, show='●')
+        new_password_confirm_entry.grid(row=3, column=1)
 
-        enter_button = ttk.Button(change_pass_frame, text='OK', command=on_ok)
-        enter_button.grid(row=3, column=0, padx=10, pady=(10, 0), sticky='e')
+        button_frame = ttk.Frame(change_pass_frame)
 
-        cancel_button = ttk.Button(change_pass_frame, text='Cancel', command=on_cancel)
-        cancel_button.grid(row=3, column=1, padx=10, pady=(10, 0), sticky='w')
+        enter_button = ttk.Button(button_frame, text='OK', command=on_ok)
+        enter_button.grid(row=0, column=0, padx=10, pady=(10, 0), sticky='e')
 
-        change_pass_frame.grid(sticky='nsew')
+        cancel_button = ttk.Button(button_frame, text='Cancel', command=on_cancel)
+        cancel_button.grid(row=0, column=1, padx=10, pady=(10, 0), sticky='w')
+
+        button_frame.grid(row=4, column=0, columnspan=2)
+
+        change_pass_frame.grid(row=0, column=0, sticky='nsew')
 
     def _refresh_data(self):
         self.wallet_balance.set(self.root.btc_wallet.wallet_balance / self.unit_factor)

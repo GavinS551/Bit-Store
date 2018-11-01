@@ -164,7 +164,7 @@ class RootApplication(tk.Tk):
     @classmethod
     def password_prompt(cls, parent):
         return cls.TTKSimpleDialog.askstring('Password Entry', 'Enter Password:',
-                                             show='*', parent=parent)
+                                             show='●', parent=parent)
 
     @staticmethod
     def incorrect_password_prompt(parent):

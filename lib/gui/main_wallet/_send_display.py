@@ -507,7 +507,8 @@ class SendDisplay(ttk.Frame):
                                       'cost more than what you are sending, and the transaction '
                                       'may take longer to confirm.')
 
-        window = self.main_wallet.root.get_toplevel(self, resizable=True)
+        window = self.main_wallet.root.get_toplevel(self)
+        window.grab_set()
 
         bold_title = self.main_wallet.root.bold_title_font
         bold_small = self.main_wallet.root.small_font + ('bold',)
@@ -646,7 +647,7 @@ class SendDisplay(ttk.Frame):
             toplevel.grab_set()
             frame = ttk.Frame(toplevel, padding=10)
 
-            locktime_label = ttk.Label(frame, text='Locktime:', font=small)
+            locktime_label = ttk.Label(frame, text='Locktime:', font=bold_small)
             locktime_label.grid(row=0, column=0, sticky='w', padx=10, pady=5)
 
             # function to validate locktime entry to only allow digits
