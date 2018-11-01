@@ -406,11 +406,16 @@ class Transaction:
         (self.size only considers unsigned, signature-less size if
         transaction is unsigned)
         """
+        # to make unsigned transactions serialisable, SegWitTransactions are initialised with extra
+        # Witness data that won't actually effect the signed transaction size, so it's subtracted here
+        extra_witness_data_offset = 2
+
         # calculations -> https://goo.gl/HrquvH
         if self.is_segwit:
-            return round(self.size + (len(self._txn.ins) * (23 + 1 + ((1 + 1 + 72 + 1 + 33) / 4)) + 0.5))
+            return round(self.size + (len(self._txn.ins) *
+                                      (23 + 1 + ((1 + 1 + 72 + 1 + 33) / 4)) + 0.5)) - extra_witness_data_offset
         else:
-            return self.size + (len(self._txn.ins) * (1 + 72 + 33))
+            return self.size + (len(self._txn.ins) * (1 + 72 + 33)) - extra_witness_data_offset
 
     def _remove_dust_change(self):
         if self.is_signed:
