@@ -20,7 +20,7 @@ import os
 import traceback
 import platform
 
-from . import ttk_simpledialog as simpledialog
+from extern import ttk_simpledialog as simpledialog
 from ..core import config, wallet
 
 from .wallet_select import WalletSelect
