@@ -18,7 +18,7 @@ from tkinter import ttk, messagebox, filedialog
 
 import string
 import pathlib
-import json
+import platform
 from threading import Event
 from types import SimpleNamespace
 
@@ -60,8 +60,10 @@ class SendDisplay(ttk.Frame):
                                   font=self.main_wallet.root.small_font)
         address_label.grid(row=0, column=0, pady=5, padx=10, sticky='e')
 
-        self.address_entry = ttk.Entry(self, width=70, validate='key', validatecommand=address_validate)
-        self.address_entry.grid(row=0, column=1, pady=5, padx=20, columnspan=3)
+        # on Ubuntu the address entry is too big at 70 for some reason
+        addr_entry_width = 70 if platform.system() == 'Windows' else 50
+        self.address_entry = ttk.Entry(self, width=addr_entry_width, validate='key', validatecommand=address_validate)
+        self.address_entry.grid(row=0, column=1, pady=5, padx=20, sticky='w', columnspan=3)
 
         amount_btc_label = ttk.Label(self, text=f'Amount ({self.main_wallet.display_units}):',
                                      font=self.main_wallet.root.small_font)
