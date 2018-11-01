@@ -20,6 +20,7 @@ from btcpy.structs.script import Script, P2wpkhV0Script, ScriptSig, StackData
 from btcpy.structs.sig import P2pkhSolver, P2shSolver, P2wpkhV0Solver
 from btcpy.structs.crypto import PrivateKey
 from btcpy.structs.address import Address
+from btcpy.setup import setup
 
 from .structs import UTXOData
 
@@ -28,6 +29,9 @@ from ..exceptions.tx_exceptions import *
 
 TX_VERSION = 1
 DUST_THRESHOLD = 546  # satoshis
+
+# btcpy setup
+setup('mainnet')
 
 
 def btcpy_monkey_patch():
@@ -235,8 +239,13 @@ class Transaction:
 
     @property
     def hex_txn(self):
-        """ returns the raw hex representation of a btc transaction. """
+        """ return standard raw hex representation of the btc transaction. """
         return self._txn.hexlify()
+
+    @property
+    def json_txn(self):
+        """ returns the standard raw json representation of the btc transaction. """
+        return self._txn.to_json()
 
     # size and weight need to be properties as self._txn will mutate
     @property
