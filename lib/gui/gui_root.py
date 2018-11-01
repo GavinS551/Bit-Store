@@ -123,10 +123,16 @@ class RootApplication(tk.Tk):
 
         error_window = tk.Toplevel(self)
         error_window.bell()
+        error_window.grab_set()
         error_window.wm_iconbitmap(self.ICON)
         error = tk.Text(error_window, font=self.tiny_font, wrap=tk.WORD)
         error.insert(tk.END, message)
-        error.pack(expand=True)
+        error.grid(row=0, column=0, sticky='nsew')
+
+        scrollbar = ttk.Scrollbar(error_window, command=error.yview)
+        scrollbar.grid(row=0, column=1, sticky='ns')
+
+        error.config(yscrollcommand=scrollbar.set)
 
     # kwargs is used to pass data into frame objects
     def show_frame(self, frame, **kwargs):
