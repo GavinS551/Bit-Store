@@ -14,8 +14,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import btcpy
-from btcpy.structs.transaction import MutableTransaction, MutableSegWitTransaction, TxIn, TxOut, Locktime, Sequence
-from btcpy.structs.script import Script, P2wpkhV0Script, ScriptSig
+from btcpy.structs.transaction import (MutableTransaction, MutableSegWitTransaction,
+                                       TxIn, TxOut, Locktime, Sequence, Witness)
+from btcpy.structs.script import Script, P2wpkhV0Script, ScriptSig, StackData
 from btcpy.structs.sig import P2pkhSolver, P2shSolver, P2wpkhV0Solver
 from btcpy.structs.crypto import PrivateKey
 from btcpy.structs.address import Address
@@ -177,8 +178,7 @@ class _UTXOChooser:
 class Transaction:
 
     def __init__(self, utxo_data, outputs_amounts, change_address,
-                 fee, is_segwit, locktime=0,
-                 use_unconfirmed_utxos=False,
+                 fee, is_segwit, use_unconfirmed_utxos=False,
                  use_full_address_utxos=True):
         """
         :param utxo_data: list of unspent outs in standard format. which ones to be spend will be chosen in class
@@ -186,7 +186,6 @@ class Transaction:
         :param change_address: change address of txn (if needed)
         :param fee: txn fee
         :param is_segwit: bool
-        :param locktime: locktime of btc txn
         :param use_unconfirmed_utxos: should unconfirmed UTXO's be chosen
         :param use_full_address_utxos: should all of an addresses UTXOs be chosen, and not cherry-picked
         """
@@ -196,7 +195,7 @@ class Transaction:
 
         self._modified_outputs_amounts = self.outputs_amounts.copy()
 
-        self._locktime = locktime
+        self.locktime = 0
         self._utxo_data = utxo_data
 
         self.output_contains_dust = False
@@ -236,14 +235,10 @@ class Transaction:
 
     @property
     def hex_txn(self):
-        """ returns the hex representation of a btc transaction. Segwit txns
-        can only be hex serialised after they are signed, as btcpy represents
-        blank witnesses as un-serialisable None. Unsigned segwit txns return None
-        """
-        return self._txn.hexlify() if self.is_signed or not self.is_segwit else None
+        """ returns the raw hex representation of a btc transaction. """
+        return self._txn.hexlify()
 
-    # size and weight need to be properties as self._txn will mutate often
-
+    # size and weight need to be properties as self._txn will mutate
     @property
     def size(self):
         """ vsize """
@@ -260,6 +255,9 @@ class Transaction:
 
         except btcpy.structs.address.InvalidAddress as ex:
             raise ValueError('Couldn\'t generate a scriptPubKey for entered address') from ex
+
+    def remake_transaction(self):
+        self._txn = self._get_unsigned_txn()
 
     def _choose_utxos(self):
         output_amount = sum([v for v in self.outputs_amounts.values()]) + self.fee
@@ -304,7 +302,8 @@ class Transaction:
                 TxIn(txid=t[0],
                      txout=t[1],
                      script_sig=ScriptSig.empty(),
-                     sequence=Sequence.max())
+                     sequence=Sequence.max(),
+                     witness=Witness([StackData.zero()])) if self.is_segwit else None,
             )
 
         if self.is_segwit:
@@ -313,7 +312,7 @@ class Transaction:
                 version=TX_VERSION,
                 ins=inputs,
                 outs=outputs,
-                locktime=Locktime(self._locktime)
+                locktime=Locktime(self.locktime),
             )
 
         else:
@@ -322,7 +321,7 @@ class Transaction:
                 version=TX_VERSION,
                 ins=inputs,
                 outs=outputs,
-                locktime=Locktime(self._locktime)
+                locktime=Locktime(self.locktime)
             )
 
         return transaction
