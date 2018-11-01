@@ -200,7 +200,6 @@ class SendDisplay(ttk.Frame):
             tk.messagebox.showerror('Insufficient Funds', 'Amount to send exceeds wallet balance')
 
         elif float(self.amount_btc_entry.get()) <= 0 or \
-                float(self.amount_btc_entry.get()) <= 0 or \
                 int(self.fee_entry.get()) <= 0:
             tk.messagebox.showerror('Invalid Amount(s)', 'Amount(s) must be positive, non-zero, numbers')
 
@@ -699,7 +698,6 @@ class SendDisplay(ttk.Frame):
                 return
 
             elif float(self.amount_btc_entry.get()) <= 0 or \
-                    float(self.amount_btc_entry.get()) <= 0 or \
                     int(self.fee_entry.get()) <= 0:
                 tk.messagebox.showerror('Invalid Amount(s)', 'Amount(s) must be positive, non-zero, numbers')
                 return
