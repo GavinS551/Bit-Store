@@ -210,15 +210,18 @@ class MainWallet(ttk.Frame):
         def on_ok():
             incorrect = False
             if not data_store.validate_password(old_password_entry.get()):
-                tk.messagebox.showerror('Incorrect Password', 'Old Password is incorrect, try again.')
+                tk.messagebox.showerror('Incorrect Password', 'Old Password is incorrect, try again.',
+                                        parent=change_pass_window)
                 incorrect = True
 
             elif not new_password_entry.get() == new_password_confirm_entry.get():
-                tk.messagebox.showerror('Password Validation', 'New password entries do not match, try again.')
+                tk.messagebox.showerror('Password Validation', 'New password entries do not match, try again.',
+                                        parent=change_pass_window)
                 incorrect = True
 
             elif '' in (new_password_entry.get(), new_password_confirm_entry.get()):
-                tk.messagebox.showerror('Blank Password', 'Password cannot be blank')
+                tk.messagebox.showerror('Blank Password', 'Password cannot be blank',
+                                        parent=change_pass_window)
                 incorrect = True
 
             if incorrect:
