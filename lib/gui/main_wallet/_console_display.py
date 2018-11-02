@@ -258,14 +258,14 @@ class GUIConsole(console.Console):
                 if isinstance(getattr(self.root.btc_wallet.__class__, p), property)
                 and not p.startswith('_')]
 
-    def do_getwalletdata(self, name: str):
+    def do_getwalletdata(self, wallet_property: str):
         """ Prints the value of the wallet property <name> """
-        if name not in self._wallet_properties():
-            print(f'Error: {name} is not a valid wallet property. Type "help getwalletdata" '
+        if wallet_property not in self._wallet_properties():
+            print(f'Error: {wallet_property} is not a valid wallet property. Type "help getwalletdata" '
                   f'to see a list of wallet properties')
             return
 
-        val = getattr(self.root.btc_wallet, name)
+        val = getattr(self.root.btc_wallet, wallet_property)
         print(val)
 
     def help_getwalletdata(self):
