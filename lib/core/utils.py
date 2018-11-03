@@ -81,15 +81,15 @@ def validate_addresses(addresses, allow_testnet=False, allow_bech32=True):
     return all(validate_address(a, allow_testnet, allow_bech32) for a in addresses)
 
 
-def float_to_str(float_, show_plus_sign=False):
+def float_to_str(float_, show_plus_sign=False, places=None):
     """ Convert the given float to a string, without scientific notation """
     with decimal.localcontext() as ctx:
-        d1 = ctx.create_decimal(repr(float_))
-        if not show_plus_sign or format(d1, 'f')[0] == '-':
-            return format(d1, 'f')
+        d = ctx.create_decimal(repr(float_))
+        if not show_plus_sign or format(d, 'f')[0] == '-':
+            return format(d, 'f') if places is None else format(d, f'.{places}f')
 
         else:
-            return '+' + format(d1, 'f')
+            return '+' + format(d, 'f') if places is None else '+' + format(d, f'.{places}f')
 
 
 def datetime_str_from_timestamp(timestamp, fmt, utc=True):

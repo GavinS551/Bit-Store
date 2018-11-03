@@ -22,6 +22,7 @@ from ._tx_display import TransactionDisplay
 from ._send_display import SendDisplay
 from ._receive_display import ReceiveDisplay
 from ._console_display import ConsoleDisplay
+from ._address_display import AddressDisplay
 
 from ...core import config, utils, data
 
@@ -43,6 +44,7 @@ class MainWallet(ttk.Frame):
         self.tx_display = None
         self.send_display = None
         self.receive_display = None
+        self.address_display = None
         self.console_display = None
         self.title_label = None
 
@@ -54,8 +56,8 @@ class MainWallet(ttk.Frame):
         self.wallet_balance = tk.DoubleVar()
         self.unconfirmed_wallet_balance = tk.DoubleVar()
         self.price = tk.DoubleVar()
-        self.fiat_wallet_balance = tk.DoubleVar()
-        self.unconfirmed_fiat_wallet_balance = tk.DoubleVar()
+        self.fiat_wallet_balance = tk.StringVar()
+        self.unconfirmed_fiat_wallet_balance = tk.StringVar()
         self.estimated_fees = (tk.IntVar(), tk.IntVar(), tk.IntVar())  # low, medium, high priority
 
         self.next_receiving_address = tk.StringVar()
@@ -63,10 +65,9 @@ class MainWallet(ttk.Frame):
         self.api_thread_status = tk.StringVar()
 
     def gui_draw(self):
-
         self.title_label = ttk.Label(self, text=self.root.btc_wallet.name,
                                      font=self.root.bold_title_font)
-        self.title_label.grid(row=0, column=0)
+        self.title_label.grid(row=0, column=0, pady=(0, 10))
 
         self.notebook = ttk.Notebook(self)
         self.notebook.enable_traversal()
@@ -82,6 +83,10 @@ class MainWallet(ttk.Frame):
         self.receive_display = ReceiveDisplay(self.notebook, self)
         self.receive_display.grid(sticky='nsew')
         self.notebook.add(self.receive_display, text='Receive', underline=0)
+
+        self.address_display = AddressDisplay(self.notebook, self)
+        self.address_display.grid(sticky='nsew')
+        self.notebook.add(self.address_display, text='Addresses', underline=0)
 
         self.console_display = ConsoleDisplay(self.notebook, self)
         self.console_display.grid(sticky='nsew')
@@ -276,11 +281,12 @@ class MainWallet(ttk.Frame):
         change_pass_frame.grid(row=0, column=0, sticky='nsew')
 
     def _refresh_data(self):
+        f2s = utils.float_to_str
         self.wallet_balance.set(self.root.btc_wallet.wallet_balance / self.unit_factor)
         self.unconfirmed_wallet_balance.set(self.root.btc_wallet.unconfirmed_wallet_balance / self.unit_factor)
         self.price.set(self.root.btc_wallet.price)
-        self.fiat_wallet_balance.set(self.root.btc_wallet.fiat_wallet_balance)
-        self.unconfirmed_fiat_wallet_balance.set(self.root.btc_wallet.unconfirmed_fiat_wallet_balance)
+        self.fiat_wallet_balance.set(f2s(self.root.btc_wallet.fiat_wallet_balance, places=2))
+        self.unconfirmed_fiat_wallet_balance.set(f2s(self.root.btc_wallet.unconfirmed_fiat_wallet_balance, places=2))
 
         # setting low, med, high priority fees
         for i, var in enumerate(self.estimated_fees):

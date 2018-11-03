@@ -100,15 +100,16 @@ class TransactionDisplay(ttk.Frame):
         sat_to_btc = lambda sat: sat / config.UNIT_FACTORS['BTC']
         price = self.main_wallet.price.get()
         f2s = utils.float_to_str
+        wallet_units = self.main_wallet.to_wallet_units
 
         if config.get_value('GUI_SHOW_FIAT_TX_HISTORY'):
-            display_data = [[t.confirmations, t.date, f'{f2s(t.wallet_amount / f, show_plus_sign=True)}',
-                             f2s(round(sat_to_btc(t.wallet_amount) * price, 2), show_plus_sign=True),
-                             f'{f2s(transactions.balances[t] / f)}',
-                             f2s(round(sat_to_btc(transactions.balances[t]) * price, 2))] for t in sorted_txns]
+            display_data = [[t.confirmations, t.date, f2s(t.wallet_amount / f, show_plus_sign=True),
+                             f2s(round(sat_to_btc(t.wallet_amount) * price, 2), show_plus_sign=True, places=2),
+                             f2s(wallet_units(transactions.balances[t], 'sat')),
+                             f2s(sat_to_btc(transactions.balances[t]) * price, 2, places=2)] for t in sorted_txns]
         else:
-            display_data = [[t.confirmations, t.date, f'{f2s(t.wallet_amount / f, show_plus_sign=True)}',
-                             f'{f2s(transactions.balances[t] / f)}'] for t in sorted_txns]
+            display_data = [[t.confirmations, t.date, f2s(t.wallet_amount / f, show_plus_sign=True),
+                             f2s(wallet_units(transactions.balances[t], 'sat'))] for t in sorted_txns]
 
         # tags containing txid corresponding to txn args in display_data
         tags = [t.txid for t in sorted_txns]
@@ -116,8 +117,7 @@ class TransactionDisplay(ttk.Frame):
         # only refresh tree_view if data has changed
         if not self._cached_display_data == display_data:
             self._populate_tree(display_data, tags)
-
-        self._cached_display_data = display_data
+            self._cached_display_data = display_data
 
         self.main_wallet.root.after(self.main_wallet.refresh_data_rate, self._refresh_transactions)
 
