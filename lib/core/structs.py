@@ -100,6 +100,7 @@ class Transactions:
 
         return balances_dict
 
+    @functools.lru_cache(maxsize=None)
     def find_address_txns(self, address_list):
         """ returns addresses from address_list arg in that are associated
          with at least one transaction in self._transactions
@@ -118,6 +119,7 @@ class Transactions:
 
         return addresses
 
+    @functools.lru_cache(maxsize=None)
     def find_txn_by_id(self, txid):
         for t in self._transactions:
             if t.txid == txid:
