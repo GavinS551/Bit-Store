@@ -202,11 +202,9 @@ class _BlockchainBaseClass:
                     # if the utxo has 0 confirmations
                     if utxo[5] == 0:
                         unconfirmed_value += utxo[4]
-                        unspent_outs.remove(utxo)
-                        continue
 
-                    value += utxo[4]
-                    unspent_outs.remove(utxo)
+                    else:
+                        value += utxo[4]
 
             balances.append((address, (value, unconfirmed_value)))
 

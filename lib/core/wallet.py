@@ -501,13 +501,15 @@ class Wallet:
 
         num_txns = 0
         for t in self.transactions:
-            for i, o in zip(t['inputs'], t['outputs']):
-                if address == i['address']:
+            for i in t['inputs']:
+                if i['address'] == address:
                     num_txns += 1
                     break
-                elif address == o['address']:
-                    num_txns += 1
-                    break
+            else:
+                for o in t['outputs']:
+                    if o['address'] == address:
+                        num_txns += 1
+                        break
 
         return num_txns
 

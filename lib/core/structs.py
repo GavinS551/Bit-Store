@@ -110,11 +110,11 @@ class Transactions:
         addresses = set()
 
         for t in self._transactions:
-            for i, o in zip(t.inputs, t.outputs):
-
+            for i in t.inputs:
                 if i['address'] in address_list:
                     addresses.add(i['address'])
 
+            for o in t.outputs:
                 if o['address'] in address_list:
                     addresses.add(o['address'])
 
