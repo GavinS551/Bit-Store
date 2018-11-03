@@ -63,6 +63,7 @@ class TransactionData(NamedTuple):
 
 
 class Transactions:
+    """ methods that will usually be called in a loop many times are cached """
 
     @classmethod
     def from_list(cls, txn_list):
@@ -100,10 +101,9 @@ class Transactions:
 
         return balances_dict
 
-    @functools.lru_cache(maxsize=None)
-    def find_address_txns(self, address_list):
+    def find_address_with_txns(self, address_list):
         """ returns addresses from address_list arg in that are associated
-         with at least one transaction in self._transactions
+        with at least one transaction in self._transactions
         """
         # addresses shouldn't be repeated if they are associated with more than
         # one transaction
@@ -114,12 +114,12 @@ class Transactions:
 
                 if i['address'] in address_list:
                     addresses.add(i['address'])
+
                 if o['address'] in address_list:
                     addresses.add(o['address'])
 
         return addresses
 
-    @functools.lru_cache(maxsize=None)
     def find_txn_by_id(self, txid):
         for t in self._transactions:
             if t.txid == txid:

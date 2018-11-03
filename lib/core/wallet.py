@@ -265,7 +265,7 @@ class Wallet:
         non_used_addresses = self.receiving_addresses + self.change_addresses
 
         txns = structs.Transactions.from_list(self.transactions)
-        tx_addresses = txns.find_address_txns(non_used_addresses)
+        tx_addresses = txns.find_address_with_txns(non_used_addresses)
 
         u_addrs = [a for a in non_used_addresses if a in tx_addresses]
 
@@ -292,7 +292,7 @@ class Wallet:
         # it happened during my testing anyway, so here this is.)
 
         # if there are transactions associated with the change address
-        if structs.Transactions.from_list(self.transactions).find_address_txns(change_address):
+        if structs.Transactions.from_list(self.transactions).find_address_with_txns((change_address,)):
             self.set_used_addresses()
             change_address = self.change_addresses[0]
 
@@ -493,6 +493,15 @@ class Wallet:
 
         elif address in self.used_addresses and default_type:
             return 'receiving' if address in self.default_addresses['receiving'] else 'change'
+
+    def addr_num_transactions(self, address):
+        """ return the number of transactions associated with an address """
+        if address not in self.all_addresses:
+            raise ValueError(f'"{address}" is not a wallet address')
+
+        txns = structs.Transactions.from_list(self.transactions)
+
+        return 0
 
     @property
     def xpub(self):
