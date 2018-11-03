@@ -55,6 +55,7 @@ class AddressDisplay(ttk.Frame):
         self._last_wallet_transactions = None  # used to see if the display should be updated
 
         self._refresh_addresses()
+        self._set_popup_event()
 
     def _insert_row(self, *args):
         self.tree_view.insert('', tk.END, text=args[0], values=(args[1], args[2], args[3]))
@@ -95,3 +96,25 @@ class AddressDisplay(ttk.Frame):
             self._populate_tree(addr_data)
 
         self.root.after(self.main_wallet.refresh_data_rate, self._refresh_addresses)
+
+    def _set_popup_event(self):
+        def copy():
+            self.main_wallet.root.clipboard_clear()
+            item = self.tree_view.item(self.tree_view.selection()[0])['values'][0]  # first value is address
+            self.main_wallet.root.clipboard_append(item)
+
+        popup = tk.Menu(self, tearoff=0)
+        popup.add_command(label='Copy Address', command=copy)
+
+        def do_popup(event):
+            # get row under mouse
+            iid = self.tree_view.identify_row(event.y)
+
+            # if there was a row under mouse
+            if iid:
+                self.tree_view.selection_set(iid)
+                self.tree_view.focus(iid)
+
+                popup.tk_popup(event.x_root, event.y_root, 0)
+
+        self.tree_view.bind('<Button-3>', do_popup)

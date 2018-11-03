@@ -16,6 +16,8 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 
+from types import SimpleNamespace
+
 from ...core import config, structs, utils
 
 
@@ -64,7 +66,7 @@ class TransactionDisplay(ttk.Frame):
                 return "break"
         self.tree_view.bind('<Button-1>', handle_click)
 
-        self.tree_view.bind('<Double-1>', self.on_double_click)
+        self.tree_view.bind('<Double-1>', self._on_double_click)
 
         self.scrollbar = ttk.Scrollbar(self, command=self.tree_view.yview)
         self.tree_view.configure(yscrollcommand=self.scrollbar.set)
@@ -73,6 +75,17 @@ class TransactionDisplay(ttk.Frame):
         self._last_wallet_transactions = None  # used to see if the display should be updated
 
         self._refresh_transactions()
+        self._set_popup_event()
+
+    def get_selected_transaction(self):
+        try:
+            sel = self.tree_view.selection()[0]
+        except IndexError:
+            return
+
+        item = self.tree_view.item(sel)
+        txid = item['tags'][0]
+        return structs.Transactions.from_list(self.main_wallet.root.btc_wallet.transactions).find_txn_by_id(txid)
 
     def _insert_row(self, *args, tags=None):
         if config.get_value('GUI_SHOW_FIAT_TX_HISTORY'):
@@ -122,21 +135,29 @@ class TransactionDisplay(ttk.Frame):
 
         self.main_wallet.root.after(self.main_wallet.refresh_data_rate, self._refresh_transactions)
 
-    def on_double_click(self, event):
+    def _set_popup_event(self):
+        popup = tk.Menu(self, tearoff=0)
+        popup.add_command(label='Details',
+                          command=lambda: self._on_double_click(SimpleNamespace(widget=self.tree_view)))
 
-        # in the event that the treeview is double clicked
-        # but nothing is selected (i.e the top bar is double clicked)
-        try:
-            sel = event.widget.selection()[0]
-        except IndexError:
-            return
+        def do_popup(event):
+            # get row under mouse
+            iid = self.tree_view.identify_row(event.y)
 
-        item = self.tree_view.item(sel)
-        txid = item['tags'][0]
-        txn = structs.Transactions.from_list(self.main_wallet.root.btc_wallet.transactions).find_txn_by_id(txid)
+            # if there was a row under mouse
+            if iid:
+                self.tree_view.selection_set(iid)
+                self.tree_view.focus(iid)
 
+                popup.tk_popup(event.x_root, event.y_root, 0)
+
+        self.tree_view.bind('<Button-3>', do_popup)
+
+    def _on_double_click(self, event):
+        txn = self.get_selected_transaction()
+
+        # no selection in treeview
         if txn is None:
-            messagebox.showerror('Error', 'Transaction not found!')
             return
 
         self.main_wallet.display_txn(txn)
