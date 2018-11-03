@@ -70,7 +70,8 @@ class TransactionDisplay(ttk.Frame):
         self.tree_view.configure(yscrollcommand=self.scrollbar.set)
         self.scrollbar.grid(row=0, column=1, sticky='ns')
 
-        self._cached_display_data = None
+        self._last_wallet_transactions = None  # used to see if the display should be updated
+
         self._refresh_transactions()
 
     def _insert_row(self, *args, tags=None):
@@ -88,36 +89,36 @@ class TransactionDisplay(ttk.Frame):
             self._insert_row(*tx, tags=[tag])
 
     def _refresh_transactions(self):
+        # only update if transactions have changed
+        if self._last_wallet_transactions != self.main_wallet.root.btc_wallet.transactions:
+            self._last_wallet_transactions = self.main_wallet.root.btc_wallet.transactions
 
-        # Transactions class will allow the sorting of txns by date,
-        # and txns are stored as structs.TransactionData instances
-        transactions = structs.Transactions.from_list(self.main_wallet.root.btc_wallet.transactions)
-        sorted_txns = transactions.date_sorted_transactions(ascending=False)
+            # Transactions class will allow the sorting of txns by date,
+            # and txns are stored as structs.TransactionData instances
+            transactions = structs.Transactions.from_list(self.main_wallet.root.btc_wallet.transactions)
+            sorted_txns = transactions.date_sorted_transactions(ascending=False)
 
-        # satoshis will be divided by this number to get amount in terms of self.main_wallet.display_units
-        f = self.main_wallet.unit_factor
+            # satoshis will be divided by this number to get amount in terms of self.main_wallet.display_units
+            f = self.main_wallet.unit_factor
 
-        sat_to_btc = lambda sat: sat / config.UNIT_FACTORS['BTC']
-        price = self.main_wallet.price.get()
-        f2s = utils.float_to_str
-        wallet_units = self.main_wallet.to_wallet_units
+            sat_to_btc = lambda sat: sat / config.UNIT_FACTORS['BTC']
+            price = self.main_wallet.price.get()
+            f2s = utils.float_to_str
+            wallet_units = self.main_wallet.to_wallet_units
 
-        if config.get_value('GUI_SHOW_FIAT_TX_HISTORY'):
-            display_data = [[t.confirmations, t.date, f2s(t.wallet_amount / f, show_plus_sign=True),
-                             f2s(round(sat_to_btc(t.wallet_amount) * price, 2), show_plus_sign=True, places=2),
-                             f2s(wallet_units(transactions.balances[t], 'sat')),
-                             f2s(sat_to_btc(transactions.balances[t]) * price, 2, places=2)] for t in sorted_txns]
-        else:
-            display_data = [[t.confirmations, t.date, f2s(t.wallet_amount / f, show_plus_sign=True),
-                             f2s(wallet_units(transactions.balances[t], 'sat'))] for t in sorted_txns]
+            if config.get_value('GUI_SHOW_FIAT_TX_HISTORY'):
+                display_data = [[t.confirmations, t.date, f2s(t.wallet_amount / f, show_plus_sign=True),
+                                 f2s(round(sat_to_btc(t.wallet_amount) * price, 2), show_plus_sign=True, places=2),
+                                 f2s(wallet_units(transactions.balances[t], 'sat')),
+                                 f2s(sat_to_btc(transactions.balances[t]) * price, 2, places=2)] for t in sorted_txns]
+            else:
+                display_data = [[t.confirmations, t.date, f2s(t.wallet_amount / f, show_plus_sign=True),
+                                 f2s(wallet_units(transactions.balances[t], 'sat'))] for t in sorted_txns]
 
-        # tags containing txid corresponding to txn args in display_data
-        tags = [t.txid for t in sorted_txns]
+            # tags containing txid corresponding to txn args in display_data
+            tags = [t.txid for t in sorted_txns]
 
-        # only refresh tree_view if data has changed
-        if not self._cached_display_data == display_data:
             self._populate_tree(display_data, tags)
-            self._cached_display_data = display_data
 
         self.main_wallet.root.after(self.main_wallet.refresh_data_rate, self._refresh_transactions)
 
