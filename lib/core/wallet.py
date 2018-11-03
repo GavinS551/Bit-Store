@@ -499,9 +499,17 @@ class Wallet:
         if address not in self.all_addresses:
             raise ValueError(f'"{address}" is not a wallet address')
 
-        txns = structs.Transactions.from_list(self.transactions)
+        num_txns = 0
+        for t in self.transactions:
+            for i, o in zip(t['inputs'], t['outputs']):
+                if address == i['address']:
+                    num_txns += 1
+                    break
+                elif address == o['address']:
+                    num_txns += 1
+                    break
 
-        return 0
+        return num_txns
 
     @property
     def xpub(self):
@@ -545,7 +553,11 @@ class Wallet:
 
     @property
     def address_balances(self):
-        return self.data_store.get_value('ADDRESS_BALS')
+        # we make sure that all keys are present, so there are
+        # no KeyErrors when no api data is present
+        bals = {k: v for k, v in zip(self.all_addresses, (([0, 0],) * len(self.all_addresses)))}
+        bals.update(self.data_store.get_value('ADDRESS_BALS'))
+        return bals
 
     @property
     def transactions(self):
