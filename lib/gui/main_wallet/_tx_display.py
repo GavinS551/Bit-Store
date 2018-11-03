@@ -14,7 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk
 
 from types import SimpleNamespace
 
@@ -81,6 +81,7 @@ class TransactionDisplay(ttk.Frame):
         try:
             sel = self.tree_view.selection()[0]
         except IndexError:
+            # if nothing is selected
             return
 
         item = self.tree_view.item(sel)
