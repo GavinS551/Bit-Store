@@ -29,13 +29,6 @@ from . import blockchain, config, data, tx, price, hd, structs, utils
 from ..exceptions.wallet_exceptions import *
 
 
-API_REFRESH_RATE = 10
-API_REFRESH_RATE_LOWER = 5
-
-GAP_LIMIT_MIN = 20
-GAP_LIMIT_MAX = 50
-
-
 def get_wallet(name, password, offline=False):
     """ function will return wallet of correct type (normal or watch-only) """
     try:
@@ -64,87 +57,75 @@ class _ApiDataUpdaterThread(threading.Thread):
         first_attempt = 1
         error = 2
 
-    def __init__(self, wallet_instance, refresh_rate):
+    def __init__(self, wallet_instance, blockchain_refresh_rate, fee_refresh_rate, price_refresh_rate):
 
         if not isinstance(wallet_instance, Wallet):
             raise TypeError('wallet_instance must be an instance of Wallet class')
 
-        if not isinstance(refresh_rate, int):
-            raise TypeError('Refresh rate must be an int')
+        refresh_rates = (blockchain_refresh_rate, fee_refresh_rate, price_refresh_rate)
+        if not all(isinstance(r, int) and r > 0 for r in refresh_rates):
+            raise TypeError('Refresh rates must be positive ints')
 
-        # due to api request limits
-        if refresh_rate < API_REFRESH_RATE_LOWER:
-            raise ValueError(f'Refresh rate must be at least {API_REFRESH_RATE_LOWER} seconds')
+        super().__init__(name='API_DATA_UPDATER')
 
-        threading.Thread.__init__(self, name='API_DATA_UPDATER')
         # event will be set outside of this class
         self.event = threading.Event()
-        self.wallet_instance = wallet_instance
-        self.refresh_rate = refresh_rate
-        # a requests Exception, stored if the last data request failed
-        # if last request was successful, store False
-        self.connection_exception = None
+
+        self.wallet = wallet_instance
+
+        # minimum refresh rate will be used for wait amount in self.run loop
+        self.min_refresh_rate = min([blockchain_refresh_rate, fee_refresh_rate, price_refresh_rate])
+
+        # API interface objects
+        self.blockchain_interface = blockchain.blockchain_api(config.get('BLOCKCHAIN_API_SOURCE'),
+                                                              self.wallet.all_addresses, blockchain_refresh_rate)
+
+        self.price_interface = price.BitcoinPrice(currency=config.get('FIAT'),
+                                                  source=config.get('PRICE_API_SOURCE'))
+
+        self.fees_interface = blockchain.fee_api(config.get('FEE_ESTIMATE_SOURCE'), fee_refresh_rate)
+
         self.connection_status = self.ApiConnectionStatus.first_attempt
-
-        self.connection_timestamp = None
-
-        # blockchain api object
-        self.bd = None
-
-        self.estimate_fees = blockchain.EstimateFee(source=config.get_value('FEE_ESTIMATE_SOURCE'))
+        self.connection_timestamp = 0  # unix timestamp
 
     def run(self):
 
-        def _update_api_data(data_keys):
-            data_dict = {}
-
-            for d in data_keys:
-                data_dict[d] = api_data[d]
-
-            self.wallet_instance.data_store.write_value(**data_dict)
-
         while threading.main_thread().is_alive() and not self.event.is_set():
 
-            addresses = self.wallet_instance.all_addresses
-
-            self.bd = blockchain.blockchain_api(addresses, self.refresh_rate,
-                                                source=config.get_value('BLOCKCHAIN_API_SOURCE'))
-            price_data = price.BitcoinPrice(currency=config.get_value('FIAT'),
-                                            source=config.get_value('PRICE_API_SOURCE'))
-
             try:
+                # formatted for data_store write
                 api_data = {
-                    'WALLET_BAL': self.bd.wallet_balance,
-                    'TXNS': self.bd.transactions,
-                    'ADDRESS_BALS': self.bd.address_balances,
-                    'PRICE': price_data.price,
-                    'UNSPENT_OUTS': self.bd.unspent_outputs,
-                    'ESTIMATED_FEES': list(self.estimate_fees.all_priorities)
+                    'WALLET_BAL': self.blockchain_interface.wallet_balance,
+                    'TXNS': self.blockchain_interface.transactions,
+                    'ADDRESS_BALS': self.blockchain_interface.address_balances,
+                    'UNSPENT_OUTS': self.blockchain_interface.unspent_outputs,
+                    'PRICE': self.price_interface.price,
+                    'ESTIMATED_FEES': self.fees_interface.all_priorities
                 }
-                self.connection_exception = None
                 self.connection_status = self.ApiConnectionStatus.good
-
                 self.connection_timestamp = time.time()
+
             # TODO IMPLEMENT STANDARD ERROR FOR PRICE TOO. (like BlockchainConnectionError's abstracted exception)
-            except (blockchain.BlockchainConnectionError, requests.RequestException) as ex:
-                self.connection_exception = ex
+            except (blockchain.BlockchainConnectionError, requests.RequestException):
                 self.connection_status = self.ApiConnectionStatus.error
 
-                self.event.wait(self.refresh_rate)
+            else:
+                # data that needs to be updated
+                old_keys = [k for k in api_data if self.wallet.data_store.get_value(k) != api_data[k]]
 
-                continue
+                # if it is not empty, we write new values
+                if old_keys:
+                    self.wallet.data_store.write_values(**api_data)
 
-            # data that needs to be updated
-            old_keys = [k for k in api_data if self.wallet_instance.data_store.get_value(k) != api_data[k]]
+                    # if new transactions have been updated, used addresses are set appropriately
+                    if 'TXNS' in api_data:
+                        self.wallet.set_used_addresses()
 
-            # if old_keys isn't an empty list
-            if old_keys and not self.event.is_set():
-                _update_api_data(old_keys)
+            # reached if exception was raised in try block as well as normal execution of try block
+            self.event.wait(self.min_refresh_rate)
 
-            # if new transactions have been updated, used addresses are set appropriately
-            self.wallet_instance.set_used_addresses()
-
-            self.event.wait(self.refresh_rate)
+    def stop(self):
+        self.event.set()
 
 
 class Wallet:
@@ -203,7 +184,7 @@ class Wallet:
                 'DEFAULT_ADDRESSES': {'receiving': addresses[0], 'change': addresses[1]}
             }
 
-            d_store.write_value(**info)
+            d_store.write_values(**info)
 
             del hd_wallet_obj
 
@@ -223,18 +204,18 @@ class Wallet:
             raise
 
     def __init__(self, name, password, offline=False):
-        data_file_path = os.path.join(config.WALLET_DATA_DIR, name, 'wallet_data')
-        self.data_store = data.DataStore(data_file_path, password, data_format=config.STANDARD_DATA_FORMAT,
+        self.name = name
+
+        data_file_path = os.path.join(config.WALLET_DATA_DIR, name, config.WALLET_DATA_FILE_NAME)
+        self.data_store = data.DataStore(data_file_path, password,
+                                         data_format=config.STANDARD_DATA_FORMAT,
                                          sensitive_keys=config.SENSITIVE_DATA)
 
         if not offline:
-            self.updater_thread = self._create_api_updater_thread(refresh_rate=API_REFRESH_RATE)
+            self.updater_thread = _ApiDataUpdaterThread(self, config.get('BLOCKCHAIN_API_REFRESH'),
+                                                        config.get('FEE_API_REFRESH'),
+                                                        config.get('PRICE_API_REFRESH'))
             self.updater_thread.start()
-
-        self.name = name
-
-    def _create_api_updater_thread(self, refresh_rate):
-        return _ApiDataUpdaterThread(self, refresh_rate)
 
     def _set_addresses_used(self, addresses):
         r_addrs = self.receiving_addresses
@@ -256,9 +237,9 @@ class Wallet:
                     addr_index = c_addrs.index(address)
                     u_addrs.append(c_addrs.pop(addr_index))
 
-        self.data_store.write_value(**{'ADDRESSES_RECEIVING': r_addrs,
-                                       'ADDRESSES_CHANGE': c_addrs,
-                                       'ADDRESSES_USED': u_addrs})
+        self.data_store.write_values(**{'ADDRESSES_RECEIVING': r_addrs,
+                                        'ADDRESSES_CHANGE': c_addrs,
+                                        'ADDRESSES_USED': u_addrs})
 
     def set_used_addresses(self):
         """ sets all addresses with txns associated with them as used"""
@@ -301,8 +282,8 @@ class Wallet:
                              change_address=change_address,
                              fee=fee,
                              is_segwit=self.is_segwit,
-                             use_unconfirmed_utxos=config.get_value('SPEND_UNCONFIRMED_UTXOS'),
-                             use_full_address_utxos=not config.get_value('SPEND_UTXOS_INDIVIDUALLY'))
+                             use_unconfirmed_utxos=config.get('SPEND_UNCONFIRMED_UTXOS'),
+                             use_full_address_utxos=not config.get('SPEND_UTXOS_INDIVIDUALLY'))
 
         return txn
 
@@ -407,7 +388,7 @@ class Wallet:
         api_keys = ['TXNS', 'ADDRESS_BALS', 'WALLET_BAL', 'UNSPENT_OUTS', 'PRICE']
         k_v = {k: None for k in api_keys}
 
-        self.data_store.write_value(**k_v)
+        self.data_store.write_values(**k_v)
 
     @staticmethod
     def broadcast_transaction(signed_txn):
@@ -417,8 +398,11 @@ class Wallet:
         return blockchain.broadcast_transaction(signed_txn.hex_txn)
 
     def change_gap_limit(self, new_gap_limit, password):
-        if new_gap_limit < GAP_LIMIT_MIN or new_gap_limit > GAP_LIMIT_MAX:
-            raise ValueError(f'Gap limit must be between {GAP_LIMIT_MIN} and {GAP_LIMIT_MAX}')
+        gap_limit_min = 10
+        gap_limit_max = 50
+
+        if not gap_limit_min < new_gap_limit < gap_limit_max:
+            raise ValueError(f'Gap limit must be between {gap_limit_min} and {gap_limit_max}')
 
         if not isinstance(new_gap_limit, int):
             raise TypeError('Gap limit must be an int')
@@ -472,7 +456,7 @@ class Wallet:
                 'DEFAULT_ADDRESSES': {'receiving': r_addresses, 'change': c_addresses}
         }
 
-        self.data_store.write_value(**new_address_data)
+        self.data_store.write_values(**new_address_data)
 
         self.clear_cached_api_data()
 
@@ -689,8 +673,11 @@ class WatchOnlyWallet(Wallet):
         raise WatchOnlyWalletError
 
     def change_gap_limit(self, new_gap_limit, password):
-        if new_gap_limit < GAP_LIMIT_MIN or new_gap_limit > GAP_LIMIT_MAX:
-            raise ValueError(f'Gap limit must be between {GAP_LIMIT_MIN} and {GAP_LIMIT_MAX}')
+        gap_limit_min = 15
+        gap_limit_max = 50
+
+        if not gap_limit_min < new_gap_limit < gap_limit_max:
+            raise ValueError(f'Gap limit must be between {gap_limit_min} and {gap_limit_max}')
 
         if not isinstance(new_gap_limit, int):
             raise TypeError('Gap limit must be an int')
@@ -723,6 +710,6 @@ class WatchOnlyWallet(Wallet):
                 'DEFAULT_ADDRESSES': {'receiving': r_addresses, 'change': c_addresses}
         }
 
-        self.data_store.write_value(**new_address_data)
+        self.data_store.write_values(**new_address_data)
 
         self.clear_cached_api_data()

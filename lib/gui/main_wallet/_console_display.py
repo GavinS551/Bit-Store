@@ -210,7 +210,7 @@ class GUIConsole(console.Console):
     def do_getconfig(self, key: str):
         """ Prints current value for a config key """
         try:
-            print(config.get_value(key))
+            print(config.get(key))
 
         except KeyError:
             print(f'Error: Cannot find config key \'{key}\'')

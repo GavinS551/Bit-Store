@@ -31,7 +31,7 @@ def get_logger(log_to_file=True):
 
     if log_to_file:
         handler = _FileHandlerManager(log_dir=config.LOGGER_DIR,
-                                      max_logs=config.get_value('MAX_LOG_FILES_STORED')).get_file_handler()
+                                      max_logs=config.get('MAX_LOG_FILES_STORED')).get_file_handler()
 
     else:
         handler = logging.StreamHandler()

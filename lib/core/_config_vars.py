@@ -53,7 +53,10 @@ DEFAULT_CONFIG = {
     'SPEND_UTXOS_INDIVIDUALLY': False,
     'MAX_LOG_FILES_STORED': 10,
     'GUI_SHOW_FIAT_TX_HISTORY': True,
-    'USE_LOCALTIME': True
+    'USE_LOCALTIME': True,
+    'BLOCKCHAIN_API_REFRESH': 10,
+    'FEE_API_REFRESH': 60,
+    'PRICE_API_REFRESH': 60
 
 }
 
@@ -125,7 +128,7 @@ POSSIBLE_FIAT_UNITS = ['AUD', 'CAD', 'EUR', 'GBP', 'JPY', 'USD']
 POSSIBLE_BLOCKCHAIN_API_SOURCES = ['blockchain.info', 'blockexplorer.com']
 
 
-POSSIBLE_PRICE_API_SOURCES = ['coinmarketcap']
+POSSIBLE_PRICE_API_SOURCES = ['coinmarketcap.com']
 
 
 POSSIBLE_FEE_ESTIMATE_SOURCES = ['bitcoinfees.earn']
@@ -139,3 +142,7 @@ WALLET_DATA_FILE_NAME = 'wallet_data'
 
 
 WALLET_INFO_FILE_NAME = 'w_info'
+
+
+GAP_LIMIT_MIN = 20
+GAP_LIMIT_MAX = 50

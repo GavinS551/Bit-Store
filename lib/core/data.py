@@ -119,7 +119,7 @@ class DataStore(Crypto):
         # Storing password hash for password validation independent of
         # this class i.e Wallet class for sensitive information
         if not self.get_value('PASSWORD_HASH'):
-            self.write_value(PASSWORD_HASH=hashlib.sha256(password.encode('utf-8')).hexdigest())
+            self.write_values(PASSWORD_HASH=hashlib.sha256(password.encode('utf-8')).hexdigest())
 
         # if there are any new keys in the data format that aren't present in the file, create them
         for k in self.data_format:
@@ -175,7 +175,7 @@ class DataStore(Crypto):
 
         dict_.update(copy_dict)
 
-    def write_value(self, **kwargs):
+    def write_values(self, **kwargs):
         data = self._data
         for k, v in kwargs.items():
 

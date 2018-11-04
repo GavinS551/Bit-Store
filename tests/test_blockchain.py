@@ -26,7 +26,7 @@ class TestBlockchainBaseClass(blockchain._BlockchainBaseClass):
         return TRANSACTIONS
 
 
-test_blockchain_obj = TestBlockchainBaseClass(addresses=ADDRESSES, refresh_rate=0)
+test_blockchain_obj = TestBlockchainBaseClass(addresses=ADDRESSES, refresh_rate=0, timeout=10)
 
 
 def test_utxo_gen():
@@ -51,5 +51,5 @@ class TestBlockchainInfo(blockchain.BlockchainInfo):
 
 
 def test_blockchain_info_tx_gen():
-    blockchain_info = TestBlockchainInfo(addresses=ADDRESSES, refresh_rate=0)
+    blockchain_info = TestBlockchainInfo(addresses=ADDRESSES, refresh_rate=0, timeout=10)
     assert blockchain_info.transactions == TRANSACTIONS

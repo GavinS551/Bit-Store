@@ -84,7 +84,7 @@ class _EstimateFeeBaseClass:
 
      sub-classes should raise BlockchainConnectionError if it cannot connect to the specified source.
 
-     sub-classes need to implement all_priorities property, that returns a tuple with three values:
+     sub-classes need to implement all_priorities property, that returns a list with three values:
      low, medium and high priority fees in sat/byte
     """
 
@@ -149,7 +149,7 @@ class BitcoinFeesEarn(_EstimateFeeBaseClass):
         except (requests.RequestException, json.JSONDecodeError) as ex:
             raise BlockchainConnectionError from ex
 
-        fee_info = (data['hourFee'], data['halfHourFee'], data['fastestFee'])
+        fee_info = [data['hourFee'], data['halfHourFee'], data['fastestFee']]
 
         return fee_info
 
@@ -334,7 +334,7 @@ class BlockchainInfo(_BlockchainBaseClass):
 
             transaction['date'] = utils.datetime_str_from_timestamp(tx['time'],
                                                                     config.DATETIME_FORMAT,
-                                                                    utc=not config.get_value('USE_LOCALTIME'))
+                                                                    utc=not config.get('USE_LOCALTIME'))
 
             try:
                 transaction['block_height'] = tx['block_height']
@@ -437,7 +437,7 @@ class BlockExplorer(_BlockchainBaseClass):
 
             transaction['date'] = utils.datetime_str_from_timestamp(tx['time'],
                                                                     config.DATETIME_FORMAT,
-                                                                    utc=not config.get_value('USE_LOCALTIME'))
+                                                                    utc=not config.get('USE_LOCALTIME'))
 
             # unconfirmed txns have block height of -1
             if tx['blockheight'] < 0:

@@ -26,7 +26,7 @@ class BitcoinPrice:
     def __init__(self, currency, source, timeout=10):
 
         self.valid_sources = {
-            'coinmarketcap': self.coinmarketcap,
+            'coinmarketcap.com': self.coinmarketcap,
         }
 
         self.currency = currency

@@ -61,10 +61,10 @@ class RootApplication(tk.Tk):
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
 
-        self.bold_title_font = (config.get_value('FONT'), 14, 'bold')
-        self.title_font = (config.get_value('FONT'), 14)
-        self.small_font = (config.get_value('FONT'), 10)
-        self.tiny_font = (config.get_value('FONT'), 8)
+        self.bold_title_font = (config.get('FONT'), 14, 'bold')
+        self.title_font = (config.get('FONT'), 14)
+        self.small_font = (config.get('FONT'), 10)
+        self.tiny_font = (config.get('FONT'), 8)
 
         self.resizable(False, False)
 
@@ -148,7 +148,7 @@ class RootApplication(tk.Tk):
         self.current_frame = frame
 
     def set_style(self):
-        self.style.configure('Treeview.Heading', font=(config.get_value('FONT'), 10))
+        self.style.configure('Treeview.Heading', font=(config.get('FONT'), 10))
 
     def wallet_init(self, name, password, show_frame=False):
         self.btc_wallet = wallet.get_wallet(name, password)
@@ -191,7 +191,7 @@ class _Settings(tk.Toplevel):
     # config variables that have been changed, but may not yet be retrievable before restart.
     # stored so settings window can display config variables that the user changed, but won't be
     # used by the program until restart.
-    current_values = {k: config.get_value(k) for k in config.DEFAULT_CONFIG}
+    current_values = {k: config.get(k) for k in config.DEFAULT_CONFIG}
 
     def __init__(self, root):
         tk.Toplevel.__init__(self, root.master_frame)

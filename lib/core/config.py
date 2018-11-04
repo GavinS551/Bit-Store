@@ -72,7 +72,7 @@ def write_values(**kwargs):
 
 
 @functools.lru_cache(maxsize=None)
-def get_value(key):
+def get(key):
     try:
         return read_file()[key]
     except KeyError:

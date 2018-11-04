@@ -76,7 +76,7 @@ class SendDisplay(ttk.Frame):
         self.amount_btc_entry['state'] = tk.DISABLED  # enabled after address entry
         self.amount_btc_entry.grid(row=0, column=0, pady=5)
 
-        amount_fiat_label = ttk.Label(amount_frame, text=f'Amount ({config.get_value("FIAT")}):',
+        amount_fiat_label = ttk.Label(amount_frame, text=f'Amount ({config.get("FIAT")}):',
                                       font=self.main_wallet.root.small_font)
         amount_fiat_label.grid(row=0, column=1, pady=5, padx=20, sticky='w')
 
@@ -133,7 +133,7 @@ class SendDisplay(ttk.Frame):
                                     font=self.main_wallet.root.small_font, width=15)
         self.total_cost.grid(row=0, column=0, pady=5, padx=21, sticky='w')
 
-        total_fiat_cost_label = ttk.Label(total_cost_frame, text=f'Total ({config.get_value("FIAT")}):',
+        total_fiat_cost_label = ttk.Label(total_cost_frame, text=f'Total ({config.get("FIAT")}):',
                                           font=self.main_wallet.root.small_font)
         total_fiat_cost_label.grid(row=0, column=2, sticky='w')
 
@@ -234,7 +234,7 @@ class SendDisplay(ttk.Frame):
             tk.messagebox.showerror('No fee', 'Please enter what fee you want to use')
 
         else:
-            balance = self.main_wallet.wallet_balance.get() if not config.get_value('SPEND_UNCONFIRMED_UTXOS') else \
+            balance = self.main_wallet.wallet_balance.get() if not config.get('SPEND_UNCONFIRMED_UTXOS') else \
                 self.main_wallet.wallet_balance.get() + \
                 self.main_wallet.unconfirmed_wallet_balance.get()
             sat_balance = self.to_satoshis(balance)
