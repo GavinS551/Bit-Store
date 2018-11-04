@@ -136,8 +136,9 @@ class _EstimateFeeBaseClass:
 
 class BitcoinFeesEarn(_EstimateFeeBaseClass):
 
+    @property
     @_EstimateFeeBaseClass.limit_requests
-    def _bitcoinfees_earn(self):
+    def all_priorities(self):
         """ interface for bitcoinfees.earn api """
 
         url = 'https://bitcoinfees.earn.com/api/v1/fees/recommended'
@@ -153,10 +154,6 @@ class BitcoinFeesEarn(_EstimateFeeBaseClass):
 
         return fee_info
 
-    @property
-    def all_priorities(self):
-        return self._bitcoinfees_earn()
-
 
 class _BlockchainBaseClass:
     """ subclasses need to overwrite transactions property and make
@@ -165,6 +162,7 @@ class _BlockchainBaseClass:
      Connection errors should be re-raised as BlockchainConnectionError
      """
 
+    # bool that denoted whether the sub-class supports bech32 addresses
     bech32_support = None
 
     def __init__(self, addresses, refresh_rate, timeout):
