@@ -40,7 +40,10 @@ def broadcast_transaction(hex_transaction):
     return request.ok, request.status_code
 
 
-def blockchain_api(addresses, refresh_rate, source, timeout=10):
+def blockchain_api(source, addresses, refresh_rate, timeout=10):
+
+    if not isinstance(addresses, list):
+        raise TypeError('Address(es) must be in a list!')
 
     sources = {
         'blockchain.info': BlockchainInfo,
@@ -55,9 +58,6 @@ def blockchain_api(addresses, refresh_rate, source, timeout=10):
 
     source_cls = sources[source]
 
-    if not isinstance(addresses, list):
-        raise TypeError('Address(es) must be in a list!')
-
     if not utils.validate_addresses(addresses, allow_bech32=source_cls.bech32_support):
         raise ValueError('Invalid Address entered')
 
@@ -66,7 +66,7 @@ def blockchain_api(addresses, refresh_rate, source, timeout=10):
 
 def fee_api(source, refresh_rate, timeout=10):
     sources = {
-        'bitcoinfees.earn': 0
+        'bitcoinfees.earn': BitcoinFeesEarn
     }
 
     # ensure all possible sources are implemented
@@ -75,30 +75,22 @@ def fee_api(source, refresh_rate, timeout=10):
     if source.lower() not in sources:
         raise NotImplementedError(f'{source} is an invalid source')
 
+    return sources[source](refresh_rate, timeout)
 
-class EstimateFee:
+
+class _EstimateFeeBaseClass:
     """ api interfaces should return a tuple of low, medium and high priority fees, in sat/byte.
      they should also update cached api data every self._refresh_rate seconds.
 
-     raises BlockchainConnectionError if it cannot reach the specified source.
+     sub-classes should raise BlockchainConnectionError if it cannot connect to the specified source.
+
+     sub-classes need to implement all_priorities property, that returns a tuple with three values:
+     low, medium and high priority fees in sat/byte
     """
 
-    def __init__(self, source):
-        self.sources = {
-            'bitcoinfees.earn': self._bitcoinfees_earn
-        }
-
-        if source not in self.sources:
-            raise NotImplementedError(f'{source} is not an implemented source')
-
-        self._source_method = self.sources[source]
-
-        # unix timestamp of last api request, to maintain 60 second refresh
-        self._last_request = 0
-        self._cached_fee_info = None
-        self._refresh_rate = 60  # seconds
-
-        self.timeout = 10
+    def __init__(self, refresh_rate, timeout):
+        self.refresh_rate = refresh_rate  # seconds
+        self.timeout = timeout
 
     def limit_requests(func):
         """ limits requests to once every self._refresh_rate seconds. if it hasn't
@@ -107,30 +99,44 @@ class EstimateFee:
         """
         @functools.wraps(func)
         def wrapper(self, *args, **kwargs):
-            if time.time() - self._last_request > self._refresh_rate:
-                return func(self, *args, **kwargs)
+            # initialise cache values
+            if not hasattr(self, 'last_request_time'):
+                self.last_request_time = 0
+            if not hasattr(self, 'cached_fee_info'):
+                self.cached_fee_info = None
+
+            if time.time() - self.last_request_time > self.refresh_rate:
+                data = func(self, *args, **kwargs)
+
+                self.cached_fee_info = data
+                self.last_request_time = time.time()
+
+                return data
             else:
-                return self._cached_fee_info
+                return self.cached_fee_info
 
         return wrapper
 
     @property
     def low_priority(self):
-        return self._source_method()[0]
+        return self.all_priorities[0]
 
     @property
     def med_priority(self):
-        return self._source_method()[1]
+        return self.all_priorities[1]
 
     @property
     def high_priority(self):
-        return self._source_method()[2]
+        return self.all_priorities[2]
 
     @property
     def all_priorities(self):
-        return self._source_method()
+        raise NotImplementedError
 
-    @limit_requests
+
+class BitcoinFeesEarn(_EstimateFeeBaseClass):
+
+    @_EstimateFeeBaseClass.limit_requests
     def _bitcoinfees_earn(self):
         """ interface for bitcoinfees.earn api """
 
@@ -145,10 +151,11 @@ class EstimateFee:
 
         fee_info = (data['hourFee'], data['halfHourFee'], data['fastestFee'])
 
-        self._cached_fee_info = fee_info
-        self._last_request = time.time()
-
         return fee_info
+
+    @property
+    def all_priorities(self):
+        return self._bitcoinfees_earn()
 
 
 class _BlockchainBaseClass:
@@ -160,7 +167,7 @@ class _BlockchainBaseClass:
 
     bech32_support = None
 
-    def __init__(self, addresses, refresh_rate, timeout=10):
+    def __init__(self, addresses, refresh_rate, timeout):
 
         self.addresses = addresses
         self.timeout = timeout
