@@ -16,6 +16,7 @@
 import time
 import math
 import json
+import functools
 
 import requests
 
@@ -46,6 +47,9 @@ def blockchain_api(addresses, refresh_rate, source, timeout=10):
         'blockexplorer.com': BlockExplorer
     }
 
+    # ensure that all possible sources are implemented
+    assert all(s in sources for s in config.POSSIBLE_BLOCKCHAIN_API_SOURCES)
+
     if source.lower() not in sources:
         raise NotImplementedError(f'{source} is an invalid source')
 
@@ -58,6 +62,18 @@ def blockchain_api(addresses, refresh_rate, source, timeout=10):
         raise ValueError('Invalid Address entered')
 
     return source_cls(addresses, refresh_rate, timeout=timeout)
+
+
+def fee_api(source, refresh_rate, timeout=10):
+    sources = {
+        'bitcoinfees.earn': 0
+    }
+
+    # ensure all possible sources are implemented
+    assert all(s in sources for s in config.POSSIBLE_FEE_ESTIMATE_SOURCES)
+
+    if source.lower() not in sources:
+        raise NotImplementedError(f'{source} is an invalid source')
 
 
 class EstimateFee:
@@ -84,6 +100,20 @@ class EstimateFee:
 
         self.timeout = 10
 
+    def limit_requests(func):
+        """ limits requests to once every self._refresh_rate seconds. if it hasn't
+        been self._refresh_rate seconds yet, the cached value is returned. should be
+        used on methods that make the api calls to website sources
+        """
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            if time.time() - self._last_request > self._refresh_rate:
+                return func(self, *args, **kwargs)
+            else:
+                return self._cached_fee_info
+
+        return wrapper
+
     @property
     def low_priority(self):
         return self._source_method()[0]
@@ -100,27 +130,25 @@ class EstimateFee:
     def all_priorities(self):
         return self._source_method()
 
+    @limit_requests
     def _bitcoinfees_earn(self):
         """ interface for bitcoinfees.earn api """
-        if time.time() - self._last_request > self._refresh_rate or self._cached_fee_info is None:
-            url = 'https://bitcoinfees.earn.com/api/v1/fees/recommended'
 
-            try:
-                request = requests.get(url, timeout=self.timeout)
-                data = request.json()
+        url = 'https://bitcoinfees.earn.com/api/v1/fees/recommended'
 
-            except (requests.RequestException, json.JSONDecodeError) as ex:
-                raise BlockchainConnectionError from ex
+        try:
+            request = requests.get(url, timeout=self.timeout)
+            data = request.json()
 
-            fee_info = (data['hourFee'], data['halfHourFee'], data['fastestFee'])
+        except (requests.RequestException, json.JSONDecodeError) as ex:
+            raise BlockchainConnectionError from ex
 
-            self._cached_fee_info = fee_info
-            self._last_request = time.time()
+        fee_info = (data['hourFee'], data['halfHourFee'], data['fastestFee'])
 
-            return fee_info
+        self._cached_fee_info = fee_info
+        self._last_request = time.time()
 
-        else:
-            return self._cached_fee_info
+        return fee_info
 
 
 class _BlockchainBaseClass:
@@ -137,13 +165,37 @@ class _BlockchainBaseClass:
         self.addresses = addresses
         self.timeout = timeout
 
-        self.last_request_time = 0
-        self.last_requested_data = {}
-
         self.refresh_rate = refresh_rate
 
         self.last_transactions = None
         self.blockchain_data_updated = True
+
+    def limit_requests(func):
+        """ limits a function call to once every self.refresh_rate seconds,
+        used for methods that make api calls
+        """
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            # initialise cache values
+            if not hasattr(self, 'last_request_time'):
+                self.last_request_time = 0
+            if not hasattr(self, 'last_requested_data'):
+                self.last_requested_data = {}
+
+            if time.time() - self.last_request_time > self.refresh_rate:
+                data = func(self, *args, **kwargs)
+
+                self.last_requested_data = data
+                self.last_request_time = time.time()
+
+                self.blockchain_data_updated = True
+                return data
+
+            else:
+                self.blockchain_data_updated = False
+                return self.last_requested_data
+
+        return wrapper
 
     @property
     def transactions(self):
@@ -240,34 +292,23 @@ class BlockchainInfo(_BlockchainBaseClass):
     bech32_support = False
 
     @property
+    @_BlockchainBaseClass.limit_requests
     def _blockchain_data(self):
-        # leaves self.refresh rate seconds between api requests
-        if time.time() - self.last_request_time > self.refresh_rate:
+        url = 'https://blockchain.info/multiaddr?active='
 
-            url = 'https://blockchain.info/multiaddr?active='
+        for address in self.addresses:
+            url += f'{address}|'
+        url += '&n=100'  # show up to 100 (max) transactions
 
-            for address in self.addresses:
-                url += f'{address}|'
-            url += '&n=100'  # show up to 100 (max) transactions
+        try:
+            request = requests.get(url, timeout=self.timeout)
+            data = request.json()
+            request.raise_for_status()
 
-            try:
-                request = requests.get(url, timeout=self.timeout)
-                data = request.json()
-                request.raise_for_status()
+        except (requests.RequestException, json.JSONDecodeError) as ex:
+            raise BlockchainConnectionError from ex
 
-            except (requests.RequestException, json.JSONDecodeError) as ex:
-                raise BlockchainConnectionError from ex
-
-            self.last_request_time = time.time()
-            self.last_requested_data = data
-            self.blockchain_data_updated = True
-
-            return data
-
-        else:
-            # if self.refresh_rate seconds haven't passed since last api call,
-            # the last data received will be returned
-            return self.last_requested_data
+        return data
 
     @property
     def transactions(self):
@@ -343,45 +384,33 @@ class BlockExplorer(_BlockchainBaseClass):
     bech32_support = False
 
     @property
+    @_BlockchainBaseClass.limit_requests
     def _blockchain_data(self):
-        # leaves self.refresh rate seconds between api requests
-        if time.time() - self.last_request_time > self.refresh_rate:
+        url = 'https://blockexplorer.com/api/addrs/'
 
-            url = 'https://blockexplorer.com/api/addrs/'
+        for address in self.addresses:
+            # for trailing comma
+            if address != self.addresses[-1]:
+                url += f'{address},'
+            else:
+                url += address
 
-            for address in self.addresses:
-                # for trailing comma
-                if address != self.addresses[-1]:
-                    url += f'{address},'
-                else:
-                    url += address
+        url += '/txs?from=0&to=50'
 
-            url += '/txs?from=0&to=50'
+        try:
+            request = requests.get(url, timeout=self.timeout)
+            data = request.json()
+            request.raise_for_status()
 
-            try:
-                request = requests.get(url, timeout=self.timeout)
-                data = request.json()
-                request.raise_for_status()
+        except (requests.RequestException, json.JSONDecodeError) as ex:
+            raise BlockchainConnectionError from ex
 
-            except (requests.RequestException, json.JSONDecodeError) as ex:
-                raise BlockchainConnectionError from ex
+        if data['totalItems'] > 50:
+            raise RuntimeError('Error: More than 50 transactions detected in this wallet. '
+                               'Support for >50 txns is not yet implemented for the '
+                               'blockexplorer.com API. Please use another API source.')
 
-            if data['totalItems'] > 50:
-                raise RuntimeError('Error: More than 50 transactions detected in this wallet. '
-                                   'Support for >50 txns is not yet implemented for the '
-                                   'blockexplorer.com API. Please use another API source.')
-
-            self.last_request_time = time.time()
-            self.last_requested_data = data
-            self.blockchain_data_updated = True
-
-            return data
-
-        else:
-            # if self.refresh_rate seconds haven't passed since last api call,
-            # the last data received will be returned
-            self.blockchain_data_updated = False
-            return self.last_requested_data
+        return data
 
     @property
     def transactions(self):
