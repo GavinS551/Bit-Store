@@ -34,10 +34,10 @@ def main():
     app = RootApplication()
     app.mainloop()
 
-    # setting event in api_data_updater thread of Wallet instance after
+    # stopping api_data_updater thread of Wallet instance after
     # tkinter mainloop closes
     if app.btc_wallet is not None:
-        app.btc_wallet.updater_thread.event.set()
+        app.btc_wallet.updater_thread.stop()
 
 
 class RootApplication(tk.Tk):

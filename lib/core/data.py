@@ -18,10 +18,11 @@ import hashlib
 import base64
 import json
 import copy
+import threading
 
 import cryptography.fernet as fernet
 
-from . import utils
+from ..core import utils
 from ..exceptions.data_exceptions import *
 
 
@@ -46,7 +47,7 @@ class Crypto:
         return str_bytes.decode('utf-8')
 
 
-class DataStore(Crypto):
+class DataStore:
 
     # dict of file paths and instances of DataStore.
     _instances = {}
@@ -64,76 +65,82 @@ class DataStore(Crypto):
 
             return new_cls
 
+    @classmethod
+    def new_data_store(cls, file_path, password, data_format, sensitive_keys=None):
+        """ alternative constructor for DataStore that creates and formats new file """
+
+        # format for file, setting data format keys to their instantiated types
+        json_blank_template = json.dumps({k: v() for k, v in data_format.items()})
+        crypto = Crypto(password)
+
+        with open(file_path, 'w') as f:
+            json.dump(crypto.encrypt(json_blank_template), f)
+
+        return cls(file_path, password, data_format, sensitive_keys)
+
     def __init__(self, file_path, password, data_format, sensitive_keys=None):
         """
         :param file_path: path to data file
         :param password: password to encrypt data with
-        :param data_format: a dictionary of allowed keys and allowed value types
+        :param data_format: a dictionary of allowed keys and allowed value types (None will be set
+        to new instance of allowed type when writing)
         :param sensitive_keys: a list of data_format keys that should have their values encrypted
-        as well as regular file encryption
+        on top of regular file encryption
         """
-        super().__init__(password)
         self.file_path = file_path
+        self.data_format = data_format
+        self.sensitive_keys = sensitive_keys if sensitive_keys is not None else []
+        self.crypto = Crypto(password)
+
+        self.write_lock = threading.Lock()
 
         if not data_format:
             raise ValueError('Data format must be specified')
 
-        self.data_format = data_format
+        if not os.path.exists(self.file_path):
+            raise FileNotFoundError(f'{self.file_path} does not exist!')
 
-        # json serialised data_format to be dumped to new file
-        # (types are instantiated in the template)
-        self.json_blank_template = json.dumps({k: v() for k, v in self.data_format.items()})
-
-        # sensitive keys will have their values encrypted twice, so when the file is read
-        # and stored in memory, their values will still be encrypted
-        self.sensitive_keys = sensitive_keys if sensitive_keys is not None else []
+        if not self._check_password():
+            raise IncorrectPasswordError('Entered password is incorrect')
 
         if not all(self.data_format[k] in (str, dict) for k in self.sensitive_keys):
             raise ValueError('Sensitive key values must be either a string or a dict')
 
-        if not os.path.exists(self.file_path):
-            raise FileNotFoundError(f'{self.file_path} does not exist!')
-
-        with open(self.file_path, 'r') as d:
-            # new file handling
-            if d.read() == '':
-                with open(self.file_path, 'w') as dw:
-                    dw.write(self.encrypt(self.json_blank_template))
-            d.seek(0)
-
-            # input checking
-            try:
-                if not self._check_password():
-                    raise IncorrectPasswordError('Entered password is incorrect')
-
-                json.loads(self.decrypt(d.read()))
-
-            except json.decoder.JSONDecodeError:
-                d.seek(0)
-                raise InvalidFileFormat(f'Invalid JSON: wallet data file is invalid JSON')
-
         # data will be stored in memory and accessed from there after first read
         # but data will constantly be written to file as it updates
-        self._data = self._read_file()
+        self._internal_data = self._read_file()
 
+        # if there are any new keys in the data format that aren't present in the file, create them
+        self._write_new_keys()
+
+        # TODO: make a password a requirement for decryption of sensitive keys,
+        # TODO: not this simple hash verification
         # Storing password hash for password validation independent of
         # this class i.e Wallet class for sensitive information
         if not self.get_value('PASSWORD_HASH'):
+            # use internal write values as thread not started yet
             self.write_values(PASSWORD_HASH=hashlib.sha256(password.encode('utf-8')).hexdigest())
 
-        # if there are any new keys in the data format that aren't present in the file, create them
+    @property
+    def _data(self):
+        """ returns copy of data
+        self._internel_data is only accessed directly by self._write_data_to_file.
+        This is to ensure the internal object state is consistent, especially
+        when threads are being used to modify data.
+        """
+        return copy.deepcopy(self._internal_data)
+
+    def _write_new_keys(self):
+        """ if there are any keys present in self.data_format that
+        aren't in file, the file will be updated with the new keys.
+        (for backwards compatibility with old DataStore files)
+        """
+        data = {}
         for k in self.data_format:
             if k not in self._data:
-                self._data[k] = self.data_format[k]()
-        self._write_to_file(self._data)
+                data[k] = self.data_format[k]()
 
-    def change_password(self, new_password):
-        # make new fernet key from password
-        self._fernet = fernet.Fernet(self.key_from_password(new_password))
-        # store new password hash
-        self._data['PASSWORD_HASH'] = hashlib.sha256(new_password.encode('utf-8')).hexdigest()
-        # write data to file (will encrypt data using new fernet key)
-        self._write_to_file(self._data)
+        self._write_data_to_file(data)
 
     def _check_password(self):
         try:
@@ -146,17 +153,23 @@ class DataStore(Crypto):
 
     def _read_file(self):
         with open(self.file_path, 'r') as d:
-            data = d.read()
-            return json.loads(self.decrypt(data))
+            data = self.crypto.decrypt(d.read())
+            return json.loads(data)
 
-    def _write_to_file(self, data):
+    def _write_data_to_file(self, data):
+        """ data should be a dict of self.data_format key/values to be updated in the file """
+        # sanity checks, real validation of data should have been done by callers
+        assert all(k in self.data_format and isinstance(v, self.data_format[k]) for k, v in data.items())
+
         # if data is invalid for json.dumps it will raise exception here before file is overwritten
         json.dumps(data)
-        # update data in memory
-        self._data = data
 
-        utils.atomic_file_write(data=self.encrypt(json.dumps(data)),
-                                file_path=self.file_path)
+        with self.write_lock:
+            # update data in memory
+            self._internal_data.update(data)
+
+            utils.atomic_file_write(data=self.crypto.encrypt(json.dumps(self._internal_data)),
+                                    file_path=self.file_path)
 
     def _encrypt_dict_string_values(self, dict_):
         """ goes through a dict and encrypts all string values, and all string values in nested dicts """
@@ -168,7 +181,7 @@ class DataStore(Crypto):
 
         for k, v in copy_dict.items():
             if isinstance(v, str):
-                copy_dict.update({k: self.encrypt(v)})
+                copy_dict.update({k: self.crypto.encrypt(v)})
 
             elif isinstance(v, dict):
                 self._encrypt_dict_string_values(v)
@@ -176,7 +189,7 @@ class DataStore(Crypto):
         dict_.update(copy_dict)
 
     def write_values(self, **kwargs):
-        data = self._data
+        data = {}
         for k, v in kwargs.items():
 
             # if v is None, set it to a new instance if its proper type
@@ -200,14 +213,14 @@ class DataStore(Crypto):
                             data.update({k: v})
 
                         elif isinstance(v, str):
-                            data[k] = self.encrypt(v)
+                            data[k] = self.crypto.encrypt(v)
                         else:
                             raise ValueError(f'Invalid sensitive data type: "{type(v)}"')
 
                     else:
                         data[k] = v
 
-        self._write_to_file(data)
+        self._write_data_to_file(data)
 
     def get_value(self, key):
         value = self._data[key.upper()]
@@ -216,11 +229,20 @@ class DataStore(Crypto):
         # in the dict will be decrypted when needed, so only strings
         # are decrypted. (string and dicts are only types allowed in sensitive data)
         if key.upper() in self.sensitive_keys and isinstance(value, str):
-            return self.decrypt(value)
+            return self.crypto.decrypt(value)
 
         else:
             # return deepcopy for other types than immutable string (dicts mainly)
             return copy.deepcopy(value)
+
+    def change_password(self, new_password):
+        data = {}
+        # make new fernet key from password
+        self.crypto._fernet = fernet.Fernet(self.crypto.key_from_password(new_password))
+        # store new password hash
+        data['PASSWORD_HASH'] = hashlib.sha256(new_password.encode('utf-8')).hexdigest()
+        # write data to file (will encrypt data using new fernet key)
+        self._write_data_to_file(data)
 
     # for use outside this class, where the password isn't actually used
     # to decrypt the file, but still needs to be verified for security

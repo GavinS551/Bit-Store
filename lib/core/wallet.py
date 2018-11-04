@@ -139,34 +139,33 @@ class Wallet:
 
         return m_data
 
+    @staticmethod
+    def get_wallet_path(name):
+        return os.path.join(config.WALLET_DATA_DIR, name)
+
     @classmethod
     def new_wallet(cls, name, password, hd_wallet_obj, offline=False):
 
         if not isinstance(hd_wallet_obj, hd.HDWallet):
             raise TypeError('hd_wallet_obj must be an instance of Bip32 class')
 
-        dir_ = os.path.join(config.WALLET_DATA_DIR, name)
-        data_file_path = os.path.join(dir_, config.WALLET_DATA_FILE_NAME)
+        wallet_dir_path = cls.get_wallet_path(name)
+        wallet_data_file_path = os.path.join(wallet_dir_path, config.WALLET_DATA_FILE_NAME)
+        wallet_info_file_path = os.path.join(wallet_dir_path, config.WALLET_INFO_FILE_NAME)
 
         # Everything is in a try/except block so files get cleaned up
         # before exception is raised
         try:
 
-            if not os.path.isdir(dir_):
-                os.makedirs(dir_, exist_ok=True)
-
-            elif not is_wallet(name) and os.path.isdir(dir_):
-                # won't raise exception if wallet folder exists but doesn't contain any data needed
-                pass
+            if not os.path.isdir(wallet_dir_path):
+                os.makedirs(wallet_dir_path, exist_ok=True)
 
             else:
                 raise WalletAlreadyExistsError('Wallet with the same name already exists!')
 
-            with open(data_file_path, 'w+'):
-                pass
-
-            d_store = data.DataStore(data_file_path, password, data_format=config.STANDARD_DATA_FORMAT,
-                                     sensitive_keys=config.SENSITIVE_DATA)
+            d_store = data.DataStore.new_data_store(wallet_data_file_path, password,
+                                                    data_format=config.STANDARD_DATA_FORMAT,
+                                                    sensitive_keys=config.SENSITIVE_DATA)
 
             addresses = hd_wallet_obj.addresses()
 
@@ -186,9 +185,7 @@ class Wallet:
 
             d_store.write_values(**info)
 
-            del hd_wallet_obj
-
-            with open(os.path.join(dir_, config.WALLET_INFO_FILE_NAME), 'w') as w_info_file:
+            with open(wallet_info_file_path, 'w') as w_info_file:
                 w_data = {'watch_only': cls == WatchOnlyWallet}
                 json.dump(w_data, w_info_file)
 
@@ -198,7 +195,7 @@ class Wallet:
 
             # if exception is because of a name conflict, it won't delete data
             if not isinstance(ex, WalletAlreadyExistsError):
-                shutil.rmtree(dir_, ignore_errors=True)
+                shutil.rmtree(wallet_dir_path, ignore_errors=True)
 
             # re-raise exception that triggered try/except block
             raise
@@ -623,11 +620,11 @@ class Wallet:
 
             r_dict = addr_wif_keys['receiving']
             for k, v in r_dict.items():
-                r_dict.update({k: self.data_store.decrypt(v)})
+                r_dict.update({k: self.data_store.crypto.decrypt(v)})
 
             c_dict = addr_wif_keys['change']
             for K, V in c_dict.items():
-                c_dict.update({K: self.data_store.decrypt(V)})
+                c_dict.update({K: self.data_store.crypto.decrypt(V)})
 
             return addr_wif_keys
 
@@ -644,7 +641,7 @@ class Wallet:
                 addr_type = self.address_type(a)
 
                 # only decrypt the values that we need
-                wif_keys.append(self.data_store.decrypt(addr_wif_keys[addr_type][a]))
+                wif_keys.append(self.data_store.crypto.decrypt(addr_wif_keys[addr_type][a]))
 
             return wif_keys
 
