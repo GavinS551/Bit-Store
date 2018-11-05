@@ -142,9 +142,14 @@ class TransactionDisplay(ttk.Frame):
         self.main_wallet.root.after(self.main_wallet.refresh_data_rate, self._refresh_transactions)
 
     def _set_popup_event(self):
+        explorer_txn = lambda: self.main_wallet.block_explorer.show_transaction(self.get_selected_transaction().txid)
+
         popup = tk.Menu(self, tearoff=0)
         popup.add_command(label='Details',
                           command=lambda: self._on_double_click(SimpleNamespace(widget=self.tree_view)))
+
+        popup.add_command(label='Open in block explorer',
+                          command=explorer_txn)
 
         def do_popup(event):
             # get row under mouse

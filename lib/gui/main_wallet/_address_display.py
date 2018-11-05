@@ -57,6 +57,17 @@ class AddressDisplay(ttk.Frame):
         self._refresh_addresses()
         self._set_popup_event()
 
+    def get_selected_address(self):
+        try:
+            sel = self.tree_view.selection()[0]
+        except IndexError:
+            # if nothing is selected
+            return
+
+        item = self.tree_view.item(sel)
+
+        return item['values'][0]
+
     def _insert_row(self, *args):
         self.tree_view.insert('', tk.END, text=args[0], values=(args[1], args[2], args[3]))
 
@@ -103,8 +114,11 @@ class AddressDisplay(ttk.Frame):
             item = self.tree_view.item(self.tree_view.selection()[0])['values'][0]  # first value is address
             self.main_wallet.root.clipboard_append(item)
 
+        explorer_address = lambda: self.main_wallet.block_explorer.show_address(self.get_selected_address())
+
         popup = tk.Menu(self, tearoff=0)
         popup.add_command(label='Copy Address', command=copy)
+        popup.add_command(label='Open in block explorer', command=explorer_address)
 
         def do_popup(event):
             # get row under mouse

@@ -15,61 +15,35 @@
 
 import webbrowser
 
+from . import config
+
 
 def explorer_api(source):
+    # tuple of urls should have txid url and address url
     sources = {
-        'blockchain.info': BlockchainInfo,
+        'blockchain.info': ('https://www.blockchain.com/btc/tx/', 'https://www.blockchain.com/btc/address/'),
+        'blockcypher.com': ('https://live.blockcypher.com/btc/tx/', 'https://live.blockcypher.com/btc/address/'),
+        'blockchair.com': ('https://blockchair.com/bitcoin/transaction/', 'https://blockchair.com/bitcoin/address/')
     }
+    # ensure all sources in config are implemented
+    assert all(s in config.POSSIBLE_EXPLORER_SOURCES for s in sources)
 
-    if source.lower() not in sources:
+    if source not in sources:
         raise NotImplementedError(f'"{source}" is not an implemented explorer api')
 
-    return sources[source]()
+    return BlockExplorer(sources[source][0], sources[source][1])
 
 
-class _BlockExplorerBaseClass:
+class BlockExplorer:
     """ class that can open different block explorers in web browser to
     show transaction/address info
     """
-    bech32_support = None
+    def __init__(self, tx_url, addr_url):
+        self.tx_url = tx_url
+        self.addr_url = addr_url
 
     def show_transaction(self, txid):
-        raise NotImplementedError
+        webbrowser.open(self.tx_url + txid)
 
     def show_address(self, address):
-        raise NotImplementedError
-
-
-class BlockchainInfo(_BlockExplorerBaseClass):
-    bech32_support = False
-
-    def show_transaction(self, txid):
-        url = f'https://www.blockchain.com/btc/tx/{txid}'
-        webbrowser.open(url)
-
-    def show_address(self, address):
-        url = f'https://www.blockchain.com/btc/address/{address}'
-        webbrowser.open(url)
-
-
-class BlockCypher(_BlockExplorerBaseClass):
-    bech32_support = False
-
-    def show_transaction(self, txid):
-        url = f'https://live.blockcypher.com/btc/tx/{txid}'
-        webbrowser.open(url)
-
-    def show_address(self, address):
-        url = f'https://live.blockcypher.com/btc/address/{address}'
-        webbrowser.open(url)
-
-
-class Blockchair(_BlockExplorerBaseClass):
-
-    def show_transaction(self, txid):
-        url = f'https://blockchair.com/bitcoin/transaction/{txid}'
-        webbrowser.open(url)
-
-    def show_address(self, address):
-        url = f'https://blockchair.com/bitcoin/address/{address}'
-        webbrowser.open(url)
+        webbrowser.open(self.addr_url + address)

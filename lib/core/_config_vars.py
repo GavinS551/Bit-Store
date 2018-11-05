@@ -43,9 +43,10 @@ LOGGER_DIR = os.path.join(DATA_DIR, 'logs')
 
 DEFAULT_CONFIG = {
 
-    'PRICE_API_SOURCE': 'coinmarketcap',
+    'PRICE_API_SOURCE': 'coinbase.com',
     'BLOCKCHAIN_API_SOURCE': 'blockchain.info',
     'FEE_ESTIMATE_SOURCE': 'bitcoinfees.earn',
+    'BLOCK_EXPLORER_SOURCE': 'blockchair.com',
     'FIAT': 'USD',
     'BTC_UNITS': 'BTC',
     'FONT': 'verdana',
@@ -125,10 +126,13 @@ POSSIBLE_BTC_UNITS = ['BTC', 'mBTC', 'bits', 'sat']
 POSSIBLE_BLOCKCHAIN_API_SOURCES = ['blockchain.info', 'blockexplorer.com']
 
 
-POSSIBLE_PRICE_API_SOURCES = ['coinbase']
+POSSIBLE_PRICE_API_SOURCES = ['coinbase.com']
 
 
 POSSIBLE_FEE_ESTIMATE_SOURCES = ['bitcoinfees.earn']
+
+
+POSSIBLE_EXPLORER_SOURCES = ['blockchain.info', 'blockcypher.com', 'blockchair.com']
 
 
 # standard format for datetime stings
@@ -142,4 +146,6 @@ WALLET_INFO_FILE_NAME = 'w_info'
 
 
 GAP_LIMIT_MIN = 20
+
+
 GAP_LIMIT_MAX = 50

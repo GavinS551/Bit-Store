@@ -31,7 +31,7 @@ def _source_to_cls(source):
     ensures that config keys and sources keys are in sync)
     """
     sources = {
-        'coinbase': Coinbase
+        'coinbase.com': Coinbase
     }
     # make sure all sources are implemented
     assert all(s in sources for s in config.POSSIBLE_PRICE_API_SOURCES)

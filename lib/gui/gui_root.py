@@ -214,6 +214,7 @@ class _Settings(tk.Toplevel):
         self.fiat_unit = tk.StringVar()
         self.btc_units = tk.StringVar()
         self.show_fiat_history = tk.BooleanVar()
+        self.blockexplorer_api = tk.StringVar()
 
         # config variable names as keys with their corresponding tk Variables
         self.config_vars = {
@@ -224,7 +225,8 @@ class _Settings(tk.Toplevel):
             'FEE_ESTIMATE_SOURCE': self.fee_api,
             'FIAT': self.fiat_unit,
             'BTC_UNITS': self.btc_units,
-            'GUI_SHOW_FIAT_TX_HISTORY': self.show_fiat_history
+            'GUI_SHOW_FIAT_TX_HISTORY': self.show_fiat_history,
+            'BLOCK_EXPLORER_SOURCE': self.blockexplorer_api
         }
 
         # setting tkinter variables
@@ -344,6 +346,14 @@ class _Settings(tk.Toplevel):
         fee_api_options = ttk.Combobox(frame, textvariable=self.fee_api, state='readonly',
                                        value=config.POSSIBLE_FEE_ESTIMATE_SOURCES, width=15)
         fee_api_options.grid(row=2, column=1, sticky='e')
+
+        blockexplorer_label = ttk.Label(frame, text='Block Explorer:', font=self.root.tiny_font)
+        blockexplorer_label.grid(row=3, column=0, padx=padx, pady=10, sticky='w')
+
+        blockexplorer_options = ttk.Combobox(frame, textvariable=self.blockexplorer_api,
+                                             state='readonly', value=config.POSSIBLE_EXPLORER_SOURCES,
+                                             width=15)
+        blockexplorer_options.grid(row=3, column=1, sticky='e')
 
     def draw_gui_settings(self):
         frame = self.gui_settings

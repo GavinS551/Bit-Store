@@ -24,7 +24,7 @@ from ._receive_display import ReceiveDisplay
 from ._console_display import ConsoleDisplay
 from ._address_display import AddressDisplay
 
-from ...core import config, utils, data
+from ...core import config, utils, data, blockexplorer
 
 
 class MainWallet(ttk.Frame):
@@ -63,6 +63,8 @@ class MainWallet(ttk.Frame):
         self.next_receiving_address = tk.StringVar()
 
         self.api_thread_status = tk.StringVar()
+
+        self.block_explorer = blockexplorer.explorer_api(config.get('BLOCK_EXPLORER_SOURCE'))
 
     def gui_draw(self):
         self._refresh_data()
