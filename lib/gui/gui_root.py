@@ -20,6 +20,9 @@ import os
 import traceback
 import platform
 
+import qrcode
+from PIL import ImageTk
+
 from extern import ttk_simpledialog as simpledialog
 from ..core import config, wallet, price
 
@@ -184,6 +187,21 @@ class RootApplication(tk.Tk):
         toplevel.resizable(resizable, resizable)
 
         return toplevel
+
+    def qr_code_window(self, parent, str_data):
+        toplevel = self.get_toplevel(parent)
+
+        qr = qrcode.QRCode(box_size=5)
+        qr.add_data(str_data)
+        bg_colour = '#DCDAD5' if self.theme == 'clam' else '#F0F0F0'
+        tk_image = ImageTk.PhotoImage(qr.make_image(back_color=bg_colour))
+        toplevel.qr = tk_image  # keep reference to image to avoid garbage collector
+
+        qr_code = ttk.Label(toplevel, image=tk_image)
+        qr_code.grid(row=0, column=0, sticky='nsew', padx=10, pady=5)
+
+        ok_button = ttk.Button(toplevel, text='OK', command=toplevel.destroy)
+        ok_button.grid(row=1, column=0, pady=(0, 10))
 
 
 class _Settings(tk.Toplevel):
