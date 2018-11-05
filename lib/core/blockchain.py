@@ -43,7 +43,7 @@ def broadcast_transaction(hex_transaction):
 def blockchain_api(source, addresses, refresh_rate, timeout=10):
 
     if not isinstance(addresses, list):
-        raise TypeError('Address(es) must be in a list!')
+        raise TypeError('Address(es) must be in a list')
 
     sources = {
         'blockchain.info': BlockchainInfo,
@@ -145,6 +145,7 @@ class BitcoinFeesEarn(_EstimateFeeBaseClass):
 
         try:
             request = requests.get(url, timeout=self.timeout)
+            request.raise_for_status()
             data = request.json()
 
         except (requests.RequestException, json.JSONDecodeError) as ex:

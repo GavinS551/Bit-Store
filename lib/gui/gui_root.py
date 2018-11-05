@@ -21,7 +21,7 @@ import traceback
 import platform
 
 from extern import ttk_simpledialog as simpledialog
-from ..core import config, wallet
+from ..core import config, wallet, price
 
 from .wallet_select import WalletSelect
 from .wallet_creation import (WalletCreation, WalletCreationLoading,
@@ -203,6 +203,8 @@ class _Settings(tk.Toplevel):
 
         self.root = root
 
+        self.fiat_options = None  # defined in draw_gui_settings
+
         # settings variables, will be set to current config values below
         self.spend_unconfirmed_outs = tk.BooleanVar()
         self.spend_utxos_individually = tk.BooleanVar()
@@ -306,6 +308,18 @@ class _Settings(tk.Toplevel):
         frame = self.api_settings
         padx = (0, 42)
 
+        def change_possible_fiat_units(event):
+            """ changes possible fiat options in gui settings based off current source """
+            source = event.widget.get()
+            fiat_options = price.source_valid_currencies(source)
+
+            self.fiat_options.config(values=fiat_options)
+
+            # leave combobox selection the same if the fiat option is still valid, else change
+            # it to valid option for new source
+            if not self.fiat_unit.get() in fiat_options:
+                self.fiat_unit.set(fiat_options[0])
+
         blockchain_api_label = ttk.Label(frame, text='Blockchain API:', font=self.root.tiny_font)
         blockchain_api_label.grid(row=0, column=0, padx=padx, pady=10, sticky='w')
 
@@ -319,6 +333,10 @@ class _Settings(tk.Toplevel):
         price_api_options = ttk.Combobox(frame, textvariable=self.price_api, state='readonly',
                                          value=config.POSSIBLE_PRICE_API_SOURCES, width=15)
         price_api_options.grid(row=1, column=1, sticky='e')
+
+        # this will update possible fiat units in gui settings to match the
+        # supported fiat units in new price api source
+        price_api_options.bind('<<ComboboxSelected>>', change_possible_fiat_units)
 
         fee_api_label = ttk.Label(frame, text='Fee API:', font=self.root.tiny_font)
         fee_api_label.grid(row=2, column=0, padx=padx, pady=10, sticky='w')
@@ -334,9 +352,14 @@ class _Settings(tk.Toplevel):
         fiat_label = ttk.Label(frame, text='Fiat Currency:', font=self.root.tiny_font)
         fiat_label.grid(row=0, column=0, padx=padx, pady=10, sticky='w')
 
-        fiat_options = ttk.Combobox(frame, textvariable=self.fiat_unit,
-                                    state='readonly', value=config.POSSIBLE_FIAT_UNITS, width=10)
-        fiat_options.grid(row=0, column=1, sticky='e')
+        # needs to be instance attribute so it can be accessed from api_settings,
+        # where possible fiat options depends on selected price api source.
+        # starting values are based on default price api source selection
+        self.fiat_options = ttk.Combobox(frame, textvariable=self.fiat_unit,
+                                         state='readonly',
+                                         value=price.source_valid_currencies(self.price_api.get()),
+                                         width=10)
+        self.fiat_options.grid(row=0, column=1, sticky='e')
 
         btc_units_label = ttk.Label(frame, text='Bitcoin Units:', font=self.root.tiny_font)
         btc_units_label.grid(row=1, column=0, padx=padx, pady=10, sticky='w')

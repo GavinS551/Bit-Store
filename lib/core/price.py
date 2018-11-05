@@ -14,94 +14,123 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import time
+import functools
+import json
 
 import requests
 
+from . import config
 
-class BitcoinPrice:
 
-    # TODO: CLASS NEEDS A REFACTOR
-    # TODO: MAKE SURE PRICES ARE ALL FLOATS
+class BtcPriceConnectionError(Exception):
+    pass
 
-    def __init__(self, currency, source, timeout=10):
 
-        self.valid_sources = {
-            'coinmarketcap.com': self.coinmarketcap,
-        }
+def _source_to_cls(source):
+    """ returns class corresponding to config var source string (assertion below
+    ensures that config keys and sources keys are in sync)
+    """
+    sources = {
+        'coinbase': Coinbase
+    }
+    # make sure all sources are implemented
+    assert all(s in sources for s in config.POSSIBLE_PRICE_API_SOURCES)
 
+    if source.lower() not in sources:
+        raise NotImplementedError(f'{source} is an invalid source')
+
+    return sources[source]
+
+
+def source_valid_currencies(source):
+    """ returns supported currencies for passed source """
+    return _source_to_cls(source).currencies
+
+
+def price_api(source, currency, refresh_rate, timeout=10):
+    source_cls = _source_to_cls(source)
+    return source_cls(currency, refresh_rate, timeout)
+
+
+class _BitcoinPriceBaseClass:
+    """ Sub-classes should implement price property that returns current
+    price of 1 BTC in self.currency units.
+
+    All connection errors should be re-raised as BtcPriceConnectionError
+    """
+
+    # should be overridden by subclasses
+    # list that contains all currencies that interface supports
+    currencies = []
+
+    def __init__(self, currency, refresh_rate, timeout):
         self.currency = currency
-
-        self.source = source
-        if self.source not in self.valid_sources:
-            raise Exception(f'{self.source} is not a valid source!')
-
-        self.last_request = 0  # unix timestamp of last price request
-        self.last_price = 0  # last requested price
-
+        self.refresh_rate = refresh_rate
         self.timeout = timeout
+
+        if self.currency not in self.currencies:
+            raise NotImplementedError(f'"{self.currency}" is not an implemented currency for this interface')
+
+    def limit_requests(func):
+        """ limit func calls to once every self.refresh_rate seconds,
+        returns cached data if call is made more often than that
+        """
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            # initialise cache values
+            if not hasattr(self, 'last_request_time'):
+                self.last_request_time = 0
+            if not hasattr(self, 'cached_price_data'):
+                self.cached_price_data = None
+
+            if time.time() - self.last_request_time > self.refresh_rate:
+                data = func(self, *args, **kwargs)
+
+                self.last_request_time = time.time()
+                self.cached_price_data = data
+
+                return data
+            else:
+                return self.cached_price_data
+
+        return wrapper
 
     @property
     def price(self):
-        # Leaves 60 seconds between price requests
-        if time.time() - self.last_request >= 60:
-            self.last_price = self.valid_sources[self.source]()
-            self.last_request = time.time()
-            return self.last_price
-        else:
-            return self.last_price
-
-    def coinmarketcap(self):
-        currency = self.currency
-        valid_currencies = ["AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "CZK",
-                            "DKK", "EUR", "GBP", "HKD", "HUF", "IDR", "ILS",
-                            "INR", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD",
-                            "PHP", "PKR", "PLN", "RUB", "SEK", "SGD", "THB",
-                            "TRY", "TWD", "ZAR", "USD"]
-
-        if currency.upper() not in valid_currencies:
-            raise ValueError(f'"{currency}" is not a valid currency for this source')
-
-        url = 'https://api.coinmarketcap.com/v1/ticker/bitcoin/?convert='
-        data = requests.get(url + currency, timeout=self.timeout).json()[0]
-        # will return the currency ticker as well for all methods, because of
-        # the ability to default to USD silently-ish
-        return float(data[f'price_{currency.lower()}'])
-
-    def blockchaininfo(self):
         raise NotImplementedError
-    #     currency = self.currency
-    #     valid_currencies = ['USD', 'AUD', 'BRL', 'CAD', 'CHF', 'CLP', 'CNY',
-    #                         'DKK', 'EUR', 'GBP', 'HKD', 'INR', 'ISK', 'JPY',
-    #                         'KRW', 'NZD', 'PLN', 'RUB', 'SEK', 'SGD', 'THB',
-    #                         'TWD']
-    #
-    #     if currency.upper() not in valid_currencies:
-    #         raise ValueError(f'"{currency}" is not a valid currency for this source')
-    #
-    #     url = 'https://blockchain.info/ticker'
-    #     data = requests.get(url, timeout=self.timeout).json()
-    #     return data[currency.upper()]['last']
-    #
-    def gdax(self):
-        raise NotImplementedError
-    #     currency = self.currency
-    #     valid_currencies = ["EUR", "USD", "GBP"]
-    #
-    #     if currency.upper() not in valid_currencies:
-    #         raise ValueError(f'"{currency}" is not a valid currency for this source')
-    #
-    #     url = f'https://api.gdax.com/products/BTC-{currency}/ticker'
-    #     data = requests.get(url, timeout=self.timeout).json()
-    #     return data['price']
-    #
-    def bitstamp(self):
-        raise NotImplementedError
-    #     currency = self.currency
-    #     valid_currencies = ["EUR", "USD"]
-    #
-    #     if currency.upper() not in valid_currencies:
-    #         raise ValueError(f'"{currency}" is not a valid currency for this source')
-    #
-    #     url = f'https://www.bitstamp.net/api/v2/ticker/btc{currency}/'
-    #     data = requests.get(url, timeout=self.timeout).json()
-    #     return data['last']
+
+
+class Coinbase(_BitcoinPriceBaseClass):
+
+    currencies = ['AED', 'AFN', 'ALL', 'AMD', 'ANG', 'AOA', 'ARS', 'AUD', 'AWG', 'AZN', 'BAM',
+                  'BBD', 'BDT', 'BGN', 'BHD', 'BIF', 'BMD', 'BND', 'BOB', 'BRL', 'BSD', 'BTN',
+                  'BWP', 'BYN', 'BYR', 'BZD', 'CAD', 'CDF', 'CHF', 'CLF', 'CLP', 'CNH', 'CNY',
+                  'COP', 'CRC', 'CUC', 'CVE', 'CZK', 'DJF', 'DKK', 'DOP', 'DZD', 'EEK', 'EGP',
+                  'ERN', 'ETB', 'EUR', 'FJD', 'FKP', 'GBP', 'GEL', 'GGP', 'GHS', 'GIP', 'GMD',
+                  'GNF', 'GTQ', 'GYD', 'HKD', 'HNL', 'HRK', 'HTG', 'HUF', 'IDR', 'ILS', 'IMP',
+                  'INR', 'IQD', 'ISK', 'JEP', 'JMD', 'JOD', 'JPY', 'KES', 'KGS', 'KHR', 'KMF',
+                  'KRW', 'KWD', 'KYD', 'KZT', 'LAK', 'LBP', 'LKR', 'LRD', 'LSL', 'LTL', 'LVL',
+                  'LYD', 'MAD', 'MDL', 'MGA', 'MKD', 'MMK', 'MNT', 'MOP', 'MRO', 'MTL', 'MUR',
+                  'MVR', 'MWK', 'MXN', 'MYR', 'MZN', 'NAD', 'NGN', 'NIO', 'NOK', 'NPR', 'NZD',
+                  'OMR', 'PAB', 'PEN', 'PGK', 'PHP', 'PKR', 'PLN', 'PYG', 'QAR', 'RON', 'RSD',
+                  'RUB', 'RWF', 'SAR', 'SBD', 'SCR', 'SEK', 'SGD', 'SHP', 'SLL', 'SOS', 'SRD',
+                  'SSP', 'STD', 'SVC', 'SZL', 'THB', 'TJS', 'TMT', 'TND', 'TOP', 'TRY', 'TTD',
+                  'TWD', 'TZS', 'UAH', 'UGX', 'USD', 'UYU', 'UZS', 'VEF', 'VND', 'VUV', 'WST',
+                  'XAF', 'XAG', 'XAU', 'XCD', 'XDR', 'XOF', 'XPD', 'XPF', 'XPT', 'YER', 'ZAR',
+                  'ZMK', 'ZMW', 'ZWL']
+
+    @property
+    @_BitcoinPriceBaseClass.limit_requests
+    def price(self):
+        url = f'https://api.coinbase.com/v2/prices/BTC-{self.currency}/spot'
+
+        try:
+            request = requests.get(url, timeout=self.timeout)
+            request.raise_for_status()
+            data = request.json()
+
+        except (requests.RequestException, json.JSONDecodeError) as ex:
+            raise BtcPriceConnectionError from ex
+
+        price = float(data['data']['amount'])
+        return price

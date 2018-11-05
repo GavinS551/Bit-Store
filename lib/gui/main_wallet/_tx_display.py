@@ -38,7 +38,7 @@ class TransactionDisplay(ttk.Frame):
         self.tree_view.heading('#2', text=f'Amount ({self.main_wallet.display_units})')
 
         self.tree_view.column('#0', minwidth=100, width=100)
-        self.tree_view.column('#2', minwidth=120, width=120)
+        self.tree_view.column('#2', minwidth=120, width=120, anchor='e')
 
         if config.get('GUI_SHOW_FIAT_TX_HISTORY'):
 
@@ -47,16 +47,16 @@ class TransactionDisplay(ttk.Frame):
             self.tree_view.heading('#5', text=config.get("FIAT"))
 
             self.tree_view.column('#1', minwidth=220, width=220)
-            self.tree_view.column('#3', minwidth=90, width=90)
-            self.tree_view.column('#4', minwidth=120, width=120)
-            self.tree_view.column('#5', minwidth=90, width=90)
+            self.tree_view.column('#3', minwidth=90, width=90, anchor='e')
+            self.tree_view.column('#4', minwidth=120, width=120, anchor='e')
+            self.tree_view.column('#5', minwidth=90, width=90, anchor='e')
 
         else:
 
             self.tree_view.heading('#3', text=f'Balance ({self.main_wallet.display_units})')
 
             self.tree_view.column('#1', minwidth=400, width=400)
-            self.tree_view.column('#3', minwidth=120, width=120)
+            self.tree_view.column('#3', minwidth=120, width=120, anchor='e')
 
         self.tree_view.grid(row=0, column=0, sticky='ns')
 
@@ -124,7 +124,7 @@ class TransactionDisplay(ttk.Frame):
                 display_data = [[t.confirmations, t.date, f2s(t.wallet_amount / f, show_plus_sign=True),
                                  f2s(round(sat_to_btc(t.wallet_amount) * price, 2), show_plus_sign=True, places=2),
                                  f2s(wallet_units(transactions.balances[t], 'sat')),
-                                 f2s(sat_to_btc(transactions.balances[t]) * price, 2, places=2)] for t in sorted_txns]
+                                 f2s(sat_to_btc(transactions.balances[t]) * price, places=2)] for t in sorted_txns]
             else:
                 display_data = [[t.confirmations, t.date, f2s(t.wallet_amount / f, show_plus_sign=True),
                                  f2s(wallet_units(transactions.balances[t], 'sat'))] for t in sorted_txns]

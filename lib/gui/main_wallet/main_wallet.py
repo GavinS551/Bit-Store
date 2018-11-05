@@ -65,6 +65,8 @@ class MainWallet(ttk.Frame):
         self.api_thread_status = tk.StringVar()
 
     def gui_draw(self):
+        self._refresh_data()
+
         self.title_label = ttk.Label(self, text=self.root.btc_wallet.name,
                                      font=self.root.bold_title_font)
         self.title_label.grid(row=0, column=0, pady=(0, 10))
@@ -97,7 +99,6 @@ class MainWallet(ttk.Frame):
         self._draw_bottom_info_bar()
         self._draw_menu_bar()
         self._draw_api_status()
-        self._refresh_data()
 
     def to_satoshis(self, amount):
         """ converts amount (in terms of self.display_units) into satoshis"""

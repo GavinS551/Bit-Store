@@ -80,10 +80,9 @@ class _ApiDataUpdaterThread(threading.Thread):
         self.blockchain_interface = blockchain.blockchain_api(config.get('BLOCKCHAIN_API_SOURCE'),
                                                               self.wallet.all_addresses, blockchain_refresh_rate)
 
-        self.price_interface = price.BitcoinPrice(currency=config.get('FIAT'),
-                                                  source=config.get('PRICE_API_SOURCE'))
-
         self.fees_interface = blockchain.fee_api(config.get('FEE_ESTIMATE_SOURCE'), fee_refresh_rate)
+
+        self.price_interface = price.price_api(config.get('PRICE_API_SOURCE'), config.get('FIAT'), price_refresh_rate)
 
         self.connection_status = self.ApiConnectionStatus.first_attempt
         self.connection_timestamp = 0  # unix timestamp
@@ -105,8 +104,7 @@ class _ApiDataUpdaterThread(threading.Thread):
                 self.connection_status = self.ApiConnectionStatus.good
                 self.connection_timestamp = time.time()
 
-            # TODO IMPLEMENT STANDARD ERROR FOR PRICE TOO. (like BlockchainConnectionError's abstracted exception)
-            except (blockchain.BlockchainConnectionError, requests.RequestException):
+            except (blockchain.BlockchainConnectionError, price.BtcPriceConnectionError):
                 self.connection_status = self.ApiConnectionStatus.error
 
             else:

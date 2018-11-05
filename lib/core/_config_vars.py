@@ -122,13 +122,10 @@ BIP32_PATHS = {
 POSSIBLE_BTC_UNITS = ['BTC', 'mBTC', 'bits', 'sat']
 
 
-POSSIBLE_FIAT_UNITS = ['AUD', 'CAD', 'EUR', 'GBP', 'JPY', 'USD']
-
-
 POSSIBLE_BLOCKCHAIN_API_SOURCES = ['blockchain.info', 'blockexplorer.com']
 
 
-POSSIBLE_PRICE_API_SOURCES = ['coinmarketcap.com']
+POSSIBLE_PRICE_API_SOURCES = ['coinbase']
 
 
 POSSIBLE_FEE_ESTIMATE_SOURCES = ['bitcoinfees.earn']
