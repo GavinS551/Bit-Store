@@ -143,6 +143,9 @@ class MainWallet(ttk.Frame):
 
         self.options_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.options_menu.add_command(label='Settings', command=self.root.settings_prompt)
+        self.options_menu.add_separator()
+        self.options_menu.add_command(label='Hide Addresses')
+        self.options_menu.add_command(label='Hide Console')
 
         self.menu_bar.add_cascade(label='Wallet', menu=self.wallet_menu)
         self.menu_bar.add_cascade(label='Options', menu=self.options_menu)

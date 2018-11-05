@@ -19,6 +19,8 @@ from tkinter import ttk, messagebox
 import os
 import traceback
 import platform
+import webbrowser
+import subprocess
 
 import qrcode
 from PIL import ImageTk
@@ -191,17 +193,24 @@ class RootApplication(tk.Tk):
     def qr_code_window(self, parent, str_data):
         toplevel = self.get_toplevel(parent)
 
+        qr_frame = ttk.Frame(toplevel)
+
         qr = qrcode.QRCode(box_size=5)
         qr.add_data(str_data)
         bg_colour = '#DCDAD5' if self.theme == 'clam' else '#F0F0F0'
         tk_image = ImageTk.PhotoImage(qr.make_image(back_color=bg_colour))
         toplevel.qr = tk_image  # keep reference to image to avoid garbage collector
 
-        qr_code = ttk.Label(toplevel, image=tk_image)
-        qr_code.grid(row=0, column=0, sticky='nsew', padx=10, pady=5)
+        qr_code = ttk.Label(qr_frame, image=tk_image)
+        qr_code.grid(row=0, column=0)
+
+        qr_frame.grid(row=0, column=0, padx=10)
+
+        data_label = ttk.Label(toplevel, text=str_data, font=self.tiny_font + ('bold',), justify=tk.CENTER)
+        data_label.grid(row=1, column=0, padx=15, pady=(0, 10))
 
         ok_button = ttk.Button(toplevel, text='OK', command=toplevel.destroy)
-        ok_button.grid(row=1, column=0, pady=(0, 10))
+        ok_button.grid(row=2, column=0, pady=10)
 
 
 class _Settings(tk.Toplevel):
@@ -267,6 +276,11 @@ class _Settings(tk.Toplevel):
         self.draw_gui_settings()
         self.gui_settings.grid(sticky='nsew')
         self.notebook.add(self.gui_settings, text='GUI')
+
+        self.advanced_settings = ttk.Frame(self.notebook, padding=10)
+        self.draw_advanced_settings()
+        self.advanced_settings.grid(sticky='nsew')
+        self.notebook.add(self.advanced_settings, text='Advanced')
 
         self.notebook.grid(row=0, column=0, padx=20, pady=10)
 
@@ -402,3 +416,28 @@ class _Settings(tk.Toplevel):
         show_fiat_history_check = ttk.Checkbutton(frame, variable=self.show_fiat_history,
                                                   offvalue=False, onvalue=True)
         show_fiat_history_check.grid(row=2, column=1, sticky='e')
+
+    def draw_advanced_settings(self):
+
+        def on_edit():
+            editor = os.getenv('EDITOR')
+
+            # unix systems should have editor env variable
+            if editor:
+                subprocess.Popen(f'{editor} {config.CONFIG_FILE}')
+
+            # editor env var not defined on windows
+            elif platform.system() == 'Windows':
+                subprocess.Popen(f'notepad.exe {config.CONFIG_FILE}')
+
+            # if nothing above works use webbrowser
+            else:
+                webbrowser.open(config.CONFIG_FILE)
+
+        frame = self.advanced_settings
+
+        edit_label = ttk.Label(frame, text='Edit JSON file:', font=self.root.tiny_font)
+        edit_label.grid(row=0, column=0, padx=(0, 85), pady=10, sticky='w')
+
+        edit_button = ttk.Button(frame, text='Edit', command=on_edit)
+        edit_button.grid(row=0, column=1, sticky='e')
