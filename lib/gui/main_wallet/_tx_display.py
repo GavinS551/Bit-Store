@@ -72,7 +72,9 @@ class TransactionDisplay(ttk.Frame):
         self.tree_view.configure(yscrollcommand=self.scrollbar.set)
         self.scrollbar.grid(row=0, column=1, sticky='ns')
 
-        self._last_wallet_transactions = None  # used to see if the display should be updated
+        # used to see if the display should be updated
+        self._last_wallet_transactions = None
+        self._last_price = None
 
         self._refresh_transactions()
         self._set_popup_event()
@@ -104,8 +106,11 @@ class TransactionDisplay(ttk.Frame):
 
     def _refresh_transactions(self):
         # only update if transactions have changed
-        if self._last_wallet_transactions != self.main_wallet.root.btc_wallet.transactions:
+        if self._last_wallet_transactions != self.main_wallet.root.btc_wallet.transactions or \
+                self._last_price != self.main_wallet.price.get():
+
             self._last_wallet_transactions = self.main_wallet.root.btc_wallet.transactions
+            self._last_price = self.main_wallet.price.get()
 
             # Transactions class will allow the sorting of txns by date,
             # and txns are stored as structs.TransactionData instances
