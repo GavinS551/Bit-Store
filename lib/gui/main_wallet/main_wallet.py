@@ -48,6 +48,8 @@ class MainWallet(ttk.Frame):
         self.console_display = None
         self.title_label = None
 
+        self.tab_hidden = None
+
         self.menu_bar = None
         self.wallet_menu = None
         self.options_menu = None
@@ -98,6 +100,9 @@ class MainWallet(ttk.Frame):
 
         self.notebook.grid(row=1, column=0, pady=(0, 10))
 
+        # holds info about whether a tab is hidden
+        self.tab_hidden = dict.fromkeys(self.notebook.children.values(), False)
+
         self._draw_bottom_info_bar()
         self._draw_menu_bar()
         self._draw_api_status()
@@ -132,6 +137,14 @@ class MainWallet(ttk.Frame):
         """
         TransactionView(self, txn)
 
+    def toggle_notebook_tab(self, tab):
+        if self.tab_hidden[tab]:
+            self.tab_hidden[tab] = False
+            self.notebook.add(tab)
+        else:
+            self.tab_hidden[tab] = True
+            self.notebook.hide(tab)
+
     def _draw_menu_bar(self):
         self.menu_bar = tk.Menu(self.root)
 
@@ -144,8 +157,10 @@ class MainWallet(ttk.Frame):
         self.options_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.options_menu.add_command(label='Settings', command=self.root.settings_prompt)
         self.options_menu.add_separator()
-        self.options_menu.add_command(label='Hide Addresses')
-        self.options_menu.add_command(label='Hide Console')
+        self.options_menu.add_command(label='Toggle Addresses',
+                                      command=lambda: self.toggle_notebook_tab(self.address_display))
+        self.options_menu.add_command(label='Toggle Console',
+                                      command=lambda: self.toggle_notebook_tab(self.console_display))
 
         self.menu_bar.add_cascade(label='Wallet', menu=self.wallet_menu)
         self.menu_bar.add_cascade(label='Options', menu=self.options_menu)

@@ -47,7 +47,7 @@ class ReceiveDisplay(ttk.Frame):
         self.draw_qr_code()
 
         self.address_frame.grid(row=1, column=0)
-        self.qr_frame.grid(row=1, column=1)
+        self.qr_frame.grid(row=1, column=1, padx=10)
 
         self._update_address()
 
