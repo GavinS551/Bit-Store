@@ -88,7 +88,9 @@ class _ApiDataUpdaterThread(threading.Thread):
         self.connection_timestamp = 0  # unix timestamp
 
     def run(self):
-        last_api_data = None  # stored to check if new api data should be written to file
+        # returns a list of datastore values from input list keys
+        get_values = lambda vals: [self.wallet.data_store.get_value(v) for v in vals]
+
         while threading.main_thread().is_alive() and not self.event.is_set():
 
             try:
@@ -109,14 +111,14 @@ class _ApiDataUpdaterThread(threading.Thread):
 
             else:
                 # if values have changed since last call
-                if last_api_data is None or api_data != last_api_data:
+                if get_values([k for k in api_data]) != [v for v in api_data.values()]:
+                    new_txns = api_data['TXNS'] != self.wallet.data_store.get_value('TXNS')
+
                     self.wallet.data_store.write_values(**api_data)
 
                     # if new transactions have been updated, used addresses are set appropriately
-                    if last_api_data is not None and api_data['TXNS'] != last_api_data['TXNS']:
+                    if new_txns:
                         self.wallet.set_used_addresses()
-
-                    last_api_data = api_data
 
             # reached if exception was raised in try block as well as normal execution of try block
             self.event.wait(self.min_refresh_rate)
