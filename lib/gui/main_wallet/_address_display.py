@@ -118,7 +118,7 @@ class AddressDisplay(ttk.Frame):
         qr_popup = lambda: self.main_wallet.root.qr_code_window(self, self.get_selected_address())
 
         popup = tk.Menu(self, tearoff=0)
-        popup.add_command(label='Copy Address', command=copy)
+        popup.add_command(label='Copy address', command=copy)
         popup.add_command(label='Show QR code', command=qr_popup)
         popup.add_command(label='Open in block explorer', command=explorer_address)
 
