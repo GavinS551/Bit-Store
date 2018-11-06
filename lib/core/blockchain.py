@@ -362,6 +362,12 @@ class BlockchainInfo(_BlockchainBaseClass):
 
                 ins.append(i)
 
+            # for some reason blockchain.info doesnt always show all outputs
+            # (I presume it could happen to inputs), so we make sure the user
+            # knows not all ins/outs are retrieved by adding an entry anyway
+            for _ in range(tx['vin_sz'] - len(ins)):
+                ins.append({'value': 0, 'address': 'Error: Cannot find TX-IN', 'n': 0})
+
             transaction['inputs'] = ins
 
             outs = []
@@ -375,6 +381,12 @@ class BlockchainInfo(_BlockchainBaseClass):
                 o['script'] = output['script']
 
                 outs.append(o)
+
+            # for some reason blockchain.info doesnt always show all outputs
+            # so we make sure the user knows not all ins/outs were retrieved
+            # by adding an entry anyway
+            for _ in range(tx['vout_sz'] - len(outs)):
+                outs.append({'value': 0, 'address': 'Error: Cannot find TX-OUT', 'n': 0, 'spent': None, 'script': ''})
 
             transaction['outputs'] = outs
 
