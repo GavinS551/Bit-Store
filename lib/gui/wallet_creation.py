@@ -74,13 +74,13 @@ class WalletCreation(ttk.Frame):
         password_label = ttk.Label(self, text='Enter Password:*', font=self.root.small_font)
         password_label.grid(row=2, column=0, sticky='w')
 
-        self.password_entry = ttk.Entry(self, show='*')
+        self.password_entry = ttk.Entry(self, show='●')
         self.password_entry.grid(row=2, column=1, pady=5, columnspan=2)
 
         confirm_pass_label = ttk.Label(self, text='Confirm Password:*', font=self.root.small_font)
         confirm_pass_label.grid(row=3, column=0, sticky='w')
 
-        self.confirm_pass_entry = ttk.Entry(self, show='*')
+        self.confirm_pass_entry = ttk.Entry(self, show='●')
         self.confirm_pass_entry.grid(row=3, column=1, pady=5, columnspan=2)
 
         path_label = ttk.Label(self, text='Custom Path:', font=self.root.small_font)
