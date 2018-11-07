@@ -41,6 +41,7 @@ class WalletCreation(ttk.Frame):
         self.segwit_check = None
         self.name_entry = None
         self.mnemonic_passphrase_entry = None
+        self.recommend_label = None
 
         # attributes for subclass support
         self.title = None
@@ -74,13 +75,13 @@ class WalletCreation(ttk.Frame):
         password_label = ttk.Label(self, text='Enter Password:*', font=self.root.small_font)
         password_label.grid(row=2, column=0, sticky='w')
 
-        self.password_entry = ttk.Entry(self, show='*')
+        self.password_entry = ttk.Entry(self, show='●')
         self.password_entry.grid(row=2, column=1, pady=5, columnspan=2)
 
         confirm_pass_label = ttk.Label(self, text='Confirm Password:*', font=self.root.small_font)
         confirm_pass_label.grid(row=3, column=0, sticky='w')
 
-        self.confirm_pass_entry = ttk.Entry(self, show='*')
+        self.confirm_pass_entry = ttk.Entry(self, show='●')
         self.confirm_pass_entry.grid(row=3, column=1, pady=5, columnspan=2)
 
         path_label = ttk.Label(self, text='Custom Path:', font=self.root.small_font)
@@ -99,8 +100,8 @@ class WalletCreation(ttk.Frame):
         segwit_enabled_check = ttk.Checkbutton(self, variable=self.segwit_check)
         segwit_enabled_check.grid(row=5, column=1, pady=5)
 
-        recommend_label = ttk.Label(self, text='(Recommended)', font=self.root.tiny_font)
-        recommend_label.grid(row=5, column=3, padx=5, sticky='w')
+        self.recommend_label = ttk.Label(self, text='(Recommended)', font=self.root.tiny_font)
+        self.recommend_label.grid(row=5, column=3, padx=5, sticky='w')
 
         self.mnemonic_passphrase_label = ttk.Label(self, text='Mnemonic Passphrase:', font=self.root.small_font)
         self.mnemonic_passphrase_label.grid(row=6, column=0, sticky='w')
