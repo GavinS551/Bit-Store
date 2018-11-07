@@ -26,6 +26,8 @@ class WalletImport(WalletCreation):
         super().gui_draw()
         self.title.config(text='Wallet Import:')
 
+        self.recommend_label.grid_remove()
+
         self.create_button.config(text='Next',
                                   command=self.on_next)
 
