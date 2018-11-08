@@ -313,7 +313,7 @@ class MainWallet(ttk.Frame):
         for i, var in enumerate(self.estimated_fees):
             var.set(self.root.btc_wallet.estimated_fees[i])
 
-        self.next_receiving_address.set(self.root.btc_wallet.receiving_addresses[0])
+        self.next_receiving_address.set(self.root.btc_wallet.next_receiving_address())
 
         updater_thread = self.root.btc_wallet.updater_thread
         status_enum = updater_thread.ApiConnectionStatus

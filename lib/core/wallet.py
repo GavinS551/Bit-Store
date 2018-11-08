@@ -23,8 +23,6 @@ import pickle
 import hashlib
 import binascii
 
-import requests.exceptions
-
 from . import blockchain, config, data, tx, price, hd, structs, utils
 from ..exceptions.wallet_exceptions import *
 
@@ -208,10 +206,14 @@ class Wallet:
                                          sensitive_keys=config.SENSITIVE_DATA)
 
         if not offline:
-            self.updater_thread = _ApiDataUpdaterThread(self, config.get('BLOCKCHAIN_API_REFRESH'),
-                                                        config.get('FEE_API_REFRESH'),
-                                                        config.get('PRICE_API_REFRESH'))
-            self.updater_thread.start()
+            self.updater_thread = None
+            self._start_updater_thread()
+
+    def _start_updater_thread(self):
+        self.updater_thread = _ApiDataUpdaterThread(self, config.get('BLOCKCHAIN_API_REFRESH'),
+                                                    config.get('FEE_API_REFRESH'),
+                                                    config.get('PRICE_API_REFRESH'))
+        self.updater_thread.start()
 
     def _set_addresses_used(self, addresses):
         r_addrs = self.receiving_addresses
@@ -271,7 +273,7 @@ class Wallet:
         # if there are transactions associated with the change address
         if structs.Transactions.from_list(self.transactions).find_address_with_txns((change_address,)):
             self.set_used_addresses()
-            change_address = self.change_addresses[0]
+            change_address = self.next_change_address()
 
         txn = tx.Transaction(utxo_data=self.unspent_outputs,
                              outputs_amounts=outs_amounts,
@@ -383,8 +385,13 @@ class Wallet:
     def clear_cached_api_data(self):
         api_keys = ['TXNS', 'ADDRESS_BALS', 'WALLET_BAL', 'UNSPENT_OUTS', 'PRICE']
         k_v = {k: None for k in api_keys}
-
         self.data_store.write_values(**k_v)
+
+        # if new addresses were added to wallet, we need to
+        # restart api data updater thread
+        self.updater_thread.stop()
+        self.updater_thread.join()
+        self._start_updater_thread()
 
     @staticmethod
     def broadcast_transaction(signed_txn):
@@ -393,7 +400,7 @@ class Wallet:
 
         return blockchain.broadcast_transaction(signed_txn.hex_txn)
 
-    def change_gap_limit(self, new_gap_limit, password):
+    def change_gap_limit(self, new_gap_limit):
         gap_limit_min = 10
         gap_limit_max = 50
 
@@ -404,7 +411,7 @@ class Wallet:
             raise TypeError('Gap limit must be an int')
 
         if new_gap_limit > self.gap_limit:
-            xpriv = self.get_xpriv(password)
+            xpriv = self.data_store.get_value('XPRIV')
 
             hd_obj = hd.HDWallet(key=xpriv, path=self.path, segwit=self.is_segwit,
                                  gap_limit=new_gap_limit)
@@ -416,7 +423,7 @@ class Wallet:
             r_addresses = self.default_addresses['receiving'] + new_addresses[0]
             c_addresses = self.default_addresses['change'] + new_addresses[1]
 
-            cur_addr_wif_keys = self.get_address_wif_keys(password)
+            cur_addr_wif_keys = self.data_store.get_value('ADDRESS_WIF_KEYS')
             r_keys = cur_addr_wif_keys['receiving']
             c_keys = cur_addr_wif_keys['change']
 
@@ -431,7 +438,7 @@ class Wallet:
             r_addresses = self.default_addresses['receiving'][:new_gap_limit]
             c_addresses = self.default_addresses['change'][:new_gap_limit]
 
-            cur_addr_wif_keys = self.get_address_wif_keys(password)
+            cur_addr_wif_keys = self.data_store.get_value('ADDRESS_WIF_KEYS')
             addr_wif_keys = {}
 
             new_r_keys = dict(list(cur_addr_wif_keys['receiving'].items())[:new_gap_limit])
@@ -647,6 +654,23 @@ class Wallet:
         else:
             raise data.IncorrectPasswordError
 
+    # Below methods will increase gap limit if there are no more new addresses
+    def next_receiving_address(self):
+        gap_limit_increase = 5
+        try:
+            return self.receiving_addresses[0]
+
+        except IndexError:
+            self.change_gap_limit(self.gap_limit + gap_limit_increase)
+
+    def next_change_address(self):
+        gap_limit_increase = 5
+        try:
+            return self.receiving_addresses[0]
+
+        except IndexError:
+            self.change_gap_limit(self.gap_limit + gap_limit_increase)
+
 
 class WatchOnlyWallet(Wallet):
 
@@ -668,7 +692,7 @@ class WatchOnlyWallet(Wallet):
     def get_address_wif_keys(self, password):
         raise WatchOnlyWalletError
 
-    def change_gap_limit(self, new_gap_limit, password):
+    def change_gap_limit(self, new_gap_limit):
         gap_limit_min = 15
         gap_limit_max = 50
 

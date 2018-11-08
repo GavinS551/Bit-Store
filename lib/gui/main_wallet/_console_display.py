@@ -228,7 +228,7 @@ class GUIConsole(console.Console):
         print(config.VERSION)
 
     @catch_incorrect_password
-    def do_setgaplimit(self, gap_limit: int, password: str):
+    def do_setgaplimit(self, gap_limit: int):
 
         try:
             gap_limit = self.string_eval(gap_limit, expected_type=int)
@@ -241,7 +241,7 @@ class GUIConsole(console.Console):
         print('Changing gap limit...')
 
         try:
-            self.wallet.change_gap_limit(gap_limit, password)
+            self.wallet.change_gap_limit(gap_limit)
 
         except ValueError as ex:
             print(f'Error: {str(ex)}')
