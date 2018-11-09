@@ -33,7 +33,7 @@ class MainWallet(ttk.Frame):
         self.root = root
         ttk.Frame.__init__(self, self.root.master_frame, padding=5)
 
-        self.refresh_data_rate = 1000  # milliseconds
+        self.refresh_data_rate = 3000  # milliseconds
 
         self.display_units = config.get('BTC_UNITS')
         self.unit_factor = config.UNIT_FACTORS[self.display_units]
