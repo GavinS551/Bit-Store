@@ -44,7 +44,7 @@ LOGGER_DIR = os.path.join(DATA_DIR, 'logs')
 DEFAULT_CONFIG = {
 
     'PRICE_API_SOURCE': 'coinbase.com',
-    'BLOCKCHAIN_API_SOURCE': 'blockexplorer.com',
+    'BLOCKCHAIN_API_SOURCE': 'blockchain.info',
     'FEE_ESTIMATE_SOURCE': 'bitcoinfees.earn',
     'BLOCK_EXPLORER_SOURCE': 'blockchair.com',
     'FIAT': 'USD',
