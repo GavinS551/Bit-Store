@@ -24,6 +24,7 @@ from types import SimpleNamespace
 
 from ...core import config, utils
 from ...core.tx import InsufficientFundsError
+from ...exceptions.wallet_exceptions import TransactionImportError
 
 
 class SendDisplay(ttk.Frame):
@@ -277,7 +278,7 @@ class SendDisplay(ttk.Frame):
                 messagebox.showerror('Error', 'Cannot import unsigned transaction in watch-only wallet')
                 return
 
-        except ValueError as ex:
+        except TransactionImportError as ex:
             messagebox.showerror('Error', str(ex))
             return
 
