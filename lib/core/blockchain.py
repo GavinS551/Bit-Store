@@ -319,10 +319,13 @@ class BlockchainInfo(_BlockchainBaseClass):
     @property
     def transactions(self):
         """ returns all txns associated with the entered addresses in standard format"""
+        # called first as self.blockchain_data_updated will be updated here to
+        # see if there is a need to remake transaction dict
+        data = self._blockchain_data
+
         if not self.blockchain_data_updated and self.last_transactions is not None:
             return self.last_transactions
 
-        data = self._blockchain_data
         transactions = []
 
         for tx in data['txs']:
