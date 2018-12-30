@@ -157,7 +157,7 @@ class GUIConsole(console.Console):
         """ Broadcasts a signed hexadecimal transaction """
         print('Broadcasting...')
         response = blockchain.broadcast_transaction(hex_transaction)
-        if response:
+        if response[0]:
             print('Transaction broadcast successful')
         else:
             print('Error: Unable to broadcast transaction')
@@ -229,6 +229,7 @@ class GUIConsole(console.Console):
 
     @catch_incorrect_password
     def do_setgaplimit(self, gap_limit: int):
+        """ Sets the gap limit of the wallet to the passed int"""
 
         try:
             gap_limit = self.string_eval(gap_limit, expected_type=int)
