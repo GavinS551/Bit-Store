@@ -476,6 +476,7 @@ class TransactionView:
         self.main_wallet = main_wallet
 
         self.toplevel = self.root.get_toplevel(main_wallet)
+        self.toplevel.grab_set()  # lock window into foreground, and disable interaction with main
         self.frame = ttk.Frame(self.toplevel, padding=10)
 
         # structs.TransactionData object
