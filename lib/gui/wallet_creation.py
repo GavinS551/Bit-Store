@@ -169,14 +169,9 @@ class WalletCreation(ttk.Frame):
 
             prev_settings = self.adv_settings.copy()
 
-            if gap_limit_var.get():
-                self.adv_settings['gap_limit'] = int(gap_limit_var.get())
-
-            if force_watch_only_var.get():
-                self.adv_settings['force_public'] = force_watch_only_var.get()
-
-            if multi_processing_var.get():
-                self.adv_settings['multi_processing'] = multi_processing_var.get()
+            self.adv_settings['gap_limit'] = int(gap_limit_var.get())
+            self.adv_settings['force_public'] = force_watch_only_var.get()
+            self.adv_settings['multi_processing'] = multi_processing_var.get()
 
             toplevel.destroy()
 
